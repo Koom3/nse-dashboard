@@ -40,28 +40,29 @@
     @media(max-width:1000px){ .grid3 { grid-template-columns: 1fr 1fr; } }
     @media(max-width:700px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
 
-    /* COLLAPSIBLE CARD */
+    /* CARDS & INTERACTIVE TABLES */
     .card, .full-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); margin-bottom: 1.5rem; overflow: hidden; }
-    .card-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem 0.75rem; border-bottom: 2px solid #f0f4f8; cursor: pointer; user-select: none; }
-    .card-header:hover { background: #fafbfd; }
+    .card-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 2px solid #f0f4f8; }
     .card-header h2 { font-size: 14px; color: #002060; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin: 0; }
-    .card-toggle { font-size: 18px; color: #002060; font-weight: 700; line-height: 1; transition: transform 0.25s; }
-    .card-toggle.open { transform: rotate(180deg); }
     .card-body { padding: 1rem 1.25rem 1.25rem; }
-    .card-body.collapsed { display: none; }
+
+    /* HORIZONTAL SCROLL FOR ALL TABLES */
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+    /* TAP TO EXPAND / CONTRACT 5-ROW LIMIT LOGIC */
+    .interactive-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .interactive-card:hover { box-shadow: 0 6px 16px rgba(0,32,96,0.12); transform: translateY(-2px); }
+    .table-collapsed tbody tr:nth-child(n+6) { display: none; }
+    .expand-hint { text-align: center; font-size: 11px; color: #D4AF37; padding-top: 8px; margin-top: 8px; border-top: 1px dashed #e2e8f0; font-weight: 700; user-select: none; }
+    .table-collapsed .expand-hint::after { content: "▼ Tap card to view full table ▼"; }
+    .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ Tap card to contract back to 5 rows ▲"; color: #002060; }
 
     /* TABLES */
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 8px 10px; color: #002060; font-weight: 700; border-bottom: 2px solid #e2e8f0; font-size: 12px; white-space: nowrap; background: #f8fafc; }
-    td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #333; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    th { text-align: left; padding: 8px 10px; color: #002060; font-weight: 700; border-bottom: 2px solid #e2e8f0; font-size: 12px; background: #f8fafc; }
+    td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #333; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #fafbfd; }
-
-    /* BADGES */
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; }
-    .badge.up { background: #e8f5e9; color: #1a7f37; }
-    .badge.dn { background: #fdecea; color: #cf222e; }
-    .badge.nt { background: #f1f5f9; color: #64748b; }
 
     /* TICKER HEAT MAP */
     .section-note { color: #64748b; margin-bottom: 1rem; font-style: italic; font-size: 11px; }
@@ -87,10 +88,6 @@
     .loader { text-align: center; padding: 4rem; color: #64748b; font-size: 16px; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; font-size: 12px; line-height: 1.7; }
     .error-box strong { font-size: 14px; display: block; margin-bottom: 0.4rem; }
-
-    /* LIVE TICK ANIMATION */
-    @keyframes flash { 0%{background-color:rgba(212,175,55,.25);}100%{background-color:transparent;} }
-    .live-row { animation: flash 2s ease-out; }
   </style>
 </head>
 <body>
@@ -99,7 +96,10 @@
   <h1>🇰🇪 NSE Market Dashboard — Advanced Quantitative View</h1>
   <div class="header-right">
     <span id="market-status" class="closed">⬤ STATUS PENDING</span>
-    <span id="last-updated">Loading...</span>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.4;">
+      <span id="last-updated">Loading...</span>
+      <span id="live-clock" style="font-size: 11px; color: #D4AF37; font-weight: 700;">EAT: --:--:--</span>
+    </div>
     <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
   </div>
 </header>
@@ -110,7 +110,6 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// ▼ YOUR WEB APP URL — replace the ID if you redeploy ▼
 const API_BASE = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
 // ═══════════════════════════════════════════════════════════════
 
@@ -118,10 +117,19 @@ const REFRESH_SECONDS = 60;
 const CB_NAME = "nseDashboardCallback";
 let refreshTimer = null;
 
+// ─── LIVE CLOCK ─────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const timeString = now.toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
+  document.getElementById("live-clock").textContent = "EAT: " + timeString;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
 // ─── MARKET STATUS (computed locally — D1 formula logic) ────────
 function computeMarketStatus(isHoliday) {
   const now = new Date();
-  const day = now.getDay(); // 0=Sun,6=Sat
+  const day = now.getDay(); 
   if (day === 0 || day === 6) return "CLOSED";
   if (isHoliday === true || isHoliday === "TRUE") return "CLOSED";
   const h = now.getHours(), m = now.getMinutes();
@@ -167,28 +175,36 @@ function buildError(msg) {
     1. Open Google Sheet → Extensions → Apps Script.<br>
     2. Click Deploy → Manage deployments → edit → Version: New version → Deploy.<br>
     3. Confirm Execute as: Me and Who has access: Anyone.<br>
-    4. Copy the URL, update API_BASE in index.html, commit to GitHub, wait 90s, hard-refresh (Ctrl+Shift+R).
+    4. Copy the URL, update API_BASE in index.html, commit to GitHub, wait 90s, hard-refresh.
   </div>`;
 }
 
-// ─── FORMATTING HELPERS ─────────────────────────────────────────
-// NOTE: All % values from sheet are already formatted (e.g. "-0.16%", "6.17%").
-// We parse them directly — NO division by 100.
-function parsePct(v) {
-  if (v === null || v === undefined || v === "") return null;
-  const s = String(v).replace(/[▲▼\s()%]/g, "").replace(/^-/, "").trim();
-  const neg = String(v).includes("▼") || String(v).startsWith("-") || String(v).includes("-(");
-  const n = parseFloat(s);
-  return isNaN(n) ? null : (neg ? -n : n);
+// ─── FORMATTING HELPERS (EXACT READS, NO DIVISION) ──────────────
+function formatRawChange(val) {
+  if (val === null || val === undefined || val === "") return `<span class="nt">—</span>`;
+  const s = String(val).trim();
+  if (s === "—" || s === "0.00%") return `<span class="nt" style="font-weight:700;">${s}</span>`;
+  
+  let cls = "nt";
+  if (s.includes("▲") || s.includes("+")) cls = "up";
+  else if (s.includes("▼") || s.includes("(") || s.includes("-")) cls = "dn";
+  else {
+     const n = parseFloat(s.replace(/[^\d.-]/g, ""));
+     if (!isNaN(n)) {
+        if (n > 0) cls = "up";
+        if (n < 0) cls = "dn";
+     }
+  }
+  return `<span class="${cls}" style="font-weight:700;">${s}</span>`;
 }
 
-function fmtPct(v, badge) {
-  const n = (typeof v === "number") ? v : parsePct(v);
-  if (n === null) return badge ? '<span class="badge nt">—</span>' : "—";
-  const cls = n > 0 ? "up" : n < 0 ? "dn" : "nt";
-  const sym = n > 0 ? "▲ " : n < 0 ? "▼ " : "— ";
-  const txt = sym + Math.abs(n).toFixed(2) + "%";
-  return badge ? `<span class="badge ${cls}">${txt}</span>` : `<span class="${cls}">${txt}</span>`;
+function getPctNumForSort(t, key) {
+  let raw = String(t[key] || "0");
+  let s = raw.replace(/[^\d.-]/g, "").replace(/^-/, "");
+  let n = parseFloat(s);
+  if (isNaN(n)) return 0;
+  if (raw.includes("▼") || raw.includes("(") || raw.includes("-")) return -n;
+  return n;
 }
 
 function fmtNum(v, dec) {
@@ -216,164 +232,105 @@ function fmtKsh(v) {
 function fmtUSD(v) {
   if (v === null || v === undefined || v === "") return "—";
   const s = String(v);
-  // Already has $ sign in sheet
   if (s.includes("$")) return s;
   const n = parseFloat(s.replace(/[^0-9.\-]/g, ""));
   if (isNaN(n)) return s;
   return "$" + fmtNum(n, 2);
 }
 
-// ─── COLLAPSIBLE CARD BUILDER ─────────────────────────────────────
-let cardCount = 0;
-function card(title, bodyHtml, defaultOpen) {
-  const id = "card-" + (++cardCount);
-  const open = defaultOpen !== false;
-  return `
-    <div class="card">
-      <div class="card-header" onclick="toggleCard('${id}')">
-        <h2>${title}</h2>
-        <span class="card-toggle ${open ? "open" : ""}" id="${id}-icon">▼</span>
-      </div>
-      <div class="card-body ${open ? "" : "collapsed"}" id="${id}-body">
-        ${bodyHtml}
-      </div>
-    </div>`;
+// ─── INTERACTIVE TABLE BUILDER ────────────────────────────────────
+function tableCard(title, headers, rows, emptyMsg) {
+  if (!rows || rows.length === 0) {
+    return `<div class="card"><div class="card-header"><h2>${title}</h2></div><div class="card-body"><p style="color:#888;padding:0.5rem 0;font-style:italic;">${emptyMsg || "No data."}</p></div></div>`;
+  }
+  const hasMany = rows.length > 5;
+  const classStr = hasMany ? "card table-collapsed interactive-card" : "card";
+  const onclickStr = hasMany ? `onclick="this.classList.toggle('table-collapsed')"` : "";
+  
+  let html = `<div class="${classStr}" ${onclickStr}>`;
+  html += `<div class="card-header"><h2>${title}</h2></div>`;
+  html += `<div class="card-body">`;
+  html += `<div class="table-responsive"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>`;
+  html += `<tbody>${rows.join("")}</tbody></table></div>`;
+  if (hasMany) html += `<div class="expand-hint"></div>`;
+  html += `</div></div>`;
+  return html;
 }
 
-function fullCard(title, bodyHtml, defaultOpen) {
-  const id = "card-" + (++cardCount);
-  const open = defaultOpen !== false;
-  return `
-    <div class="full-card">
-      <div class="card-header" onclick="toggleCard('${id}')">
-        <h2>${title}</h2>
-        <span class="card-toggle ${open ? "open" : ""}" id="${id}-icon">▼</span>
-      </div>
-      <div class="card-body ${open ? "" : "collapsed"}" id="${id}-body">
-        ${bodyHtml}
-      </div>
-    </div>`;
-}
-
-function toggleCard(id) {
-  const body = document.getElementById(id + "-body");
-  const icon = document.getElementById(id + "-icon");
-  const collapsed = body.classList.toggle("collapsed");
-  icon.classList.toggle("open", !collapsed);
-}
-
-// ─── TABLE BUILDER ────────────────────────────────────────────────
-function tbl(headers, rows, emptyMsg) {
-  if (!rows || rows.length === 0) return `<p style="color:#888;padding:0.5rem 0;font-style:italic;">${emptyMsg || "No data available."}</p>`;
-  return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
-    <tbody>${rows.join("")}</tbody></table>`;
+function standardCard(title, bodyHtml) {
+  return `<div class="full-card">
+    <div class="card-header"><h2>${title}</h2></div>
+    <div class="card-body">${bodyHtml}</div>
+  </div>`;
 }
 
 // ─── MAIN RENDER ────────────────────────────────────────────────
 function render(data) {
-  cardCount = 0;
-
-  // ── RAW DATASETS FROM API ─────────────────────────────────────
+  // ── RAW DATASETS ──
   const tickers   = (data.tickers    || []).filter(t => t.symbol);
   const mw        = (data.marketwatch|| []).filter(t => t.symbol);
-  const indices   = (data.indices    || []).filter(r => r.name && r.name !== "Name" && r.price && r.price !== "N/A");
-  const active    = (data.mostactive || []).filter(r => r.symbol && r.price);
-  const tvData    = (data.tradingview|| []).filter(r => r.symbol && r["price"] && r["price"] !== "N/A");
-  const forexRaw  = (data.forex      || []);
-
-  // ── MARKET STATUS from Market Assumptions (Holiday flag in "tickers" meta or parse log) ─
-  // The API exposes Market Assumptions sheet data under "marketwatch" key is unavailable.
-  // We compute status locally using the D1 formula logic (same formula as the spreadsheet).
-  // holiday flag: the sheet "market_assumptions" is not in the sheetMap — compute from time alone.
-  const isHoliday = false; // Default; adjust if you add "assumptions" to buildJsonOutput
-  const status = computeMarketStatus(isHoliday);
+  const indices   = (data.indices || data.world_indices || []).filter(r => r.name && r.name !== "Name" && r.price && r.price !== "N/A");
+  const active    = (data.mostactive || data.yahoo_most_active || []).filter(r => r.symbol && r.price);
+  const statsArr  = (data.stats || []);
+  
+  // Market Status
+  const status = computeMarketStatus(false);
   setMarketStatus(status);
 
-  // ── NSE STATS ────────────────────────────────────────────────
-  const statsArr = (data.stats || []);
+  // ── CBK MACRO DATA (Read exactly from A5:A16 & B5:B16 format) ──
+  const cbkRaw = data["cbk_grouped_data"] || data["cbk"] || [];
+  function getCBKVal(label) {
+    for (let r of cbkRaw) {
+      const vals = Object.values(r);
+      for (let i = 0; i < vals.length; i++) {
+        if (String(vals[i]).trim().toLowerCase() === label.toLowerCase()) {
+          return vals[i+1] !== undefined && String(vals[i+1]).trim() !== "" ? String(vals[i+1]).trim() : "—";
+        }
+      }
+    }
+    return "—";
+  }
+
+  // ── BOA FOREX RATES ──
+  const boaRaw = data["boa_daily_market_update"] || data["forex"] || data["boa"] || [];
+  const forexTableRows = [];
+  boaRaw.forEach(r => {
+      const vals = Object.values(r).map(v => String(v||"").trim());
+      if(vals[0] && (vals[0].includes("/") || ["USD","GBP","EUR","JPY","ZAR","CHF","CAD"].includes(vals[0]))) {
+          forexTableRows.push(`<tr><td><strong>${vals[0]}</strong></td><td>${vals[1]||"—"}</td><td>${vals[2]||"—"}</td><td>${vals[3]||"—"}</td><td>${vals[4]||"—"}</td></tr>`);
+      }
+  });
+
+  // ── NSE STATS MAP ──
   const statsMap = {};
   statsArr.forEach(r => { if (r.name) statsMap[r.name.trim()] = r.value; });
 
-  // ── KEY RATES from CBK (exposed under "forex" sheet via BOA + CBK data) ──────────
-  // The key rates appear in the TradingView sheet area as a sub-table.
-  // We hardcode labels and fetch them from the raw API via the tradingview key_rates field.
-  // They are actually embedded in the spreadsheet's TradingView sheet area as a companion table.
-  // From the sheet read: they appear under a "Key Rates" header in the TradingView sheet.
-  // The API key "tradingview" maps to that sheet, so we pull key rates from there.
-  const keyRateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia","Kesonia Compound Rate"];
-  // Key rates come through the tradingview sheet but as non-ticker rows.
-  // Since buildJsonOutput maps headers → objects, the key rates table will appear
-  // as rows with a "symbol" key = rate name and "price" key = value.
-  // Find them by matching against keyRateLabels.
-  const keyRatesMap = {};
-  (data.tradingview || []).forEach(r => {
-    const sym = String(r.symbol || "").trim();
-    if (keyRateLabels.includes(sym)) keyRatesMap[sym] = r.price || r["price"] || "";
-  });
-  // Also try the "forex" sheet which contains CBK data sections:
-  const fxRows = data.forex || [];
-  fxRows.forEach(r => {
-    const vals = Object.values(r);
-    const lbl = String(vals[0] || "").trim();
-    if (keyRateLabels.includes(lbl)) keyRatesMap[lbl] = vals[1] || "";
-  });
-
-  // ── DERIVE RANKING TABLES FROM MARKET WATCH ──────────────────
-  // The "Rank Analysis" sheet is not in buildJsonOutput's sheetMap.
-  // We compute all rankings client-side from the Market Watch data.
+  // ── RANKING TABLES FROM MARKET WATCH ──
   function numMW(row, key) {
     const v = row[key] || row[key.toLowerCase()] || 0;
     return parseFloat(String(v).replace(/[^0-9.\-]/g,"")) || 0;
   }
-
   const validMW = mw.filter(r => r.symbol && numMW(r,"volume") + numMW(r,"turnover_(kshs)") + numMW(r,"trades") > 0);
 
-  const topTurnover = [...validMW].sort((a,b) => numMW(b,"turnover_(kshs)") - numMW(a,"turnover_(kshs)")).slice(0,10);
-  const topVolume   = [...validMW].sort((a,b) => numMW(b,"volume") - numMW(a,"volume")).slice(0,10);
-  const topTrades   = [...validMW].sort((a,b) => numMW(b,"trades") - numMW(a,"trades")).slice(0,10);
-  const topForeignB = [...validMW].filter(r => numMW(r,"foreign_buy") > 0).sort((a,b) => numMW(b,"foreign_buy") - numMW(a,"foreign_buy")).slice(0,10);
-  const topForeignS = [...validMW].filter(r => numMW(r,"foreign_sell") > 0).sort((a,b) => numMW(b,"foreign_sell") - numMW(a,"foreign_sell")).slice(0,10);
+  const topTurnover = [...validMW].sort((a,b) => numMW(b,"turnover_(kshs)") - numMW(a,"turnover_(kshs)"));
+  const topVolume   = [...validMW].sort((a,b) => numMW(b,"volume") - numMW(a,"volume"));
+  const topTrades   = [...validMW].sort((a,b) => numMW(b,"trades") - numMW(a,"trades"));
+  const topForeignB = [...validMW].filter(r => numMW(r,"foreign_buy") > 0).sort((a,b) => numMW(b,"foreign_buy") - numMW(a,"foreign_buy"));
+  const topForeignS = [...validMW].filter(r => numMW(r,"foreign_sell") > 0).sort((a,b) => numMW(b,"foreign_sell") - numMW(a,"foreign_sell"));
 
-  // ── TICKER CHANGE % parsing ───────────────────────────────────
-  function getPct(t) {
-    // % Change comes as string like "-0.16%" or "6.17%" from ticker sheet
-    const raw = t["%_change"] || t["percent_change"] || t["change_%"] || "";
-    const n = parsePct(raw);
-    return n !== null ? n : 0;
-  }
+  // ── TICKERS MOVERS ──
+  const percentKey = t => t["%_change"] || t["percent_change"] || t["change_%"];
+  const gainers    = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a,b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change"));
+  const losers     = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a,b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change"));
+  const unchanged  = [...tickers].filter(t => getPctNumForSort(t, "%_change") === 0);
 
-  const gainers    = tickers.filter(t => getPct(t) > 0).sort((a,b) => getPct(b) - getPct(a));
-  const losers     = tickers.filter(t => getPct(t) < 0).sort((a,b) => getPct(a) - getPct(b));
-  const unchanged  = tickers.filter(t => getPct(t) === 0);
-
-  // ── FOREX TABLE (BOA Cross Rates) ─────────────────────────────
-  // The forex sheet has mixed content. Extract rows that look like currency pairs.
-  const forexCurrencies = ["USD","GBP","EUR","JPY","ZAR","CHF","CAD","KES/UGX","KES/TZS"];
-  const forexRows = [];
-  fxRows.forEach(r => {
-    const vals = Object.values(r).map(v => String(v||"").trim());
-    if (forexCurrencies.some(c => vals[0] === c || vals.includes(c))) {
-      forexRows.push(vals);
-    }
-  });
-
-  // ── WORLD INDICES — fix % Change (already formatted as "▲ 1.20%" in sheet) ──
-  function idxPct(r) {
-    const v = r["%_change"] || r["percent_change"] || r["change_%"] || "";
-    return parsePct(v);
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // ── BUILD HTML ───────────────────────────────────────────────
-  // ─────────────────────────────────────────────────────────────
-
-  // ── 1. SUMMARY METRICS ───────────────────────────────────────
+  // ── 1. SUMMARY METRICS ──
   const metricsHtml = `
     <div class="metrics">
       <div class="metric-card">
         <div class="lbl">NSE All Share</div>
         <div class="val">${fmtNum(statsMap["NSE ALL SHARE INDEX"], 2)}</div>
-        <div class="sub">${fmtPct(statsMap["NSE ALL SHARE INDEX_change"] || null)} vs prev</div>
+        <div class="sub">${formatRawChange(statsMap["NSE ALL SHARE INDEX_change"])} vs prev</div>
       </div>
       <div class="metric-card">
         <div class="lbl">NSE 20 Index</div>
@@ -402,148 +359,59 @@ function render(data) {
       </div>
     </div>`;
 
-  // ── 2. KEY RATES ──────────────────────────────────────────────
-  const rateLabels = [
-    "Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO",
-    "Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR",
-    "Kesonia Compound Rate"
-  ];
+  // ── 2. KEY RATES ──
+  const rateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia Compound Rate"];
   const ratesHtml = `<div class="rates-grid">
     ${rateLabels.map(l => {
-      const v = keyRatesMap[l] || keyRatesMap["Kesonia"] || "";
+      const v = getCBKVal(l);
       return `<div class="rate-cell">
         <div class="rate-label">${l}</div>
-        <div class="rate-value">${v || "—"}</div>
+        <div class="rate-value">${v}</div>
       </div>`;
     }).join("")}
   </div>`;
 
-  // ── 3. NSE MARKET STATS FULL TABLE ───────────────────────────
+  // ── 3. NSE MARKET STATS FULL TABLE ──
   const statsRows = statsArr.filter(r => r.name && r.value !== undefined && r.value !== "").map(r =>
     `<tr><td>${r.name}</td><td><strong>${fmtNum(r.value, 2)}</strong></td>
-     <td>${r.change !== undefined && r.change !== "" ? fmtPct(r.change) : "—"}</td></tr>`
+     <td>${r.change !== undefined && r.change !== "" ? formatRawChange(r.change) : "—"}</td></tr>`
   );
-  const statsHtml = tbl(["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded.");
 
-  // ── 4. TOP MOVERS ─────────────────────────────────────────────
+  // ── 4. TOP MOVERS ──
   function tickerRow(t) {
-    const p = getPct(t);
     return `<tr><td><strong>${t.symbol}</strong></td>
       <td>${fmtKsh(t["last_price_(kshs)"])}</td>
-      <td>${fmtPct(p, true)}</td></tr>`;
+      <td>${formatRawChange(percentKey(t))}</td></tr>`;
   }
-  const gainerRows = gainers.map(tickerRow);
-  const loserRows  = losers.map(tickerRow);
 
-  // ── 5. RANKING TABLES ─────────────────────────────────────────
-  function rankRow_TO(r) {
-    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
-      <td style="color:#002060;font-weight:600;">${fmtKsh(r["turnover_(kshs)"])}</td>
-      <td>${fmtNum(r.volume, 0)}</td><td>${r.trades || "—"}</td></tr>`;
-  }
-  function rankRow_Vol(r) {
-    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
-      <td style="color:#002060;font-weight:600;">${fmtNum(numMW(r,"volume"), 0)}</td>
-      <td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
-  }
-  function rankRow_Trades(r) {
-    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
-      <td style="color:#002060;font-weight:600;">${fmtNum(r.trades, 0)}</td>
-      <td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
-  }
-  function rankRow_FB(r) {
+  // ── 5. RANKING TABLES ROWS ──
+  const rankRow_TO = r => `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td><td style="color:#002060;font-weight:600;">${fmtKsh(r["turnover_(kshs)"])}</td><td>${fmtNum(r.volume, 0)}</td><td>${r.trades || "—"}</td></tr>`;
+  const rankRow_Vol = r => `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td><td style="color:#002060;font-weight:600;">${fmtNum(numMW(r,"volume"), 0)}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
+  const rankRow_Trades = r => `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td><td style="color:#002060;font-weight:600;">${fmtNum(r.trades, 0)}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
+  
+  const rankRow_FB = r => {
     const net = numMW(r,"foreign_buy") - numMW(r,"foreign_sell");
-    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
-      <td class="up">${fmtNum(numMW(r,"foreign_buy"), 0)}</td>
-      <td>${fmtNum(numMW(r,"foreign_sell"), 0)}</td>
-      <td class="${net>=0?"up":"dn"}">${fmtNum(net, 0)}</td></tr>`;
-  }
-  function rankRow_FS(r) {
-    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
-      <td class="dn">${fmtNum(numMW(r,"foreign_sell"), 0)}</td>
-      <td>${fmtNum(numMW(r,"foreign_buy"), 0)}</td></tr>`;
-  }
+    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td><td class="up">${fmtNum(numMW(r,"foreign_buy"), 0)}</td><td>${fmtNum(numMW(r,"foreign_sell"), 0)}</td><td class="${net>=0?"up":"dn"}">${fmtNum(net, 0)}</td></tr>`;
+  };
+  const rankRow_FS = r => `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td><td class="dn">${fmtNum(numMW(r,"foreign_sell"), 0)}</td><td>${fmtNum(numMW(r,"foreign_buy"), 0)}</td></tr>`;
 
-  // ── 6. FOREX (BOA) ────────────────────────────────────────────
-  const forexTableRows = forexRows.map(v =>
-    `<tr><td><strong>${v[0]}</strong></td><td>${v[1] || "—"}</td><td>${v[2] || "—"}</td><td>${v[3] || "—"}</td><td>${v[4] || "—"}</td></tr>`
-  );
-  const forexHtml = tbl(["Currency","Buy vs USD","Sell vs USD","KES Buy","KES Sell"], forexTableRows, "Forex rates not yet loaded.");
+  // ── 6. GLOBAL INDICES & YAHOO ──
+  const indicesRows = indices.map(r => `<tr><td><strong>${r.name}</strong></td><td>${r.name === "US Dollar Index" ? r.price : fmtUSD(r.price)}</td><td>${formatRawChange(r["%_change"] || r.percent_change)}</td><td>${r.volume && r.volume !== "N/A" ? fmtNum(r.volume, 0) : "—"}</td></tr>`);
+  const activeRows = active.map(r => `<tr><td><strong>${r.symbol}</strong></td><td>${r.name || "—"}</td><td>${fmtUSD(r.price)}</td><td>${formatRawChange(r["%_change"] || r.percent_change)}</td><td>${fmtNum(r.volume, 0)}</td><td>${fmtNum(r["market_cap"], 0)}</td></tr>`);
 
-  // ── 7. GLOBAL INDICES ─────────────────────────────────────────
-  const indicesRows = indices.map(r => {
-    const p = idxPct(r);
-    const priceStr = r.name === "US Dollar Index" ? r.price : fmtUSD(r.price);
-    return `<tr><td><strong>${r.name}</strong></td>
-      <td>${priceStr}</td>
-      <td>${p !== null ? fmtPct(p, true) : "—"}</td>
-      <td>${r.volume && r.volume !== "N/A" ? fmtNum(r.volume, 0) : "—"}</td></tr>`;
-  });
-  const indicesHtml = tbl(["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded.");
+  // ── 7. TICKER PRICES & MARKET WATCH FULL TABLES ──
+  const tickerFullRows = tickers.map(t => `<tr><td><strong>${t.symbol}</strong></td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatRawChange(t["change"])}</td><td>${formatRawChange(percentKey(t))}</td><td><small style="color:#888">${t["last_updated"] || "—"}</small></td></tr>`);
+  const mwRows = mw.filter(r => numMW(r,"ltp_(kshs)") > 0 || numMW(r,"volume") > 0).map(r => `<tr><td><strong>${r.symbol}</strong></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r["security_name"] || ""}</td><td>${fmtKsh(r["ltp_(kshs)"])}</td><td>${fmtKsh(r["prev_close"])}</td><td>${fmtNum(r.volume, 0)}</td><td>${r.trades || "—"}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td><td class="up">${fmtNum(r["foreign_buy"], 0)}</td><td class="dn">${fmtNum(r["foreign_sell"], 0)}</td></tr>`);
 
-  // ── 8. YAHOO MOST ACTIVE ─────────────────────────────────────
-  const activeRows = active.map(r => {
-    const pct = parsePct(r["%_change"] || r["percent_change"] || "");
-    return `<tr><td><strong>${r.symbol}</strong></td>
-      <td>${r.name || "—"}</td>
-      <td>${fmtUSD(r.price)}</td>
-      <td>${pct !== null ? fmtPct(pct, true) : "—"}</td>
-      <td>${fmtNum(r.volume, 0)}</td>
-      <td>${fmtNum(r["market_cap"], 0)}</td></tr>`;
-  });
-  const activeHtml = tbl(["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded.");
-
-  // ── 9. TICKER PRICES FULL TABLE ───────────────────────────────
-  const tickerFullRows = tickers.map(t => {
-    const p = getPct(t);
-    return `<tr><td><strong>${t.symbol}</strong></td>
-      <td>${fmtKsh(t["last_price_(kshs)"])}</td>
-      <td>${fmtNum(t["change"], 2)}</td>
-      <td>${fmtPct(p, true)}</td>
-      <td><small style="color:#888">${t["last_updated"] || "—"}</small></td></tr>`;
-  });
-  const tickerFullHtml = tbl(["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded.");
-
-  // ── 10. MARKET WATCH FULL TABLE ───────────────────────────────
-  const mwRows = mw.filter(r => numMW(r,"ltp_(kshs)") > 0 || numMW(r,"volume") > 0).map(r =>
-    `<tr><td><strong>${r.symbol}</strong></td>
-     <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r["security_name"] || ""}</td>
-     <td>${fmtKsh(r["ltp_(kshs)"])}</td>
-     <td>${fmtKsh(r["prev_close"])}</td>
-     <td>${fmtNum(r.volume, 0)}</td>
-     <td>${r.trades || "—"}</td>
-     <td>${fmtKsh(r["turnover_(kshs)"])}</td>
-     <td class="up">${fmtNum(r["foreign_buy"], 0)}</td>
-     <td class="dn">${fmtNum(r["foreign_sell"], 0)}</td></tr>`
-  );
-  const mwHtml = `<div style="overflow-x:auto">${tbl(["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded.")}</div>`;
-
-  // ── 11. TRADINGVIEW PERFORMANCE ───────────────────────────────
-  const tvRows = tvData.map(r =>
-    `<tr><td><strong>${r.symbol}</strong></td>
-     <td>${fmtKsh(r.price)}</td>
-     <td>${r["change_%"] || r["change"] || "—"}</td>
-     <td>${r["perf_%_1w"] || "—"}</td>
-     <td>${r["perf_%_1m"] || "—"}</td>
-     <td>${r["perf_%_ytd"] || "—"}</td>
-     <td>${r["perf_%_1y"] || "—"}</td>
-     <td>${r["volatility_1w"] || "—"}</td>
-     <td>${r["volatility_1m"] || "—"}</td></tr>`
-  );
-  const tvHtml = tvData.length > 0
-    ? `<div style="overflow-x:auto">${tbl(["Symbol","Price","Change","1W","1M","YTD","1Y","Vol 1W","Vol 1M"], tvRows)}</div>`
-    : `<p style="color:#888;padding:0.5rem 0;font-style:italic;">TradingView data pending — runs every 5 minutes during market hours. Ensure the V4 script is active and the TradingView trigger is live.</p>`;
-
-  // ── 12. EQUITY HEAT MAP ───────────────────────────────────────
+  // ── 8. EQUITY HEAT MAP ──
   const heatCells = tickers.map(t => {
-    const p = getPct(t);
-    const cls = p > 0 ? "up-cell" : p < 0 ? "dn-cell" : "nt-cell";
-    const chgCls = p > 0 ? "up" : p < 0 ? "dn" : "nt";
-    const sym = p > 0 ? "▲" : p < 0 ? "▼" : "—";
+    const rawStr = percentKey(t);
+    const n = getPctNumForSort(t, "%_change");
+    const cls = n > 0 ? "up-cell" : n < 0 ? "dn-cell" : "nt-cell";
     return `<div class="ticker-cell ${cls}" data-sym="${t.symbol}">
       <div class="tc-sym">${t.symbol}</div>
       <div class="tc-price">${fmtKsh(t["last_price_(kshs)"])}</div>
-      <div class="tc-chg ${chgCls}">${sym} ${Math.abs(p).toFixed(2)}%</div>
+      <div class="tc-chg">${formatRawChange(rawStr)}</div>
     </div>`;
   }).join("");
   const heatHtml = `
@@ -551,39 +419,38 @@ function render(data) {
     <input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol..." oninput="filterHeatmap(this.value)">
     <div class="ticker-grid" id="heatmap-grid">${heatCells}</div>`;
 
-  // ── ASSEMBLE FULL PAGE ────────────────────────────────────────
+  // ── ASSEMBLE FULL PAGE ──
   document.getElementById("app").innerHTML = `
     ${metricsHtml}
 
-    ${fullCard("Key Rates — Central Bank of Kenya", ratesHtml, true)}
+    ${standardCard("Key Rates — Central Bank of Kenya", ratesHtml)}
 
     <div class="grid3">
-      ${card("Top Gainers", tbl(["Ticker","Price","Change"], gainerRows, "No gainers today."), true)}
-      ${card("Top Losers",  tbl(["Ticker","Price","Change"], loserRows,  "No losers today."),  true)}
-      ${card("Global Markets (World Indices)", indicesHtml, true)}
+      ${tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today.")}
+      ${tableCard("Top Losers",  ["Ticker","Price","Change"], losers.map(tickerRow),  "No losers today.")}
+      ${tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded.")}
     </div>
 
     <div class="grid2">
-      ${card("Forex Rates (BOA)", forexHtml, true)}
-      ${card("Yahoo Most Active (US Equities)", activeHtml, true)}
+      ${tableCard("Forex Rates (BOA)", ["Currency","Buy vs USD","Sell vs USD","KES Buy","KES Sell"], forexTableRows, "Forex rates not yet loaded.")}
+      ${tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded.")}
     </div>
 
     <div class="grid3">
-      ${card("Top by Turnover", tbl(["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), true)}
-      ${card("Top by Volume",   tbl(["Symbol","Security","Volume","Turnover (KSh)"],         topVolume.map(rankRow_Vol),   "No volume data."),   true)}
-      ${card("Top by Trades",   tbl(["Symbol","Security","Trades","Turnover (KSh)"],         topTrades.map(rankRow_Trades),"No trades data."),   true)}
+      ${tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data.")}
+      ${tableCard("Top by Volume",   ["Symbol","Security","Volume","Turnover (KSh)"],         topVolume.map(rankRow_Vol),   "No volume data.")}
+      ${tableCard("Top by Trades",   ["Symbol","Security","Trades","Turnover (KSh)"],         topTrades.map(rankRow_Trades),"No trades data.")}
     </div>
 
     <div class="grid2">
-      ${card("Top Foreign Inflows (Buys)",  tbl(["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topForeignB.map(rankRow_FB), "No foreign buy data."), true)}
-      ${card("Top Foreign Outflows (Sells)",tbl(["Symbol","Security","Foreign Sell","Foreign Buy"],           topForeignS.map(rankRow_FS), "No foreign sell data."),true)}
+      ${tableCard("Top Foreign Inflows (Buys)",  ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topForeignB.map(rankRow_FB), "No foreign buy data.")}
+      ${tableCard("Top Foreign Outflows (Sells)",["Symbol","Security","Foreign Sell","Foreign Buy"],            topForeignS.map(rankRow_FS), "No foreign sell data.")}
     </div>
 
-    ${fullCard("NSE Market Statistics", statsHtml, false)}
-    ${fullCard("Equity Heat Map — All Tickers", heatHtml, true)}
-    ${fullCard("Ticker Prices — Full List", tickerFullHtml, false)}
-    ${fullCard("Market Watch — Full Order Book Detail", mwHtml, false)}
-    ${fullCard("TradingView Performance Data", tvHtml, false)}
+    ${tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded.")}
+    ${standardCard("Equity Heat Map — All Tickers", heatHtml)}
+    ${tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded.")}
+    ${tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded.")}
   `;
 }
 
