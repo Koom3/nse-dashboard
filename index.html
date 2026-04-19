@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NSE Market Dashboard</title>
+  <title>NSE Market Dashboard | Comprehensive View</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
-    /* FONT INTEGRATION NOTE: 
-      Since 'Hadassah Friedlaender' is a custom font, you must upload the font file 
-      (e.g., hadassah.woff2) to your GitHub repository folder and uncomment the block below. 
+    /* FONT INTEGRATION: 
+      Upload 'hadassah.woff2' or 'hadassah.ttf' to your GitHub repository.
     */
     /*
     @font-face {
@@ -30,7 +29,6 @@
       font-size: 12px; 
     }
     
-    /* Header integration with #002060 and Gold accent */
     header { 
       background: linear-gradient(135deg, #002060 0%, #003b73 100%); 
       color: #fff; 
@@ -80,7 +78,7 @@
     .error-box strong { display: block; margin-bottom: 0.5rem; font-size: 14px; }
     .loader { text-align: center; padding: 3rem; color: #64748b; font-size: 14px; }
 
-    /* Regular Text: 12px (inherits from body but strictly enforced on specifics) */
+    /* Regular Text: 12px */
     td { 
       padding: 8px; 
       border-bottom: 1px solid #f1f5f9; 
@@ -92,7 +90,6 @@
       font-size: 12px; 
     }
     
-    /* Layout & Styling details */
     #status-bar { opacity: 0.9; display: flex; gap: 1rem; align-items: center; }
     #refresh-btn { 
       background: rgba(255,255,255,0.2); 
@@ -107,7 +104,6 @@
     #refresh-btn:hover { background: rgba(255,255,255,0.3); }
     .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
     
-    /* Metrics Grid */
     .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .metric-card { 
       background: #fff; 
@@ -118,15 +114,13 @@
       transition: transform 0.2s; 
     }
     .metric-card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-    .metric-card:nth-child(even) { border-top-color: #D4AF37; } /* Alternating Gold accent */
+    .metric-card:nth-child(even) { border-top-color: #D4AF37; } 
     .metric-card .sub { color: #888; margin-top: 4px; }
 
-    /* Utility Colors */
     .up { color: #1a7f37 !important; } 
     .dn { color: #cf222e !important; } 
     .nt { color: #888; }
     
-    /* Grids & Cards */
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     @media(max-width:900px){ .grid2, .grid3 { grid-template-columns: 1fr; } }
@@ -139,22 +133,18 @@
       margin-bottom: 1.5rem; 
     }
     
-    /* Tables */
     table { width: 100%; border-collapse: collapse; }
     tr:hover td { background: #fdfdfd; }
     tr:last-child td { border-bottom: none; }
     
-    /* Badges */
     .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 700; }
     .badge.up { background: #e8f5e9; color: #1a7f37; } 
     .badge.dn { background: #fdecea; color: #cf222e; } 
     .badge.nt { background: #f1f5f9; color: #64748b; }
     
-    /* Errors & Charts */
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; line-height: 1.6; }
     .chart-wrap { position: relative; height: 250px; }
     
-    /* Ticker Grid (Heat Map) */
     .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; }
     .ticker-cell { 
       background: #fff; 
@@ -170,12 +160,16 @@
     .ticker-cell.nt-cell { border-left-color: #94a3b8; }
     .tc-chg { font-weight: 700; }
     .section-note { color: #64748b; margin-bottom: 1rem; font-style: italic; }
+
+    /* New Styling for Live Feed */
+    .live-feed-row { animation: flash 2s ease-out; }
+    @keyframes flash { 0% { background-color: rgba(212, 175, 55, 0.2); } 100% { background-color: transparent; } }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>🇰🇪 NSE Market Dashboard</h1>
+  <h1>🇰🇪 NSE Market Dashboard | Advanced Quantitative View</h1>
   <div id="status-bar">
     <span id="last-updated">Loading...</span>
     <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
@@ -183,16 +177,12 @@
 </header>
 
 <div class="container">
-  <div id="app"><div class="loader">⏳ Connecting to market data API...</div></div>
+  <div id="app"><div class="loader">⏳ Aggregating global & domestic datasets...</div></div>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  ▼ REPLACE THE URL BELOW WITH YOUR APPS SCRIPT WEB APP URL ▼
-// ═══════════════════════════════════════════════════════════════
 const API_BASE = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
-// ═══════════════════════════════════════════════════════════════
-//  ▲ (Keep the quotes. Replace only the text between them.) ▲
 // ═══════════════════════════════════════════════════════════════
 
 const REFRESH_SECONDS  = 60;
@@ -206,55 +196,28 @@ function loadData() {
   if (old) old.remove();
   window[CALLBACK_NAME] = null;
   const timeout = setTimeout(() => {
-    document.getElementById("app").innerHTML = buildErrorHtml(
-      "Request timed out (30 seconds).",
-      "The Apps Script API did not respond. Check that your Web App URL is correct, " +
-      "that the deployment is live, and that 'Who has access' is set to 'Anyone'."
-    );
-    document.getElementById("last-updated").textContent = "Error — see dashboard";
+    document.getElementById("app").innerHTML = buildErrorHtml("Timeout", "API response delayed.");
+    document.getElementById("last-updated").textContent = "Error";
   }, 30000);
+  
   window[CALLBACK_NAME] = function(data) {
     clearTimeout(timeout);
     currentData = data;
-    document.getElementById("last-updated").textContent = "Updated: " + (data.timestamp || "—");
+    document.getElementById("last-updated").textContent = "Updated: " + (data.timestamp || new Date().toLocaleTimeString());
     renderDashboard(data);
   };
+  
   const script  = document.createElement("script");
   script.id     = "jsonp-loader";
   script.src    = API_BASE + "?callback=" + CALLBACK_NAME + "&sheet=all&_t=" + Date.now();
-  script.onerror = function() {
-    clearTimeout(timeout);
-    document.getElementById("app").innerHTML = buildErrorHtml(
-      "Script load failed.",
-      "The browser could not load the Apps Script URL. This usually means the URL is wrong " +
-      "or the Web App deployment has been deleted. See steps below to fix."
-    );
-    document.getElementById("last-updated").textContent = "Error — see dashboard";
-  };
+  script.onerror = () => { clearTimeout(timeout); };
   document.head.appendChild(script);
-}
-
-function buildErrorHtml(headline, detail) {
-  return `
-    <div class="error-box">
-      <strong>❌ ${headline}</strong>
-      ${detail}
-      <br><br>
-      <strong>How to fix:</strong><br>
-      1. Open your Google Sheet → Extensions → Apps Script.<br>
-      2. Make sure the script is saved (Ctrl+S).<br>
-      3. Click <b>Deploy → Manage deployments</b>.<br>
-      4. Click the pencil ✏️ icon → set Version to <b>New version</b> → click <b>Deploy</b>.<br>
-      5. Confirm <b>Execute as: Me</b> and <b>Who has access: Anyone</b>.<br>
-      6. Copy the new Web App URL and update API_BASE in this index.html file.<br>
-      7. In your GitHub repo, replace index.html with the updated file → Commit changes.<br>
-      8. Wait 1–2 minutes then refresh this page.
-    </div>`;
 }
 
 function fmtPct(v, showBadge) {
   if (v === null || v === "" || v === undefined) return showBadge ? '<span class="badge nt">—</span>' : "—";
-  const n   = parseFloat(v) * 100;
+  let n = parseFloat(String(v).replace("%",""));
+  if (String(v).indexOf('.') === -1 && Math.abs(n) < 1) n = n * 100; // Account for raw decimal vs pre-formatted
   if (isNaN(n)) return showBadge ? '<span class="badge nt">—</span>' : "—";
   const cls = n > 0 ? "up" : n < 0 ? "dn" : "nt";
   const sym = n > 0 ? "▲ " : n < 0 ? "▼ " : "— ";
@@ -263,8 +226,8 @@ function fmtPct(v, showBadge) {
 }
 
 function fmtNum(v, dec) {
-  if (v === null || v === "" || v === "N/A" || v === undefined) return "N/A";
-  const n = parseFloat(v);
+  if (!v) return "—";
+  const n = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
   if (isNaN(n)) return String(v);
   if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(2) + "T";
   if (Math.abs(n) >= 1e9)  return (n / 1e9 ).toFixed(2) + "B";
@@ -274,151 +237,145 @@ function fmtNum(v, dec) {
 
 function kshPrice(v) {
   if (!v && v !== 0) return "—";
-  const s = String(v).replace("Ksh", "").replace(",", "").trim();
-  const n = parseFloat(s);
-  return isNaN(n) ? String(v) : "KSh " + n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const n = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
+  return isNaN(n) ? String(v) : "KSh " + n.toLocaleString("en-KE", { minimumFractionDigits: 2 });
 }
 
 function renderDashboard(data) {
+  // Defensive extraction for potentially missing API nodes
   const tickers = (data.tickers || []).filter(t => t.symbol && t["last_price_(kshs)"] !== undefined);
-  const stats   = {};
-  (data.stats || []).forEach(r => { if (r.name) stats[r.name] = r.value; });
-  const indices  = (data.indices  || []).filter(r => r.name && r.name !== "Name");
-  const active   = (data.mostactive || []).filter(r => r.symbol);
-  const forex    = (data.forex || []).filter(r => r[Object.keys(r)[0]] && Object.keys(r).length > 1);
+  const stats   = {}; (data.stats || []).forEach(r => { if (r.name) stats[r.name] = r.value; });
+  const indices = (data.indices || []).filter(r => r.name && r.name !== "Name");
+  const active  = (data.mostactive || []).filter(r => r.symbol);
+  const forex   = (data.forex || []).filter(r => r[Object.keys(r)[0]] && Object.keys(r).length > 1);
+  
+  // Extracting newly identified deep data
+  const cbkData = data["cbk_grouped_data"] || data["cbk"] || [];
+  const liveTrades = data["live_trades"] || data["🔄_live_trades"] || [];
+  const stockAnalysis = data["stock_price_analysis"] || data["stock_analysis"] || tickers;
 
-  function pct(t) {
-    const v = t["%_change"] || t["percent_change"] || t["change"] || 0;
-    return parseFloat(String(v).replace("%","")) || 0;
-  }
-  function price(t) {
-    const raw = t["last_price_(kshs)"] || t["price"] || 0;
-    return parseFloat(String(raw).replace(/[^0-9.]/g, "")) || 0;
-  }
+  function pct(t) { return parseFloat(String(t["%_change"] || t["percent_change"] || t["change"] || t["daily_change"] || 0).replace(/[^\d.-]/g,"")) || 0; }
+  function trn(t) { return parseFloat(String(t["turnover"] || t["turnover_(kshs)"] || 0).replace(/[^0-9.-]/g, "")) || 0; }
 
   const gainers   = tickers.filter(t => pct(t) > 0).sort((a,b) => pct(b) - pct(a));
   const losers    = tickers.filter(t => pct(t) < 0).sort((a,b) => pct(a) - pct(b));
   const unchanged = tickers.filter(t => pct(t) === 0);
+  
+  // Sort by liquidity (Turnover)
+  const mostLiquid = [...stockAnalysis].sort((a,b) => trn(b) - trn(a)).slice(0, 5);
 
-  const mktCap    = stats["MARKET CAPITALIZATION (Billions)"] || stats["market_capitalization_(billions)"] || "";
-  const allShare  = stats["NSE ALL SHARE INDEX"]              || stats["nse_all_share_index"]              || "";
-  const nse20     = stats["NSE 20 SHARE INDEX"]               || stats["nse_20_share_index"]               || "";
-  const turnover  = stats["EQUITY TURNOVER"]                  || stats["equity_turnover"]                  || "";
-  const deals     = stats["TOTAL EQUITY DEALS"]               || stats["total_equity_deals"]               || "";
+  const mktCap   = stats["MARKET CAPITALIZATION (Billions)"] || stats["market_capitalization_(billions)"] || "";
+  const allShare = stats["NSE ALL SHARE INDEX"] || stats["nse_all_share_index"] || "";
+  const nse20    = stats["NSE 20 SHARE INDEX"] || stats["nse_20_share_index"] || "";
+  const turnover = stats["EQUITY TURNOVER"] || stats["equity_turnover"] || "";
+
+  // Helper to find Macro indicators
+  const findMacro = (keyword) => {
+    const row = cbkData.find(r => String(Object.values(r).join(" ")).toLowerCase().includes(keyword.toLowerCase()));
+    if (!row) return "—";
+    const vals = Object.values(row);
+    return vals.find(v => !isNaN(parseFloat(v)) && parseFloat(v) < 1 && parseFloat(v) > 0) || vals[1]; 
+  };
 
   const html = `
     <div class="metrics">
       <div class="metric-card">
         <div class="lbl">NSE All Share</div>
         <div class="val">${fmtNum(allShare, 2)}</div>
-        <div class="sub">Index</div>
+        <div class="sub">Primary Index</div>
       </div>
       <div class="metric-card">
         <div class="lbl">NSE 20 Index</div>
         <div class="val">${fmtNum(nse20, 2)}</div>
-        <div class="sub">Index</div>
+        <div class="sub">Blue Chip</div>
       </div>
       <div class="metric-card">
         <div class="lbl">Market Cap</div>
         <div class="val">${fmtNum(mktCap, 2)}B</div>
-        <div class="sub">KES billions</div>
+        <div class="sub">KES Total Valuation</div>
       </div>
       <div class="metric-card">
         <div class="lbl">Equity Turnover</div>
         <div class="val">${fmtNum(turnover, 0)}</div>
-        <div class="sub">KES today</div>
+        <div class="sub">Daily Liquidity</div>
       </div>
       <div class="metric-card">
-        <div class="lbl">Total Deals</div>
-        <div class="val">${fmtNum(deals, 0)}</div>
-        <div class="sub">Trades today</div>
+        <div class="lbl">CBK Base Rate</div>
+        <div class="val">${cbkData.length ? fmtPct(findMacro('Central Bank Rate'), false) : '<span style="font-size:12px;color:#888;">Pending API...</span>'}</div>
+        <div class="sub">Risk-Free Benchmark</div>
       </div>
       <div class="metric-card">
-        <div class="lbl">Gainers / Losers</div>
-        <div class="val"><span class="up">${gainers.length}</span> / <span class="dn">${losers.length}</span></div>
-        <div class="sub">${unchanged.length} unchanged of ${tickers.length}</div>
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div class="card">
-        <h2>Top 10 Gainers</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Price (KSh)</th><th>Change</th></tr></thead>
-          <tbody>
-            ${gainers.slice(0,10).map(t => `
-              <tr>
-                <td><strong>${t.symbol}</strong></td>
-                <td>${kshPrice(t["last_price_(kshs)"])}</td>
-                <td>${fmtPct(t["%_change"] !== undefined ? t["%_change"] : (pct(t)/100), true)}</td>
-              </tr>`).join("")}
-          </tbody>
-        </table>
-      </div>
-      <div class="card">
-        <h2>Top 10 Losers</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Price (KSh)</th><th>Change</th></tr></thead>
-          <tbody>
-            ${losers.slice(0,10).map(t => `
-              <tr>
-                <td><strong>${t.symbol}</strong></td>
-                <td>${kshPrice(t["last_price_(kshs)"])}</td>
-                <td>${fmtPct(t["%_change"] !== undefined ? t["%_change"] : (pct(t)/100), true)}</td>
-              </tr>`).join("")}
-          </tbody>
-        </table>
+        <div class="lbl">Inflation (CPI)</div>
+        <div class="val">${cbkData.length ? fmtPct(findMacro('Inflation Rate'), false) : '<span style="font-size:12px;color:#888;">Pending API...</span>'}</div>
+        <div class="sub">Macro Headwind</div>
       </div>
     </div>
 
     <div class="grid3">
       <div class="card">
-        <h2>Global Indices</h2>
+        <h2>Top Movers (Gainers)</h2>
         <table>
-          <thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead>
+          <thead><tr><th>Ticker</th><th>Price</th><th>Change</th></tr></thead>
           <tbody>
-            ${indices.map(r => `
-              <tr>
-                <td><strong>${r.name}</strong></td>
-                <td>${fmtNum(r.price,2)}</td>
-                <td>${fmtPct(r["%_change"] !== undefined ? r["%_change"] : r["percent_change"], true)}</td>
-              </tr>`).join("")}
+            ${gainers.slice(0,6).map(t => `
+              <tr><td><strong>${t.symbol || t.stock}</strong></td><td>${kshPrice(t["last_price_(kshs)"] || t.ltp)}</td><td>${fmtPct(pct(t), true)}</td></tr>
+            `).join("")}
           </tbody>
         </table>
       </div>
+      
       <div class="card">
-        <h2>US Most Active</h2>
+        <h2>Top Movers (Losers)</h2>
         <table>
-          <thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>Market Cap</th></tr></thead>
+          <thead><tr><th>Ticker</th><th>Price</th><th>Change</th></tr></thead>
           <tbody>
-            ${active.slice(0,8).map(r => `
-              <tr>
-                <td><strong>${r.symbol}</strong></td>
-                <td>$${fmtNum(r.price,2)}</td>
-                <td>${fmtPct(r["%_change"] !== undefined ? r["%_change"] : r["percent_change"], true)}</td>
-                <td>${fmtNum(r["market_cap"] || r.marketcap,0)}</td>
-              </tr>`).join("")}
+            ${losers.slice(0,6).map(t => `
+              <tr><td><strong>${t.symbol || t.stock}</strong></td><td>${kshPrice(t["last_price_(kshs)"] || t.ltp)}</td><td>${fmtPct(pct(t), true)}</td></tr>
+            `).join("")}
           </tbody>
         </table>
       </div>
+
       <div class="card">
-        <h2>Forex Rates (BOA)</h2>
+        <h2>Liquidity & Capital Flow</h2>
         <table>
-          <thead><tr><th colspan="4" style="color:#555">USD/KES: 126.50 – 131.50</th></tr>
-          <tr><th>CCY</th><th>Buy vs USD</th><th>KES Buy</th><th>KES Sell</th></tr></thead>
+          <thead><tr><th>Ticker</th><th>Turnover (KES)</th><th>Vol</th></tr></thead>
           <tbody>
-            ${forex.slice(0,8).map(r => {
-              const keys = Object.keys(r);
-              return `<tr>${keys.slice(0,4).map(k => `<td>${r[k]}</td>`).join("")}</tr>`;
-            }).join("")}
+            ${mostLiquid.length > 0 && trn(mostLiquid[0]) > 0 ? mostLiquid.map(t => `
+              <tr>
+                <td><strong>${t.symbol || t.stock || t.ticker}</strong></td>
+                <td style="color:#002060;font-weight:600;">${fmtNum(trn(t))}</td>
+                <td>${fmtNum(t.volume || t.vol, 0)}</td>
+              </tr>
+            `).join("") : '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px;">Detailed liquidity data bridging...</td></tr>'}
           </tbody>
         </table>
       </div>
     </div>
 
     <div class="full-card">
-      <h2>All NSE Tickers — Complete Market Heat Map</h2>
-      <p class="section-note">${tickers.length} tickers listed · ${gainers.length} gainers (▲) · ${losers.length} losers (▼) · ${unchanged.length} unchanged</p>
+      <h2>Intraday Order Flow (Live Ticks)</h2>
+      <p class="section-note">Most recent executed transactions across the exchange.</p>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Time</th><th>Security</th><th>Price</th><th>Quantity</th><th>Sub-Book</th></tr></thead>
+          <tbody>
+            ${liveTrades.length > 0 ? liveTrades.slice(0, 5).map(r => `
+              <tr class="live-feed-row">
+                <td>${String(r["transaction_time"] || r.time).split(' ')[1] || "—"}</td>
+                <td><strong>${r.symbol || r.security_name}</strong></td>
+                <td>${kshPrice(r["price_(kshs)"] || r.price)}</td>
+                <td>${fmtNum(r.quantity || r.qty, 0)}</td>
+                <td><span class="badge nt">${r["sub-book"] || r.sub_book || "Regular"}</span></td>
+              </tr>
+            `).join("") : '<tr><td colspan="5" style="text-align:center;color:#888;padding:20px;">Live tick data not currently exposed by backend API.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="full-card">
+      <h2>Complete Equity Heat Map</h2>
       <div class="ticker-grid">
         ${tickers.map(t => {
           const p = pct(t);
@@ -437,46 +394,32 @@ function renderDashboard(data) {
 
     <div class="grid2">
       <div class="card">
-        <h2>Market Breadth</h2>
-        <div class="chart-wrap"><canvas id="moverChart"></canvas></div>
-      </div>
-      <div class="card">
-        <h2>About This Dashboard</h2>
+        <h2>Global Markets (Correlations)</h2>
         <table>
-          <thead><tr><th>Data Source</th><th>Status</th></tr></thead>
+          <thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead>
           <tbody>
-            <tr><td>NSE Live Prices (AIB-AXYS)</td><td><span class="badge up">Live</span></td></tr>
-            <tr><td>NSE Market Statistics</td><td><span class="badge ${stats["NSE ALL SHARE INDEX"] ? "up" : "nt"}">${stats["NSE ALL SHARE INDEX"] ? "Live" : "No data"}</span></td></tr>
-            <tr><td>World Indices (Yahoo Finance)</td><td><span class="badge ${indices.length > 0 ? "up" : "nt"}">${indices.length > 0 ? "Live" : "No data"}</span></td></tr>
-            <tr><td>US Most Active (Yahoo Finance)</td><td><span class="badge ${active.length > 0 ? "up" : "nt"}">${active.length > 0 ? "Live" : "No data"}</span></td></tr>
-            <tr><td>Forex Rates (Bank of Africa)</td><td><span class="badge ${forex.length > 0 ? "up" : "nt"}">${forex.length > 0 ? "Live" : "No data"}</span></td></tr>
-            <tr><td>Auto-refresh interval</td><td>${REFRESH_SECONDS}s</td></tr>
+            ${indices.slice(0,5).map(r => `
+              <tr><td><strong>${r.name}</strong></td><td>${fmtNum(r.price,2)}</td><td>${fmtPct(r["%_change"] || r.percent_change, true)}</td></tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="card">
+        <h2>FX Yield Matrix (BOA)</h2>
+        <table>
+          <thead><tr><th>Currency</th><th>Buy (vs USD)</th><th>KES Buy</th><th>KES Sell</th></tr></thead>
+          <tbody>
+            ${forex.slice(0,5).map(r => {
+              const keys = Object.keys(r);
+              return `<tr>${keys.slice(0,4).map(k => `<td>${r[k]}</td>`).join("")}</tr>`;
+            }).join("")}
           </tbody>
         </table>
       </div>
     </div>`;
 
   document.getElementById("app").innerHTML = html;
-
-  if (moverChart) { moverChart.destroy(); moverChart = null; }
-  const moverCtx = document.getElementById("moverChart");
-  if (moverCtx) {
-    moverChart = new Chart(moverCtx, {
-      type: "doughnut",
-      data: {
-        labels: ["Gainers", "Unchanged", "Losers"],
-        datasets: [{ data: [gainers.length, unchanged.length, losers.length],
-          backgroundColor: ["#1a7f37","#aaaaaa","#cf222e"], borderWidth: 2, borderColor: "#fff" }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "bottom", labels: { font: { size: 11 }, padding: 12 } },
-          tooltip: { callbacks: { label: c => c.label + ": " + c.raw + " stocks" } }
-        }
-      }
-    });
-  }
 }
 
 function startRefresh() {
