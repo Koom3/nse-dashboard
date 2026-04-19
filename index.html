@@ -3,422 +3,609 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NSE Market Dashboard | Institutional View</title>
+  <title>NSE Market Dashboard | Advanced Quantitative View</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
-    /* FONT INTEGRATION: 
-      Upload 'hadassah.woff2' or 'hadassah.ttf' to your GitHub repository.
-    */
-    /*
-    @font-face {
-      font-family: 'Hadassah Friedlaender';
-      src: url('hadassah.woff2') format('woff2'),
-           url('hadassah.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-    }
-    */
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body { 
-      font-family: 'Hadassah Friedlaender', Georgia, serif; 
-      background: #f4f6f9; 
-      color: #2c3e50; 
-      font-size: 12px; /* Regular Text */
-      padding-bottom: 2rem;
-    }
-    
-    header { 
-      background: linear-gradient(135deg, #002060 0%, #003b73 100%); 
-      color: #fff; 
-      padding: 1rem 1.5rem; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      flex-wrap: wrap; 
-      gap: 0.5rem; 
-      border-bottom: 4px solid #D4AF37; 
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    header h1 { font-size: 18px; font-weight: 700; margin: 0; } /* Topics */
-    
-    #status-bar { display: flex; gap: 1rem; align-items: center; }
-    #refresh-btn { 
-      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); 
-      color: #fff; padding: 4px 12px; border-radius: 4px; cursor: pointer; 
-      font-family: inherit; font-size: 12px; transition: background 0.3s; 
-    }
-    #refresh-btn:hover { background: rgba(255,255,255,0.3); }
-    
-    .market-status { font-size: 14px; font-weight: bold; padding: 4px 10px; border-radius: 4px; letter-spacing: 1px; }
-    .status-closed { background: #cf222e; color: #fff; }
-    .status-open { background: #00b050; color: #fff; }
+    body { font-family: 'Hadassah Friedlaender', Georgia, serif; background: #f4f6f9; color: #2c3e50; font-size: 12px; }
+
+    header { background: linear-gradient(135deg, #002060 0%, #003b73 100%); color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; border-bottom: 4px solid #D4AF37; }
+    header h1 { font-size: 18px; font-weight: 700; }
+    .header-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    #market-status { font-size: 14px; font-weight: 700; padding: 4px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.4); }
+    #market-status.open  { color: #00e676; border-color: #00e676; }
+    #market-status.closed{ color: #ff5252; border-color: #ff5252; }
+    #last-updated { font-size: 12px; opacity: 0.85; }
+    #refresh-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 4px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 12px; transition: background 0.2s; }
+    #refresh-btn:hover { background: rgba(255,255,255,0.35); }
 
     .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
-    
-    /* Layout Grids */
+
+    /* METRIC CARDS */
     .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .metric-card { background: #fff; border-radius: 8px; padding: 1rem; border-top: 4px solid #002060; box-shadow: 0 2px 6px rgba(0,0,0,0.07); transition: transform 0.2s, box-shadow 0.2s; }
+    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.11); }
+    .metric-card:nth-child(even) { border-top-color: #D4AF37; }
+    .metric-card .lbl { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; font-weight: 700; }
+    .metric-card .val { font-size: 18px; font-weight: 700; color: #002060; }
+    .metric-card .sub { font-size: 11px; color: #999; margin-top: 4px; }
+
+    .up  { color: #1a7f37 !important; }
+    .dn  { color: #cf222e !important; }
+    .nt  { color: #888; }
+
+    /* LAYOUT GRIDS */
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    @media(max-width:900px){ .grid2, .grid3 { grid-template-columns: 1fr; } }
-    
-    /* Cards */
-    .metric-card { 
-      background: #fff; border-radius: 8px; padding: 1rem; 
-      border-top: 4px solid #002060; box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-    }
-    .metric-card:nth-child(even) { border-top-color: #D4AF37; } 
-    .metric-card .val { font-size: 18px; font-weight: 700; color: #002060; } /* Topics */
-    .metric-card .lbl { font-size: 14px; color: #555; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; } /* Subtopics */
-    .metric-card .sub { font-size: 12px; color: #888; margin-top: 4px; }
-    
-    .card, .full-card { 
-      background: #fff; border-radius: 8px; padding: 1.25rem; 
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 1.5rem; 
-    }
-    .card h2, .full-card h2 { 
-      font-size: 18px; color: #002060; text-transform: uppercase; 
-      letter-spacing: 0.05em; margin-bottom: 0.5rem; border-bottom: 2px solid #f0f4f8; padding-bottom: 0.5rem; 
-    }
-    
-    /* Interactive Expandable Table Styling */
-    .interactive-card {
-      cursor: pointer;
-      transition: box-shadow 0.3s, transform 0.2s;
-      position: relative;
-    }
-    .interactive-card:hover { box-shadow: 0 8px 16px rgba(0,32,96,0.15); transform: translateY(-2px); border-bottom: 2px solid #D4AF37; }
-    
-    /* Table logic for expand/collapse */
-    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-    th { text-align: left; padding: 8px; color: #002060; font-weight: 700; border-bottom: 2px solid #e2e8f0; font-size: 14px; white-space: nowrap; background: #f8fafc; }
-    td { padding: 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; color: #333; font-size: 12px; }
-    tr:hover td { background: #fdfdfd; }
-    
-    /* Default collapsed state: hide rows after the 6th data row (row 7 in nth-child since th is not in tbody) */
-    .interactive-card:not(.expanded) tbody tr:nth-child(n+7) { display: none; }
-    
-    .expand-hint {
-      text-align: center; font-size: 12px; color: #D4AF37; font-weight: bold; font-style: italic;
-      padding-top: 5px; border-top: 1px dashed #e2e8f0; margin-top: 5px;
-    }
-    .interactive-card:not(.expanded) .expand-hint::after { content: "▼ Tap card to view full table ▼"; }
-    .interactive-card.expanded .expand-hint::after { content: "▲ Tap card to shrink ▲"; color: #002060; }
+    @media(max-width:1000px){ .grid3 { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:700px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
 
-    /* Badges & Utilities */
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 700; font-size: 12px; }
-    .badge.up { background: #e8f5e9; color: #1a7f37; } 
-    .badge.dn { background: #fdecea; color: #cf222e; } 
+    /* COLLAPSIBLE CARD */
+    .card, .full-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); margin-bottom: 1.5rem; overflow: hidden; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem 0.75rem; border-bottom: 2px solid #f0f4f8; cursor: pointer; user-select: none; }
+    .card-header:hover { background: #fafbfd; }
+    .card-header h2 { font-size: 14px; color: #002060; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin: 0; }
+    .card-toggle { font-size: 18px; color: #002060; font-weight: 700; line-height: 1; transition: transform 0.25s; }
+    .card-toggle.open { transform: rotate(180deg); }
+    .card-body { padding: 1rem 1.25rem 1.25rem; }
+    .card-body.collapsed { display: none; }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 10px; color: #002060; font-weight: 700; border-bottom: 2px solid #e2e8f0; font-size: 12px; white-space: nowrap; background: #f8fafc; }
+    td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #333; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbfd; }
+
+    /* BADGES */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+    .badge.up { background: #e8f5e9; color: #1a7f37; }
+    .badge.dn { background: #fdecea; color: #cf222e; }
     .badge.nt { background: #f1f5f9; color: #64748b; }
-    .up { color: #1a7f37 !important; } .dn { color: #cf222e !important; } .nt { color: #888; }
-    
-    .loader { text-align: center; padding: 3rem; color: #002060; font-size: 14px; font-weight: bold;}
-    .section-title { width: 100%; font-size: 18px; color: #002060; margin: 2rem 0 1rem 0; padding-bottom: 5px; border-bottom: 2px solid #D4AF37; text-transform: uppercase; font-weight: 700; }
+
+    /* TICKER HEAT MAP */
+    .section-note { color: #64748b; margin-bottom: 1rem; font-style: italic; font-size: 11px; }
+    .heatmap-search { width: 100%; margin-bottom: 1rem; padding: 7px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    .heatmap-search:focus { border-color: #002060; }
+    .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 0.6rem; }
+    .ticker-cell { background: #fff; border-radius: 6px; padding: 0.6rem 0.75rem; border-left: 4px solid #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+    .ticker-cell:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .ticker-cell.up-cell { border-left-color: #1a7f37; background: #f8fff9; }
+    .ticker-cell.dn-cell { border-left-color: #cf222e; background: #fff8f8; }
+    .ticker-cell.nt-cell { border-left-color: #94a3b8; }
+    .tc-sym   { font-size: 13px; font-weight: 700; color: #002060; }
+    .tc-price { font-size: 12px; font-weight: 600; color: #1a1a2e; margin: 3px 0 2px; }
+    .tc-chg   { font-size: 11px; font-weight: 700; }
+
+    /* KEY RATES */
+    .rates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.6rem; }
+    .rate-cell { background: #f8fafc; border-radius: 6px; padding: 0.65rem 0.85rem; border-left: 3px solid #D4AF37; }
+    .rate-label { font-size: 10px; color: #666; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .rate-value { font-size: 16px; font-weight: 700; color: #002060; }
+
+    /* LOADER & ERROR */
+    .loader { text-align: center; padding: 4rem; color: #64748b; font-size: 16px; }
+    .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; font-size: 12px; line-height: 1.7; }
+    .error-box strong { font-size: 14px; display: block; margin-bottom: 0.4rem; }
+
+    /* LIVE TICK ANIMATION */
+    @keyframes flash { 0%{background-color:rgba(212,175,55,.25);}100%{background-color:transparent;} }
+    .live-row { animation: flash 2s ease-out; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>🇰🇪 NSE Quantitative Dashboard</h1>
-  <div id="status-bar">
-    <span id="market-status-badge" class="market-status status-closed">LOADING...</span>
-    <span id="last-updated" style="font-size: 12px; opacity: 0.8;">Loading data...</span>
+  <h1>🇰🇪 NSE Market Dashboard — Advanced Quantitative View</h1>
+  <div class="header-right">
+    <span id="market-status" class="closed">⬤ STATUS PENDING</span>
+    <span id="last-updated">Loading...</span>
     <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
   </div>
 </header>
 
-<div class="container" id="app">
-  <div class="loader">⏳ Downloading Institutional Datasets & Executing Macros...</div>
+<div class="container">
+  <div id="app"><div class="loader">⏳ Aggregating global and domestic datasets...</div></div>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
+// ▼ YOUR WEB APP URL — replace the ID if you redeploy ▼
 const API_BASE = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
 // ═══════════════════════════════════════════════════════════════
 
-const REFRESH_SECONDS  = 60;
-const CALLBACK_NAME    = "nseDashboardCallback";
-let   refreshTimer     = null;
+const REFRESH_SECONDS = 60;
+const CB_NAME = "nseDashboardCallback";
+let refreshTimer = null;
 
-// Toggles the expansion of interactive tables
-function toggleCard(element) {
-  element.classList.toggle('expanded');
+// ─── MARKET STATUS (computed locally — D1 formula logic) ────────
+function computeMarketStatus(isHoliday) {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun,6=Sat
+  if (day === 0 || day === 6) return "CLOSED";
+  if (isHoliday === true || isHoliday === "TRUE") return "CLOSED";
+  const h = now.getHours(), m = now.getMinutes();
+  const mins = h * 60 + m;
+  return (mins >= 9*60+30 && mins <= 15*60) ? "OPEN" : "CLOSED";
 }
 
+function setMarketStatus(status) {
+  const el = document.getElementById("market-status");
+  if (status === "OPEN") {
+    el.textContent = "⬤ OPEN";
+    el.className = "open";
+  } else {
+    el.textContent = "⬤ CLOSED";
+    el.className = "closed";
+  }
+}
+
+// ─── JSONP LOADER ────────────────────────────────────────────────
 function loadData() {
   const old = document.getElementById("jsonp-loader");
   if (old) old.remove();
-  window[CALLBACK_NAME] = null;
-  
-  const timeout = setTimeout(() => {
-    document.getElementById("app").innerHTML = `<div style="padding:2rem;color:red;font-size:14px;font-weight:bold;">❌ API Timeout. Check Google Apps Script deployment.</div>`;
+  window[CB_NAME] = null;
+  const timer = setTimeout(() => {
+    document.getElementById("app").innerHTML = buildError("Request timed out (30s). Check API URL and deployment.");
   }, 30000);
-  
-  window[CALLBACK_NAME] = function(data) {
-    clearTimeout(timeout);
-    document.getElementById("last-updated").textContent = "Updated: " + new Date().toLocaleTimeString();
-    renderDashboard(data);
+  window[CB_NAME] = function(data) {
+    clearTimeout(timer);
+    const ts = data.timestamp || new Date().toLocaleTimeString();
+    document.getElementById("last-updated").textContent = "Updated: " + ts;
+    render(data);
   };
-  
-  const script  = document.createElement("script");
-  script.id     = "jsonp-loader";
-  script.src    = API_BASE + "?callback=" + CALLBACK_NAME + "&sheet=all&_t=" + Date.now();
-  script.onerror = () => { clearTimeout(timeout); };
-  document.head.appendChild(script);
+  const s = document.createElement("script");
+  s.id  = "jsonp-loader";
+  s.src = API_BASE + "?callback=" + CB_NAME + "&sheet=all&_t=" + Date.now();
+  s.onerror = () => { clearTimeout(timer); document.getElementById("app").innerHTML = buildError("Failed to load API script. Check the Web App URL above."); };
+  document.head.appendChild(s);
 }
 
-// ── Percentages: NO division by 100 as per instructions ──
-function fmtPct(v, showBadge) {
-  if (v === null || v === "" || v === undefined) return showBadge ? '<span class="badge nt">—</span>' : "—";
-  let n = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
-  if (isNaN(n)) return showBadge ? '<span class="badge nt">—</span>' : "—";
-  
+function buildError(msg) {
+  return `<div class="error-box"><strong>❌ Data Error</strong>${msg}<br><br>
+    <strong>Steps to fix:</strong><br>
+    1. Open Google Sheet → Extensions → Apps Script.<br>
+    2. Click Deploy → Manage deployments → edit → Version: New version → Deploy.<br>
+    3. Confirm Execute as: Me and Who has access: Anyone.<br>
+    4. Copy the URL, update API_BASE in index.html, commit to GitHub, wait 90s, hard-refresh (Ctrl+Shift+R).
+  </div>`;
+}
+
+// ─── FORMATTING HELPERS ─────────────────────────────────────────
+// NOTE: All % values from sheet are already formatted (e.g. "-0.16%", "6.17%").
+// We parse them directly — NO division by 100.
+function parsePct(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const s = String(v).replace(/[▲▼\s()%]/g, "").replace(/^-/, "").trim();
+  const neg = String(v).includes("▼") || String(v).startsWith("-") || String(v).includes("-(");
+  const n = parseFloat(s);
+  return isNaN(n) ? null : (neg ? -n : n);
+}
+
+function fmtPct(v, badge) {
+  const n = (typeof v === "number") ? v : parsePct(v);
+  if (n === null) return badge ? '<span class="badge nt">—</span>' : "—";
   const cls = n > 0 ? "up" : n < 0 ? "dn" : "nt";
   const sym = n > 0 ? "▲ " : n < 0 ? "▼ " : "— ";
   const txt = sym + Math.abs(n).toFixed(2) + "%";
-  return showBadge ? `<span class="badge ${cls}">${txt}</span>` : `<span class="${cls}">${txt}</span>`;
+  return badge ? `<span class="badge ${cls}">${txt}</span>` : `<span class="${cls}">${txt}</span>`;
 }
 
-function fmtNum(v, dec, isCurrency, currencySymbol = "KSh ") {
-  if (!v && v !== 0) return "—";
-  const n = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
+function fmtNum(v, dec) {
+  if (v === null || v === undefined || v === "" || v === "N/A") return "—";
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
   if (isNaN(n)) return String(v);
-  
-  let formatted = n.toLocaleString("en-US", { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
-  return isCurrency ? `<span style="color:#002060;font-weight:600;">${currencySymbol}${formatted}</span>` : formatted;
+  if (Math.abs(n) >= 1e12) return (n/1e12).toFixed(dec||2) + "T";
+  if (Math.abs(n) >= 1e9)  return (n/1e9 ).toFixed(dec||2) + "B";
+  if (Math.abs(n) >= 1e6)  return (n/1e6 ).toFixed(dec||2) + "M";
+  return n.toLocaleString("en-KE", {minimumFractionDigits: dec||2, maximumFractionDigits: dec||2});
 }
 
-function renderDashboard(data) {
-  // Defensive extraction for all endpoints
-  const tickers = (data.tickers || []).filter(t => t.symbol && t["last_price_(kshs)"] !== undefined);
-  const stockAnalysis = data["stock_price_analysis"] || data["stock_analysis"] || tickers;
-  const cbkData = data["cbk_grouped_data"] || data["cbk"] || [];
-  const indices = (data.indices || data["world_indices"] || []).filter(r => r.name && r.name !== "Name");
-  const active  = (data.mostactive || data["yahoo_most_active"] || []).filter(r => r.symbol);
-  const forex   = (data.forex || []).filter(r => r[Object.keys(r)[0]] && Object.keys(r).length > 1);
-  const assumptions = JSON.stringify(data["market_assumptions"] || []).toUpperCase();
+function stripKsh(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+  return isNaN(n) ? null : n;
+}
 
-  // 1. Market Status Indicator (D1 Cell Logic)
-  const statusBadge = document.getElementById("market-status-badge");
-  if (assumptions.includes("CLOSED")) {
-    statusBadge.textContent = "MARKET CLOSED";
-    statusBadge.className = "market-status status-closed";
-  } else if (assumptions.includes("OPEN")) {
-    statusBadge.textContent = "MARKET OPEN";
-    statusBadge.className = "market-status status-open";
-  } else {
-    statusBadge.textContent = "STATUS PENDING";
-    statusBadge.className = "market-status status-closed"; // default fallback
+function fmtKsh(v) {
+  const n = stripKsh(v);
+  if (n === null || n === 0) return "—";
+  return "KSh " + n.toLocaleString("en-KE", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function fmtUSD(v) {
+  if (v === null || v === undefined || v === "") return "—";
+  const s = String(v);
+  // Already has $ sign in sheet
+  if (s.includes("$")) return s;
+  const n = parseFloat(s.replace(/[^0-9.\-]/g, ""));
+  if (isNaN(n)) return s;
+  return "$" + fmtNum(n, 2);
+}
+
+// ─── COLLAPSIBLE CARD BUILDER ─────────────────────────────────────
+let cardCount = 0;
+function card(title, bodyHtml, defaultOpen) {
+  const id = "card-" + (++cardCount);
+  const open = defaultOpen !== false;
+  return `
+    <div class="card">
+      <div class="card-header" onclick="toggleCard('${id}')">
+        <h2>${title}</h2>
+        <span class="card-toggle ${open ? "open" : ""}" id="${id}-icon">▼</span>
+      </div>
+      <div class="card-body ${open ? "" : "collapsed"}" id="${id}-body">
+        ${bodyHtml}
+      </div>
+    </div>`;
+}
+
+function fullCard(title, bodyHtml, defaultOpen) {
+  const id = "card-" + (++cardCount);
+  const open = defaultOpen !== false;
+  return `
+    <div class="full-card">
+      <div class="card-header" onclick="toggleCard('${id}')">
+        <h2>${title}</h2>
+        <span class="card-toggle ${open ? "open" : ""}" id="${id}-icon">▼</span>
+      </div>
+      <div class="card-body ${open ? "" : "collapsed"}" id="${id}-body">
+        ${bodyHtml}
+      </div>
+    </div>`;
+}
+
+function toggleCard(id) {
+  const body = document.getElementById(id + "-body");
+  const icon = document.getElementById(id + "-icon");
+  const collapsed = body.classList.toggle("collapsed");
+  icon.classList.toggle("open", !collapsed);
+}
+
+// ─── TABLE BUILDER ────────────────────────────────────────────────
+function tbl(headers, rows, emptyMsg) {
+  if (!rows || rows.length === 0) return `<p style="color:#888;padding:0.5rem 0;font-style:italic;">${emptyMsg || "No data available."}</p>`;
+  return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+    <tbody>${rows.join("")}</tbody></table>`;
+}
+
+// ─── MAIN RENDER ────────────────────────────────────────────────
+function render(data) {
+  cardCount = 0;
+
+  // ── RAW DATASETS FROM API ─────────────────────────────────────
+  const tickers   = (data.tickers    || []).filter(t => t.symbol);
+  const mw        = (data.marketwatch|| []).filter(t => t.symbol);
+  const indices   = (data.indices    || []).filter(r => r.name && r.name !== "Name" && r.price && r.price !== "N/A");
+  const active    = (data.mostactive || []).filter(r => r.symbol && r.price);
+  const tvData    = (data.tradingview|| []).filter(r => r.symbol && r["price"] && r["price"] !== "N/A");
+  const forexRaw  = (data.forex      || []);
+
+  // ── MARKET STATUS from Market Assumptions (Holiday flag in "tickers" meta or parse log) ─
+  // The API exposes Market Assumptions sheet data under "marketwatch" key is unavailable.
+  // We compute status locally using the D1 formula logic (same formula as the spreadsheet).
+  // holiday flag: the sheet "market_assumptions" is not in the sheetMap — compute from time alone.
+  const isHoliday = false; // Default; adjust if you add "assumptions" to buildJsonOutput
+  const status = computeMarketStatus(isHoliday);
+  setMarketStatus(status);
+
+  // ── NSE STATS ────────────────────────────────────────────────
+  const statsArr = (data.stats || []);
+  const statsMap = {};
+  statsArr.forEach(r => { if (r.name) statsMap[r.name.trim()] = r.value; });
+
+  // ── KEY RATES from CBK (exposed under "forex" sheet via BOA + CBK data) ──────────
+  // The key rates appear in the TradingView sheet area as a sub-table.
+  // We hardcode labels and fetch them from the raw API via the tradingview key_rates field.
+  // They are actually embedded in the spreadsheet's TradingView sheet area as a companion table.
+  // From the sheet read: they appear under a "Key Rates" header in the TradingView sheet.
+  // The API key "tradingview" maps to that sheet, so we pull key rates from there.
+  const keyRateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia","Kesonia Compound Rate"];
+  // Key rates come through the tradingview sheet but as non-ticker rows.
+  // Since buildJsonOutput maps headers → objects, the key rates table will appear
+  // as rows with a "symbol" key = rate name and "price" key = value.
+  // Find them by matching against keyRateLabels.
+  const keyRatesMap = {};
+  (data.tradingview || []).forEach(r => {
+    const sym = String(r.symbol || "").trim();
+    if (keyRateLabels.includes(sym)) keyRatesMap[sym] = r.price || r["price"] || "";
+  });
+  // Also try the "forex" sheet which contains CBK data sections:
+  const fxRows = data.forex || [];
+  fxRows.forEach(r => {
+    const vals = Object.values(r);
+    const lbl = String(vals[0] || "").trim();
+    if (keyRateLabels.includes(lbl)) keyRatesMap[lbl] = vals[1] || "";
+  });
+
+  // ── DERIVE RANKING TABLES FROM MARKET WATCH ──────────────────
+  // The "Rank Analysis" sheet is not in buildJsonOutput's sheetMap.
+  // We compute all rankings client-side from the Market Watch data.
+  function numMW(row, key) {
+    const v = row[key] || row[key.toLowerCase()] || 0;
+    return parseFloat(String(v).replace(/[^0-9.\-]/g,"")) || 0;
   }
 
-  // Value Extractors
-  function pct(t) { return parseFloat(String(t["%_change"] || t["daily_change"] || t["change"] || 0).replace(/[^\d.-]/g,"")) || 0; }
-  function val(t, key) { return parseFloat(String(t[key] || 0).replace(/[^0-9.-]/g, "")) || 0; }
-  
-  // CBK Data Extractor (Scans the raw array values to find the exact match)
-  const findMacro = (keyword) => {
-    let result = "—";
-    cbkData.forEach(row => {
-      let values = Object.values(row);
-      for(let i=0; i < values.length; i++) {
-        if(String(values[i]).trim().toLowerCase() === keyword.toLowerCase()) {
-           // Return the next column over
-           if(values[i+1] !== undefined) result = values[i+1];
-        }
-      }
-    });
-    return result;
-  };
+  const validMW = mw.filter(r => r.symbol && numMW(r,"volume") + numMW(r,"turnover_(kshs)") + numMW(r,"trades") > 0);
 
-  // Build the CBK metrics grid (A5:A16)
-  const cbkMetrics = [
-    { name: "Central Bank Rate", val: findMacro("Central Bank Rate") },
-    { name: "KESONIA", val: findMacro("KESONIA") },
-    { name: "CBK Discount Window", val: findMacro("CBK Discount Window") },
-    { name: "91-Day T-Bill", val: findMacro("91-Day T-Bill") },
-    { name: "REPO", val: findMacro("REPO") },
-    { name: "Inflation Rate", val: findMacro("Inflation Rate") },
-    { name: "Lending Rate", val: findMacro("Lending Rate") },
-    { name: "Savings Rate", val: findMacro("Savings Rate") },
-    { name: "Deposit Rate", val: findMacro("Deposit Rate") },
-    { name: "KBRR", val: findMacro("KBRR") },
-    { name: "Kesonia", val: findMacro("Kesonia") }, // Note duplicate name in source
-    { name: "Kesonia Compound Rate", val: findMacro("Kesonia Compound Rate") }
-  ];
+  const topTurnover = [...validMW].sort((a,b) => numMW(b,"turnover_(kshs)") - numMW(a,"turnover_(kshs)")).slice(0,10);
+  const topVolume   = [...validMW].sort((a,b) => numMW(b,"volume") - numMW(a,"volume")).slice(0,10);
+  const topTrades   = [...validMW].sort((a,b) => numMW(b,"trades") - numMW(a,"trades")).slice(0,10);
+  const topForeignB = [...validMW].filter(r => numMW(r,"foreign_buy") > 0).sort((a,b) => numMW(b,"foreign_buy") - numMW(a,"foreign_buy")).slice(0,10);
+  const topForeignS = [...validMW].filter(r => numMW(r,"foreign_sell") > 0).sort((a,b) => numMW(b,"foreign_sell") - numMW(a,"foreign_sell")).slice(0,10);
 
-  // Rank Analysis Sorters (derived from Stock Analysis)
-  const gainers = [...stockAnalysis].sort((a,b) => pct(b) - pct(a));
-  const losers  = [...stockAnalysis].sort((a,b) => pct(a) - pct(b));
-  const topVol  = [...stockAnalysis].sort((a,b) => val(b, "volume") - val(a, "volume"));
-  const topTrd  = [...stockAnalysis].sort((a,b) => val(b, "trades") - val(a, "trades"));
-  const topTrn  = [...stockAnalysis].sort((a,b) => val(b, "turnover") - val(a, "turnover"));
-  const topFBuy = [...stockAnalysis].sort((a,b) => val(b, "foreign_buy") - val(a, "foreign_buy"));
-  const topFSel = [...stockAnalysis].sort((a,b) => val(b, "foreign_sell") - val(a, "foreign_sell"));
+  // ── TICKER CHANGE % parsing ───────────────────────────────────
+  function getPct(t) {
+    // % Change comes as string like "-0.16%" or "6.17%" from ticker sheet
+    const raw = t["%_change"] || t["percent_change"] || t["change_%"] || "";
+    const n = parsePct(raw);
+    return n !== null ? n : 0;
+  }
 
-  const html = `
-    
-    <div class="section-title">Central Bank of Kenya (CBK) Macroeconomics</div>
+  const gainers    = tickers.filter(t => getPct(t) > 0).sort((a,b) => getPct(b) - getPct(a));
+  const losers     = tickers.filter(t => getPct(t) < 0).sort((a,b) => getPct(a) - getPct(b));
+  const unchanged  = tickers.filter(t => getPct(t) === 0);
+
+  // ── FOREX TABLE (BOA Cross Rates) ─────────────────────────────
+  // The forex sheet has mixed content. Extract rows that look like currency pairs.
+  const forexCurrencies = ["USD","GBP","EUR","JPY","ZAR","CHF","CAD","KES/UGX","KES/TZS"];
+  const forexRows = [];
+  fxRows.forEach(r => {
+    const vals = Object.values(r).map(v => String(v||"").trim());
+    if (forexCurrencies.some(c => vals[0] === c || vals.includes(c))) {
+      forexRows.push(vals);
+    }
+  });
+
+  // ── WORLD INDICES — fix % Change (already formatted as "▲ 1.20%" in sheet) ──
+  function idxPct(r) {
+    const v = r["%_change"] || r["percent_change"] || r["change_%"] || "";
+    return parsePct(v);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ── BUILD HTML ───────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+
+  // ── 1. SUMMARY METRICS ───────────────────────────────────────
+  const metricsHtml = `
     <div class="metrics">
-      ${cbkMetrics.map(m => `
-        <div class="metric-card">
-          <div class="lbl">${m.name}</div>
-          <div class="val" style="color: #D4AF37;">${String(m.val).includes("%") ? m.val : (m.val !== "—" ? fmtPct(m.val, false) : "—")}</div>
-        </div>
-      `).join("")}
-    </div>
+      <div class="metric-card">
+        <div class="lbl">NSE All Share</div>
+        <div class="val">${fmtNum(statsMap["NSE ALL SHARE INDEX"], 2)}</div>
+        <div class="sub">${fmtPct(statsMap["NSE ALL SHARE INDEX_change"] || null)} vs prev</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">NSE 20 Index</div>
+        <div class="val">${fmtNum(statsMap["NSE 20 SHARE INDEX"], 2)}</div>
+        <div class="sub">Blue-chip index</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">Market Cap</div>
+        <div class="val">${fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2)}B</div>
+        <div class="sub">KES total</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">Equity Turnover</div>
+        <div class="val">${fmtNum(statsMap["EQUITY TURNOVER"], 0)}</div>
+        <div class="sub">KES daily</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">Total Deals</div>
+        <div class="val">${fmtNum(statsMap["TOTAL EQUITY DEALS"], 0)}</div>
+        <div class="sub">Trades today</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">Gainers / Losers</div>
+        <div class="val"><span class="up">${gainers.length}</span> / <span class="dn">${losers.length}</span></div>
+        <div class="sub">${unchanged.length} unchanged of ${tickers.length}</div>
+      </div>
+    </div>`;
 
-    <div class="section-title">NSE Rank Analysis (Tap Tables to Expand)</div>
+  // ── 2. KEY RATES ──────────────────────────────────────────────
+  const rateLabels = [
+    "Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO",
+    "Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR",
+    "Kesonia Compound Rate"
+  ];
+  const ratesHtml = `<div class="rates-grid">
+    ${rateLabels.map(l => {
+      const v = keyRatesMap[l] || keyRatesMap["Kesonia"] || "";
+      return `<div class="rate-cell">
+        <div class="rate-label">${l}</div>
+        <div class="rate-value">${v || "—"}</div>
+      </div>`;
+    }).join("")}
+  </div>`;
+
+  // ── 3. NSE MARKET STATS FULL TABLE ───────────────────────────
+  const statsRows = statsArr.filter(r => r.name && r.value !== undefined && r.value !== "").map(r =>
+    `<tr><td>${r.name}</td><td><strong>${fmtNum(r.value, 2)}</strong></td>
+     <td>${r.change !== undefined && r.change !== "" ? fmtPct(r.change) : "—"}</td></tr>`
+  );
+  const statsHtml = tbl(["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded.");
+
+  // ── 4. TOP MOVERS ─────────────────────────────────────────────
+  function tickerRow(t) {
+    const p = getPct(t);
+    return `<tr><td><strong>${t.symbol}</strong></td>
+      <td>${fmtKsh(t["last_price_(kshs)"])}</td>
+      <td>${fmtPct(p, true)}</td></tr>`;
+  }
+  const gainerRows = gainers.map(tickerRow);
+  const loserRows  = losers.map(tickerRow);
+
+  // ── 5. RANKING TABLES ─────────────────────────────────────────
+  function rankRow_TO(r) {
+    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
+      <td style="color:#002060;font-weight:600;">${fmtKsh(r["turnover_(kshs)"])}</td>
+      <td>${fmtNum(r.volume, 0)}</td><td>${r.trades || "—"}</td></tr>`;
+  }
+  function rankRow_Vol(r) {
+    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
+      <td style="color:#002060;font-weight:600;">${fmtNum(numMW(r,"volume"), 0)}</td>
+      <td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
+  }
+  function rankRow_Trades(r) {
+    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
+      <td style="color:#002060;font-weight:600;">${fmtNum(r.trades, 0)}</td>
+      <td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
+  }
+  function rankRow_FB(r) {
+    const net = numMW(r,"foreign_buy") - numMW(r,"foreign_sell");
+    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
+      <td class="up">${fmtNum(numMW(r,"foreign_buy"), 0)}</td>
+      <td>${fmtNum(numMW(r,"foreign_sell"), 0)}</td>
+      <td class="${net>=0?"up":"dn"}">${fmtNum(net, 0)}</td></tr>`;
+  }
+  function rankRow_FS(r) {
+    return `<tr><td><strong>${r.symbol}</strong></td><td>${r["security_name"] || ""}</td>
+      <td class="dn">${fmtNum(numMW(r,"foreign_sell"), 0)}</td>
+      <td>${fmtNum(numMW(r,"foreign_buy"), 0)}</td></tr>`;
+  }
+
+  // ── 6. FOREX (BOA) ────────────────────────────────────────────
+  const forexTableRows = forexRows.map(v =>
+    `<tr><td><strong>${v[0]}</strong></td><td>${v[1] || "—"}</td><td>${v[2] || "—"}</td><td>${v[3] || "—"}</td><td>${v[4] || "—"}</td></tr>`
+  );
+  const forexHtml = tbl(["Currency","Buy vs USD","Sell vs USD","KES Buy","KES Sell"], forexTableRows, "Forex rates not yet loaded.");
+
+  // ── 7. GLOBAL INDICES ─────────────────────────────────────────
+  const indicesRows = indices.map(r => {
+    const p = idxPct(r);
+    const priceStr = r.name === "US Dollar Index" ? r.price : fmtUSD(r.price);
+    return `<tr><td><strong>${r.name}</strong></td>
+      <td>${priceStr}</td>
+      <td>${p !== null ? fmtPct(p, true) : "—"}</td>
+      <td>${r.volume && r.volume !== "N/A" ? fmtNum(r.volume, 0) : "—"}</td></tr>`;
+  });
+  const indicesHtml = tbl(["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded.");
+
+  // ── 8. YAHOO MOST ACTIVE ─────────────────────────────────────
+  const activeRows = active.map(r => {
+    const pct = parsePct(r["%_change"] || r["percent_change"] || "");
+    return `<tr><td><strong>${r.symbol}</strong></td>
+      <td>${r.name || "—"}</td>
+      <td>${fmtUSD(r.price)}</td>
+      <td>${pct !== null ? fmtPct(pct, true) : "—"}</td>
+      <td>${fmtNum(r.volume, 0)}</td>
+      <td>${fmtNum(r["market_cap"], 0)}</td></tr>`;
+  });
+  const activeHtml = tbl(["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded.");
+
+  // ── 9. TICKER PRICES FULL TABLE ───────────────────────────────
+  const tickerFullRows = tickers.map(t => {
+    const p = getPct(t);
+    return `<tr><td><strong>${t.symbol}</strong></td>
+      <td>${fmtKsh(t["last_price_(kshs)"])}</td>
+      <td>${fmtNum(t["change"], 2)}</td>
+      <td>${fmtPct(p, true)}</td>
+      <td><small style="color:#888">${t["last_updated"] || "—"}</small></td></tr>`;
+  });
+  const tickerFullHtml = tbl(["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded.");
+
+  // ── 10. MARKET WATCH FULL TABLE ───────────────────────────────
+  const mwRows = mw.filter(r => numMW(r,"ltp_(kshs)") > 0 || numMW(r,"volume") > 0).map(r =>
+    `<tr><td><strong>${r.symbol}</strong></td>
+     <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r["security_name"] || ""}</td>
+     <td>${fmtKsh(r["ltp_(kshs)"])}</td>
+     <td>${fmtKsh(r["prev_close"])}</td>
+     <td>${fmtNum(r.volume, 0)}</td>
+     <td>${r.trades || "—"}</td>
+     <td>${fmtKsh(r["turnover_(kshs)"])}</td>
+     <td class="up">${fmtNum(r["foreign_buy"], 0)}</td>
+     <td class="dn">${fmtNum(r["foreign_sell"], 0)}</td></tr>`
+  );
+  const mwHtml = `<div style="overflow-x:auto">${tbl(["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded.")}</div>`;
+
+  // ── 11. TRADINGVIEW PERFORMANCE ───────────────────────────────
+  const tvRows = tvData.map(r =>
+    `<tr><td><strong>${r.symbol}</strong></td>
+     <td>${fmtKsh(r.price)}</td>
+     <td>${r["change_%"] || r["change"] || "—"}</td>
+     <td>${r["perf_%_1w"] || "—"}</td>
+     <td>${r["perf_%_1m"] || "—"}</td>
+     <td>${r["perf_%_ytd"] || "—"}</td>
+     <td>${r["perf_%_1y"] || "—"}</td>
+     <td>${r["volatility_1w"] || "—"}</td>
+     <td>${r["volatility_1m"] || "—"}</td></tr>`
+  );
+  const tvHtml = tvData.length > 0
+    ? `<div style="overflow-x:auto">${tbl(["Symbol","Price","Change","1W","1M","YTD","1Y","Vol 1W","Vol 1M"], tvRows)}</div>`
+    : `<p style="color:#888;padding:0.5rem 0;font-style:italic;">TradingView data pending — runs every 5 minutes during market hours. Ensure the V4 script is active and the TradingView trigger is live.</p>`;
+
+  // ── 12. EQUITY HEAT MAP ───────────────────────────────────────
+  const heatCells = tickers.map(t => {
+    const p = getPct(t);
+    const cls = p > 0 ? "up-cell" : p < 0 ? "dn-cell" : "nt-cell";
+    const chgCls = p > 0 ? "up" : p < 0 ? "dn" : "nt";
+    const sym = p > 0 ? "▲" : p < 0 ? "▼" : "—";
+    return `<div class="ticker-cell ${cls}" data-sym="${t.symbol}">
+      <div class="tc-sym">${t.symbol}</div>
+      <div class="tc-price">${fmtKsh(t["last_price_(kshs)"])}</div>
+      <div class="tc-chg ${chgCls}">${sym} ${Math.abs(p).toFixed(2)}%</div>
+    </div>`;
+  }).join("");
+  const heatHtml = `
+    <p class="section-note">${tickers.length} tickers · ${gainers.length} gainers · ${losers.length} losers · ${unchanged.length} unchanged</p>
+    <input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol..." oninput="filterHeatmap(this.value)">
+    <div class="ticker-grid" id="heatmap-grid">${heatCells}</div>`;
+
+  // ── ASSEMBLE FULL PAGE ────────────────────────────────────────
+  document.getElementById("app").innerHTML = `
+    ${metricsHtml}
+
+    ${fullCard("Key Rates — Central Bank of Kenya", ratesHtml, true)}
+
     <div class="grid3">
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Top Gainers</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Price</th><th>Change</th></tr></thead>
-          <tbody>
-            ${gainers.filter(t => pct(t) > 0).map(t => `
-              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td><td>${fmtPct(pct(t), true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-      
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Top Losers</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Price</th><th>Change</th></tr></thead>
-          <tbody>
-            ${losers.filter(t => pct(t) < 0).map(t => `
-              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td><td>${fmtPct(pct(t), true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Top by Turnover</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Turnover</th><th>Price</th></tr></thead>
-          <tbody>
-            ${topTrn.filter(t => val(t, "turnover") > 0).map(t => `
-              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(val(t, "turnover"), 0, true)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, false)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Top by Volume</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Volume</th><th>Price</th></tr></thead>
-          <tbody>
-            ${topVol.filter(t => val(t, "volume") > 0).map(t => `
-              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(val(t, "volume"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Top by Trades</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Deals Executed</th><th>Price</th></tr></thead>
-          <tbody>
-            ${topTrd.filter(t => val(t, "trades") > 0).map(t => `
-              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td style="color:#002060;font-weight:bold;">${fmtNum(val(t, "trades"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Top Foreign Inflows (Buys)</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Foreign Buy Qty</th><th>Price</th></tr></thead>
-          <tbody>
-            ${topFBuy.filter(t => val(t, "foreign_buy") > 0).map(t => `
-              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td style="color:#1a7f37;font-weight:bold;">${fmtNum(val(t, "foreign_buy"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Top Foreign Outflows (Sells)</h2>
-        <table>
-          <thead><tr><th>Ticker</th><th>Foreign Sell Qty</th><th>Price</th></tr></thead>
-          <tbody>
-            ${topFSel.filter(t => val(t, "foreign_sell") > 0).map(t => `
-              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td style="color:#cf222e;font-weight:bold;">${fmtNum(val(t, "foreign_sell"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
+      ${card("Top Gainers", tbl(["Ticker","Price","Change"], gainerRows, "No gainers today."), true)}
+      ${card("Top Losers",  tbl(["Ticker","Price","Change"], loserRows,  "No losers today."),  true)}
+      ${card("Global Markets (World Indices)", indicesHtml, true)}
     </div>
 
-    <div class="section-title">Global Markets & FX</div>
+    <div class="grid2">
+      ${card("Forex Rates (BOA)", forexHtml, true)}
+      ${card("Yahoo Most Active (US Equities)", activeHtml, true)}
+    </div>
+
     <div class="grid3">
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Global Indices</h2>
-        <table>
-          <thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead>
-          <tbody>
-            ${indices.map(r => `
-              <tr><td><strong>${r.name}</strong></td><td>${fmtNum(r.price, 2, true, "$")}</td><td>${fmtPct(r["%_change"] || r.percent_change, true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-      
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Yahoo US Most Active</h2>
-        <table>
-          <thead><tr><th>Symbol</th><th>Price</th><th>Change</th></tr></thead>
-          <tbody>
-            ${active.map(r => `
-              <tr><td><strong>${r.symbol}</strong></td><td>${fmtNum(r.price, 2, true, "$")}</td><td>${fmtPct(r["%_change"] || r.percent_change, true)}</td></tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
-
-      <div class="card interactive-card" onclick="toggleCard(this)">
-        <h2>Forex Rates (BOA)</h2>
-        <table>
-          <thead><tr><th>Currency</th><th>Buy (vs USD)</th><th>KES Buy</th><th>KES Sell</th></tr></thead>
-          <tbody>
-            ${forex.map(r => {
-              const keys = Object.keys(r);
-              return `<tr>${keys.slice(0,4).map(k => `<td>${r[k]}</td>`).join("")}</tr>`;
-            }).join("")}
-          </tbody>
-        </table>
-        <div class="expand-hint"></div>
-      </div>
+      ${card("Top by Turnover", tbl(["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), true)}
+      ${card("Top by Volume",   tbl(["Symbol","Security","Volume","Turnover (KSh)"],         topVolume.map(rankRow_Vol),   "No volume data."),   true)}
+      ${card("Top by Trades",   tbl(["Symbol","Security","Trades","Turnover (KSh)"],         topTrades.map(rankRow_Trades),"No trades data."),   true)}
     </div>
+
+    <div class="grid2">
+      ${card("Top Foreign Inflows (Buys)",  tbl(["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topForeignB.map(rankRow_FB), "No foreign buy data."), true)}
+      ${card("Top Foreign Outflows (Sells)",tbl(["Symbol","Security","Foreign Sell","Foreign Buy"],           topForeignS.map(rankRow_FS), "No foreign sell data."),true)}
+    </div>
+
+    ${fullCard("NSE Market Statistics", statsHtml, false)}
+    ${fullCard("Equity Heat Map — All Tickers", heatHtml, true)}
+    ${fullCard("Ticker Prices — Full List", tickerFullHtml, false)}
+    ${fullCard("Market Watch — Full Order Book Detail", mwHtml, false)}
+    ${fullCard("TradingView Performance Data", tvHtml, false)}
   `;
-
-  document.getElementById("app").innerHTML = html;
 }
 
+// ─── HEATMAP FILTER ──────────────────────────────────────────────
+function filterHeatmap(q) {
+  const qUpper = q.toUpperCase();
+  document.querySelectorAll(".ticker-cell").forEach(cell => {
+    const sym = (cell.dataset.sym || "").toUpperCase();
+    cell.style.display = sym.includes(qUpper) ? "" : "none";
+  });
+}
+
+// ─── START ───────────────────────────────────────────────────────
+loadData();
 function startRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(loadData, REFRESH_SECONDS * 1000);
 }
-
-loadData();
 startRefresh();
+
+// Update market status dot every minute independently of data
+setInterval(() => setMarketStatus(computeMarketStatus(false)), 60000);
 </script>
 </body>
 </html>
