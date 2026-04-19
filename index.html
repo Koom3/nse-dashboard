@@ -176,7 +176,6 @@ function buildError(msg) {
 }
 
 // ─── STRICT FORMATTING HELPERS ───────────────────────────────────
-
 function formatChange(val, isPct) {
   if (val === null || val === undefined || val === "") return `<span class="nt">- </span>`;
   let s = String(val).trim();
@@ -281,75 +280,63 @@ function render(data) {
   const active    = (data.mostactive || data.yahoo_most_active || []).filter(r => r.symbol && r.price);
   const statsArr  = (data.stats || []);
   
-  // Market Status
   const status = computeMarketStatus(false);
   setMarketStatus(status);
 
-  // ── MACRO ANALYSIS PARSING (NEW STRUCTURE) ──
-  // Based on "Market Data Analysis - Macro Analysis.csv"
+  // ── 🎯 EXCLUSIVE PARSING FOR NEW "MACRO ANALYSIS" SHEET ──
+  // Reads explicitly from "Market Data Analysis - Macro Analysis.csv" structure
   const macroRaw = data["macro_analysis"] || data["macro"] || [];
-
+  
   const cbkMetricsMap = {};
   const forexRows = [];
+  
+  const keyRateLabels = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
+  const forexCurrencies = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
 
-  // Iterate through rows to map CBK and Forex Data
   macroRaw.forEach(r => {
-    // Collect all values in the row, normalizing keys to lower case for safety
+    // Flatten row object values to array for easy scanning
     const vals = Object.values(r).map(v => String(v).trim());
-
-    // 1. Extract KEY MACRO RATES
-    // Structure: [Empty], "Key Rates", "Values" -> Then data rows
-    // We look for rows that have exactly two meaningful strings next to each other where we expect the data.
-    const keyRateLabels = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
     
     vals.forEach((v, idx) => {
-        if(keyRateLabels.some(label => label.toLowerCase() === v.toLowerCase())) {
-            // Found a label, the value is in the next cell
-            let nextVal = vals[idx + 1];
-            if(nextVal !== undefined && nextVal !== "") {
-                cbkMetricsMap[v] = nextVal;
-            }
+      // 1. Match CBK Key Rates (Label -> Next Value)
+      if (keyRateLabels.some(label => label.toLowerCase() === v.toLowerCase())) {
+        let nextVal = vals[idx + 1];
+        if (nextVal !== undefined && nextVal !== "") {
+           cbkMetricsMap[v] = nextVal;
         }
-    });
-
-    // 2. Extract INDICATIVE FOREX RATES
-    // Structure: [Empty], "Key Exchange", "CROSS RATES", "Cross Rates (Sell)", "AGAINST KES", "Against KES (Sell)"
-    const forexCurrencies = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
-    
-    vals.forEach((v, idx) => {
-        if(forexCurrencies.includes(v)) {
-            // Found a currency, grab the next 4 cells
-            let bUsd = vals[idx+1] || "—";
-            let sUsd = vals[idx+2] || "—";
-            let kBuy = vals[idx+3] || "—";
-            let kSel = vals[idx+4] || "—";
-            
-            // Fix for USD row which has empty cross rates in CSV (,,126.5,131.5)
-            if(v === "USD" && (bUsd === "—" || bUsd === "")) {
-                 let nums = vals.slice(idx+1).filter(val => val !== "" && val !== "—");
-                 bUsd = "—"; sUsd = "—";
-                 kBuy = nums[0] || "—";
-                 kSel = nums[1] || "—";
-            }
-            
-            // Prevent duplicate insertion if we hit the same currency string multiple times in a row
-            if(!forexRows.some(row => row.includes(v))) {
-               forexRows.push(`<tr><td>${v}</td><td>${bUsd}</td><td>${sUsd}</td><td>${kBuy}</td><td>${kSel}</td></tr>`);
-            }
+      }
+      
+      // 2. Match Forex Rates (Currency -> Next 4 Cross Rate Values)
+      if (forexCurrencies.includes(v)) {
+        let bUsd = vals[idx+1] || "—";
+        let sUsd = vals[idx+2] || "—";
+        let kBuy = vals[idx+3] || "—";
+        let kSel = vals[idx+4] || "—";
+        
+        // USD exception logic (USD row misses the 2 internal cross rate cells)
+        if (v === "USD" && (bUsd === "—" || bUsd === "")) {
+           let nums = vals.slice(idx+1).filter(val => val !== "" && val !== "—");
+           bUsd = "—"; sUsd = "—";
+           kBuy = nums[0] || "—";
+           kSel = nums[1] || "—";
         }
+        
+        // Prevent dupes if same currency label appears twice
+        if (!forexRows.some(row => row.includes(`<td>${v}</td>`))) {
+          forexRows.push(`<tr><td>${v}</td><td>${bUsd}</td><td>${sUsd}</td><td>${kBuy}</td><td>${kSel}</td></tr>`);
+        }
+      }
     });
   });
 
-  // Helper to safely get CBK values
+  // Helper to safely extract CBK metrics
   function getCBKVal(label) {
-     // Check exact match first, then case-insensitive match
-     if(cbkMetricsMap[label]) return cbkMetricsMap[label];
-     for(let key in cbkMetricsMap) {
-         if(key.toLowerCase() === label.toLowerCase()) return cbkMetricsMap[key];
+     if (cbkMetricsMap[label]) return cbkMetricsMap[label];
+     for (let key in cbkMetricsMap) {
+         if (key.toLowerCase() === label.toLowerCase()) return cbkMetricsMap[key];
      }
      return "—";
   }
-
 
   // ── NSE STATS MAP ──
   const statsMap = {};
@@ -410,9 +397,9 @@ function render(data) {
     </div>`;
 
   // ── 2. KEY RATES ──
-  const rateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia Compound Rate"];
+  const displayRateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia Compound Rate"];
   const ratesHtml = `<div class="rates-grid">
-    ${rateLabels.map(l => {
+    ${displayRateLabels.map(l => {
       const v = getCBKVal(l);
       return `<div class="rate-cell">
         <div class="rate-label">${l}</div>
@@ -473,7 +460,7 @@ function render(data) {
   document.getElementById("app").innerHTML = `
     ${metricsHtml}
 
-    ${standardCard("Key Rates — Central Bank of Kenya", ratesHtml)}
+    ${standardCard("Key Macro Rates (CBK)", ratesHtml)}
 
     <div class="grid3">
       ${tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today.")}
@@ -482,7 +469,7 @@ function render(data) {
     </div>
 
     <div class="grid2">
-      ${tableCard("Forex Rates (BOA)", ["Currency","Buy vs USD","Sell vs USD","KES Buy","KES Sell"], forexRows, "Forex rates not yet loaded.")}
+      ${tableCard("Indicative Forex Rates", ["Key Exchange","Cross Rates","Cross Rates (Sell)","Against KES","Against KES (Sell)"], forexRows, "Forex rates not yet loaded.")}
       ${tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded.")}
     </div>
 
