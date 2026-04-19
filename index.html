@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NSE Market Dashboard | Comprehensive View</title>
+  <title>NSE Market Dashboard | Institutional View</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
     /* FONT INTEGRATION: 
@@ -21,12 +21,12 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* Base text is 12px */
     body { 
       font-family: 'Hadassah Friedlaender', Georgia, serif; 
       background: #f4f6f9; 
       color: #2c3e50; 
-      font-size: 12px; 
+      font-size: 12px; /* Regular Text */
+      padding-bottom: 2rem;
     }
     
     header { 
@@ -39,145 +39,100 @@
       flex-wrap: wrap; 
       gap: 0.5rem; 
       border-bottom: 4px solid #D4AF37; 
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
     
-    /* Topics: 18px */
-    header h1 { font-size: 18px; font-weight: 700; margin: 0; }
-    .card h2, .full-card h2 { 
-      font-size: 18px; 
-      color: #002060; 
-      text-transform: uppercase; 
-      letter-spacing: 0.05em; 
-      margin-bottom: 1rem; 
-      border-bottom: 2px solid #f0f4f8; 
-      padding-bottom: 0.5rem; 
-    }
-    .metric-card .val { font-size: 18px; font-weight: 700; color: #002060; }
-
-    /* Subtopics: 14px */
-    th { 
-      text-align: left; 
-      padding: 8px; 
-      color: #002060; 
-      font-weight: 700; 
-      border-bottom: 2px solid #e2e8f0; 
-      font-size: 14px; 
-      white-space: nowrap; 
-      background: #f8fafc; 
-    }
-    .metric-card .lbl { 
-      font-size: 14px; 
-      color: #555; 
-      text-transform: uppercase; 
-      letter-spacing: 0.05em; 
-      margin-bottom: 5px; 
-      font-weight: 600; 
-    }
-    .tc-sym { font-size: 14px; font-weight: 700; color: #002060; }
-    .tc-price { font-size: 14px; font-weight: 600; color: #1a1a2e; margin: 0.25rem 0; }
-    .error-box strong { display: block; margin-bottom: 0.5rem; font-size: 14px; }
-    .loader { text-align: center; padding: 3rem; color: #64748b; font-size: 14px; }
-
-    /* Regular Text: 12px */
-    td { 
-      padding: 8px; 
-      border-bottom: 1px solid #f1f5f9; 
-      white-space: nowrap; 
-      color: #333; 
-      font-size: 12px;
-    }
-    #status-bar, #refresh-btn, .metric-card .sub, .badge, .tc-chg, .section-note, .error-box { 
-      font-size: 12px; 
-    }
+    header h1 { font-size: 18px; font-weight: 700; margin: 0; } /* Topics */
     
-    #status-bar { opacity: 0.9; display: flex; gap: 1rem; align-items: center; }
+    #status-bar { display: flex; gap: 1rem; align-items: center; }
     #refresh-btn { 
-      background: rgba(255,255,255,0.2); 
-      border: 1px solid rgba(255,255,255,0.4); 
-      color: #fff; 
-      padding: 4px 12px; 
-      border-radius: 4px; 
-      cursor: pointer; 
-      font-family: inherit; 
-      transition: background 0.3s; 
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); 
+      color: #fff; padding: 4px 12px; border-radius: 4px; cursor: pointer; 
+      font-family: inherit; font-size: 12px; transition: background 0.3s; 
     }
     #refresh-btn:hover { background: rgba(255,255,255,0.3); }
+    
+    .market-status { font-size: 14px; font-weight: bold; padding: 4px 10px; border-radius: 4px; letter-spacing: 1px; }
+    .status-closed { background: #cf222e; color: #fff; }
+    .status-open { background: #00b050; color: #fff; }
+
     .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
     
+    /* Layout Grids */
     .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-    .metric-card { 
-      background: #fff; 
-      border-radius: 8px; 
-      padding: 1rem; 
-      border-top: 4px solid #002060; 
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-      transition: transform 0.2s; 
-    }
-    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-    .metric-card:nth-child(even) { border-top-color: #D4AF37; } 
-    .metric-card .sub { color: #888; margin-top: 4px; }
-
-    .up { color: #1a7f37 !important; } 
-    .dn { color: #cf222e !important; } 
-    .nt { color: #888; }
-    
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     @media(max-width:900px){ .grid2, .grid3 { grid-template-columns: 1fr; } }
     
+    /* Cards */
+    .metric-card { 
+      background: #fff; border-radius: 8px; padding: 1rem; 
+      border-top: 4px solid #002060; box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+    }
+    .metric-card:nth-child(even) { border-top-color: #D4AF37; } 
+    .metric-card .val { font-size: 18px; font-weight: 700; color: #002060; } /* Topics */
+    .metric-card .lbl { font-size: 14px; color: #555; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; } /* Subtopics */
+    .metric-card .sub { font-size: 12px; color: #888; margin-top: 4px; }
+    
     .card, .full-card { 
-      background: #fff; 
-      border-radius: 8px; 
-      padding: 1.25rem; 
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-      margin-bottom: 1.5rem; 
+      background: #fff; border-radius: 8px; padding: 1.25rem; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 1.5rem; 
+    }
+    .card h2, .full-card h2 { 
+      font-size: 18px; color: #002060; text-transform: uppercase; 
+      letter-spacing: 0.05em; margin-bottom: 0.5rem; border-bottom: 2px solid #f0f4f8; padding-bottom: 0.5rem; 
     }
     
-    table { width: 100%; border-collapse: collapse; }
-    tr:hover td { background: #fdfdfd; }
-    tr:last-child td { border-bottom: none; }
+    /* Interactive Expandable Table Styling */
+    .interactive-card {
+      cursor: pointer;
+      transition: box-shadow 0.3s, transform 0.2s;
+      position: relative;
+    }
+    .interactive-card:hover { box-shadow: 0 8px 16px rgba(0,32,96,0.15); transform: translateY(-2px); border-bottom: 2px solid #D4AF37; }
     
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 700; }
+    /* Table logic for expand/collapse */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    th { text-align: left; padding: 8px; color: #002060; font-weight: 700; border-bottom: 2px solid #e2e8f0; font-size: 14px; white-space: nowrap; background: #f8fafc; }
+    td { padding: 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; color: #333; font-size: 12px; }
+    tr:hover td { background: #fdfdfd; }
+    
+    /* Default collapsed state: hide rows after the 6th data row (row 7 in nth-child since th is not in tbody) */
+    .interactive-card:not(.expanded) tbody tr:nth-child(n+7) { display: none; }
+    
+    .expand-hint {
+      text-align: center; font-size: 12px; color: #D4AF37; font-weight: bold; font-style: italic;
+      padding-top: 5px; border-top: 1px dashed #e2e8f0; margin-top: 5px;
+    }
+    .interactive-card:not(.expanded) .expand-hint::after { content: "▼ Tap card to view full table ▼"; }
+    .interactive-card.expanded .expand-hint::after { content: "▲ Tap card to shrink ▲"; color: #002060; }
+
+    /* Badges & Utilities */
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 700; font-size: 12px; }
     .badge.up { background: #e8f5e9; color: #1a7f37; } 
     .badge.dn { background: #fdecea; color: #cf222e; } 
     .badge.nt { background: #f1f5f9; color: #64748b; }
+    .up { color: #1a7f37 !important; } .dn { color: #cf222e !important; } .nt { color: #888; }
     
-    .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; line-height: 1.6; }
-    .chart-wrap { position: relative; height: 250px; }
-    
-    .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; }
-    .ticker-cell { 
-      background: #fff; 
-      border-radius: 6px; 
-      padding: 0.75rem; 
-      border-left: 4px solid #ccc; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
-      transition: transform 0.2s; 
-    }
-    .ticker-cell:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .ticker-cell.up-cell { border-left-color: #1a7f37; } 
-    .ticker-cell.dn-cell { border-left-color: #cf222e; } 
-    .ticker-cell.nt-cell { border-left-color: #94a3b8; }
-    .tc-chg { font-weight: 700; }
-    .section-note { color: #64748b; margin-bottom: 1rem; font-style: italic; }
-
-    /* New Styling for Live Feed */
-    .live-feed-row { animation: flash 2s ease-out; }
-    @keyframes flash { 0% { background-color: rgba(212, 175, 55, 0.2); } 100% { background-color: transparent; } }
+    .loader { text-align: center; padding: 3rem; color: #002060; font-size: 14px; font-weight: bold;}
+    .section-title { width: 100%; font-size: 18px; color: #002060; margin: 2rem 0 1rem 0; padding-bottom: 5px; border-bottom: 2px solid #D4AF37; text-transform: uppercase; font-weight: 700; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>🇰🇪 NSE Market Dashboard | Advanced Quantitative View</h1>
+  <h1>🇰🇪 NSE Quantitative Dashboard</h1>
   <div id="status-bar">
-    <span id="last-updated">Loading...</span>
+    <span id="market-status-badge" class="market-status status-closed">LOADING...</span>
+    <span id="last-updated" style="font-size: 12px; opacity: 0.8;">Loading data...</span>
     <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
   </div>
 </header>
 
-<div class="container">
-  <div id="app"><div class="loader">⏳ Aggregating global & domestic datasets...</div></div>
+<div class="container" id="app">
+  <div class="loader">⏳ Downloading Institutional Datasets & Executing Macros...</div>
 </div>
 
 <script>
@@ -188,22 +143,24 @@ const API_BASE = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe1
 const REFRESH_SECONDS  = 60;
 const CALLBACK_NAME    = "nseDashboardCallback";
 let   refreshTimer     = null;
-let   currentData      = null;
-let   moverChart       = null;
+
+// Toggles the expansion of interactive tables
+function toggleCard(element) {
+  element.classList.toggle('expanded');
+}
 
 function loadData() {
   const old = document.getElementById("jsonp-loader");
   if (old) old.remove();
   window[CALLBACK_NAME] = null;
+  
   const timeout = setTimeout(() => {
-    document.getElementById("app").innerHTML = buildErrorHtml("Timeout", "API response delayed.");
-    document.getElementById("last-updated").textContent = "Error";
+    document.getElementById("app").innerHTML = `<div style="padding:2rem;color:red;font-size:14px;font-weight:bold;">❌ API Timeout. Check Google Apps Script deployment.</div>`;
   }, 30000);
   
   window[CALLBACK_NAME] = function(data) {
     clearTimeout(timeout);
-    currentData = data;
-    document.getElementById("last-updated").textContent = "Updated: " + (data.timestamp || new Date().toLocaleTimeString());
+    document.getElementById("last-updated").textContent = "Updated: " + new Date().toLocaleTimeString();
     renderDashboard(data);
   };
   
@@ -214,210 +171,243 @@ function loadData() {
   document.head.appendChild(script);
 }
 
+// ── Percentages: NO division by 100 as per instructions ──
 function fmtPct(v, showBadge) {
   if (v === null || v === "" || v === undefined) return showBadge ? '<span class="badge nt">—</span>' : "—";
-  let n = parseFloat(String(v).replace("%",""));
-  if (String(v).indexOf('.') === -1 && Math.abs(n) < 1) n = n * 100; // Account for raw decimal vs pre-formatted
+  let n = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
   if (isNaN(n)) return showBadge ? '<span class="badge nt">—</span>' : "—";
+  
   const cls = n > 0 ? "up" : n < 0 ? "dn" : "nt";
   const sym = n > 0 ? "▲ " : n < 0 ? "▼ " : "— ";
   const txt = sym + Math.abs(n).toFixed(2) + "%";
   return showBadge ? `<span class="badge ${cls}">${txt}</span>` : `<span class="${cls}">${txt}</span>`;
 }
 
-function fmtNum(v, dec) {
-  if (!v) return "—";
-  const n = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
-  if (isNaN(n)) return String(v);
-  if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(2) + "T";
-  if (Math.abs(n) >= 1e9)  return (n / 1e9 ).toFixed(2) + "B";
-  if (Math.abs(n) >= 1e6)  return (n / 1e6 ).toFixed(2) + "M";
-  return n.toLocaleString("en-KE", { minimumFractionDigits: dec || 2, maximumFractionDigits: dec || 2 });
-}
-
-function kshPrice(v) {
+function fmtNum(v, dec, isCurrency, currencySymbol = "KSh ") {
   if (!v && v !== 0) return "—";
   const n = parseFloat(String(v).replace(/[^0-9.-]/g, ""));
-  return isNaN(n) ? String(v) : "KSh " + n.toLocaleString("en-KE", { minimumFractionDigits: 2 });
+  if (isNaN(n)) return String(v);
+  
+  let formatted = n.toLocaleString("en-US", { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
+  return isCurrency ? `<span style="color:#002060;font-weight:600;">${currencySymbol}${formatted}</span>` : formatted;
 }
 
 function renderDashboard(data) {
-  // Defensive extraction for potentially missing API nodes
+  // Defensive extraction for all endpoints
   const tickers = (data.tickers || []).filter(t => t.symbol && t["last_price_(kshs)"] !== undefined);
-  const stats   = {}; (data.stats || []).forEach(r => { if (r.name) stats[r.name] = r.value; });
-  const indices = (data.indices || []).filter(r => r.name && r.name !== "Name");
-  const active  = (data.mostactive || []).filter(r => r.symbol);
-  const forex   = (data.forex || []).filter(r => r[Object.keys(r)[0]] && Object.keys(r).length > 1);
-  
-  // Extracting newly identified deep data
-  const cbkData = data["cbk_grouped_data"] || data["cbk"] || [];
-  const liveTrades = data["live_trades"] || data["🔄_live_trades"] || [];
   const stockAnalysis = data["stock_price_analysis"] || data["stock_analysis"] || tickers;
+  const cbkData = data["cbk_grouped_data"] || data["cbk"] || [];
+  const indices = (data.indices || data["world_indices"] || []).filter(r => r.name && r.name !== "Name");
+  const active  = (data.mostactive || data["yahoo_most_active"] || []).filter(r => r.symbol);
+  const forex   = (data.forex || []).filter(r => r[Object.keys(r)[0]] && Object.keys(r).length > 1);
+  const assumptions = JSON.stringify(data["market_assumptions"] || []).toUpperCase();
 
-  function pct(t) { return parseFloat(String(t["%_change"] || t["percent_change"] || t["change"] || t["daily_change"] || 0).replace(/[^\d.-]/g,"")) || 0; }
-  function trn(t) { return parseFloat(String(t["turnover"] || t["turnover_(kshs)"] || 0).replace(/[^0-9.-]/g, "")) || 0; }
+  // 1. Market Status Indicator (D1 Cell Logic)
+  const statusBadge = document.getElementById("market-status-badge");
+  if (assumptions.includes("CLOSED")) {
+    statusBadge.textContent = "MARKET CLOSED";
+    statusBadge.className = "market-status status-closed";
+  } else if (assumptions.includes("OPEN")) {
+    statusBadge.textContent = "MARKET OPEN";
+    statusBadge.className = "market-status status-open";
+  } else {
+    statusBadge.textContent = "STATUS PENDING";
+    statusBadge.className = "market-status status-closed"; // default fallback
+  }
 
-  const gainers   = tickers.filter(t => pct(t) > 0).sort((a,b) => pct(b) - pct(a));
-  const losers    = tickers.filter(t => pct(t) < 0).sort((a,b) => pct(a) - pct(b));
-  const unchanged = tickers.filter(t => pct(t) === 0);
+  // Value Extractors
+  function pct(t) { return parseFloat(String(t["%_change"] || t["daily_change"] || t["change"] || 0).replace(/[^\d.-]/g,"")) || 0; }
+  function val(t, key) { return parseFloat(String(t[key] || 0).replace(/[^0-9.-]/g, "")) || 0; }
   
-  // Sort by liquidity (Turnover)
-  const mostLiquid = [...stockAnalysis].sort((a,b) => trn(b) - trn(a)).slice(0, 5);
-
-  const mktCap   = stats["MARKET CAPITALIZATION (Billions)"] || stats["market_capitalization_(billions)"] || "";
-  const allShare = stats["NSE ALL SHARE INDEX"] || stats["nse_all_share_index"] || "";
-  const nse20    = stats["NSE 20 SHARE INDEX"] || stats["nse_20_share_index"] || "";
-  const turnover = stats["EQUITY TURNOVER"] || stats["equity_turnover"] || "";
-
-  // Helper to find Macro indicators
+  // CBK Data Extractor (Scans the raw array values to find the exact match)
   const findMacro = (keyword) => {
-    const row = cbkData.find(r => String(Object.values(r).join(" ")).toLowerCase().includes(keyword.toLowerCase()));
-    if (!row) return "—";
-    const vals = Object.values(row);
-    return vals.find(v => !isNaN(parseFloat(v)) && parseFloat(v) < 1 && parseFloat(v) > 0) || vals[1]; 
+    let result = "—";
+    cbkData.forEach(row => {
+      let values = Object.values(row);
+      for(let i=0; i < values.length; i++) {
+        if(String(values[i]).trim().toLowerCase() === keyword.toLowerCase()) {
+           // Return the next column over
+           if(values[i+1] !== undefined) result = values[i+1];
+        }
+      }
+    });
+    return result;
   };
 
+  // Build the CBK metrics grid (A5:A16)
+  const cbkMetrics = [
+    { name: "Central Bank Rate", val: findMacro("Central Bank Rate") },
+    { name: "KESONIA", val: findMacro("KESONIA") },
+    { name: "CBK Discount Window", val: findMacro("CBK Discount Window") },
+    { name: "91-Day T-Bill", val: findMacro("91-Day T-Bill") },
+    { name: "REPO", val: findMacro("REPO") },
+    { name: "Inflation Rate", val: findMacro("Inflation Rate") },
+    { name: "Lending Rate", val: findMacro("Lending Rate") },
+    { name: "Savings Rate", val: findMacro("Savings Rate") },
+    { name: "Deposit Rate", val: findMacro("Deposit Rate") },
+    { name: "KBRR", val: findMacro("KBRR") },
+    { name: "Kesonia", val: findMacro("Kesonia") }, // Note duplicate name in source
+    { name: "Kesonia Compound Rate", val: findMacro("Kesonia Compound Rate") }
+  ];
+
+  // Rank Analysis Sorters (derived from Stock Analysis)
+  const gainers = [...stockAnalysis].sort((a,b) => pct(b) - pct(a));
+  const losers  = [...stockAnalysis].sort((a,b) => pct(a) - pct(b));
+  const topVol  = [...stockAnalysis].sort((a,b) => val(b, "volume") - val(a, "volume"));
+  const topTrd  = [...stockAnalysis].sort((a,b) => val(b, "trades") - val(a, "trades"));
+  const topTrn  = [...stockAnalysis].sort((a,b) => val(b, "turnover") - val(a, "turnover"));
+  const topFBuy = [...stockAnalysis].sort((a,b) => val(b, "foreign_buy") - val(a, "foreign_buy"));
+  const topFSel = [...stockAnalysis].sort((a,b) => val(b, "foreign_sell") - val(a, "foreign_sell"));
+
   const html = `
+    
+    <div class="section-title">Central Bank of Kenya (CBK) Macroeconomics</div>
     <div class="metrics">
-      <div class="metric-card">
-        <div class="lbl">NSE All Share</div>
-        <div class="val">${fmtNum(allShare, 2)}</div>
-        <div class="sub">Primary Index</div>
-      </div>
-      <div class="metric-card">
-        <div class="lbl">NSE 20 Index</div>
-        <div class="val">${fmtNum(nse20, 2)}</div>
-        <div class="sub">Blue Chip</div>
-      </div>
-      <div class="metric-card">
-        <div class="lbl">Market Cap</div>
-        <div class="val">${fmtNum(mktCap, 2)}B</div>
-        <div class="sub">KES Total Valuation</div>
-      </div>
-      <div class="metric-card">
-        <div class="lbl">Equity Turnover</div>
-        <div class="val">${fmtNum(turnover, 0)}</div>
-        <div class="sub">Daily Liquidity</div>
-      </div>
-      <div class="metric-card">
-        <div class="lbl">CBK Base Rate</div>
-        <div class="val">${cbkData.length ? fmtPct(findMacro('Central Bank Rate'), false) : '<span style="font-size:12px;color:#888;">Pending API...</span>'}</div>
-        <div class="sub">Risk-Free Benchmark</div>
-      </div>
-      <div class="metric-card">
-        <div class="lbl">Inflation (CPI)</div>
-        <div class="val">${cbkData.length ? fmtPct(findMacro('Inflation Rate'), false) : '<span style="font-size:12px;color:#888;">Pending API...</span>'}</div>
-        <div class="sub">Macro Headwind</div>
-      </div>
+      ${cbkMetrics.map(m => `
+        <div class="metric-card">
+          <div class="lbl">${m.name}</div>
+          <div class="val" style="color: #D4AF37;">${String(m.val).includes("%") ? m.val : (m.val !== "—" ? fmtPct(m.val, false) : "—")}</div>
+        </div>
+      `).join("")}
     </div>
 
+    <div class="section-title">NSE Rank Analysis (Tap Tables to Expand)</div>
     <div class="grid3">
-      <div class="card">
-        <h2>Top Movers (Gainers)</h2>
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Top Gainers</h2>
         <table>
           <thead><tr><th>Ticker</th><th>Price</th><th>Change</th></tr></thead>
           <tbody>
-            ${gainers.slice(0,6).map(t => `
-              <tr><td><strong>${t.symbol || t.stock}</strong></td><td>${kshPrice(t["last_price_(kshs)"] || t.ltp)}</td><td>${fmtPct(pct(t), true)}</td></tr>
+            ${gainers.filter(t => pct(t) > 0).map(t => `
+              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td><td>${fmtPct(pct(t), true)}</td></tr>
             `).join("")}
           </tbody>
         </table>
+        <div class="expand-hint"></div>
       </div>
       
-      <div class="card">
-        <h2>Top Movers (Losers)</h2>
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Top Losers</h2>
         <table>
           <thead><tr><th>Ticker</th><th>Price</th><th>Change</th></tr></thead>
           <tbody>
-            ${losers.slice(0,6).map(t => `
-              <tr><td><strong>${t.symbol || t.stock}</strong></td><td>${kshPrice(t["last_price_(kshs)"] || t.ltp)}</td><td>${fmtPct(pct(t), true)}</td></tr>
+            ${losers.filter(t => pct(t) < 0).map(t => `
+              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td><td>${fmtPct(pct(t), true)}</td></tr>
             `).join("")}
           </tbody>
         </table>
+        <div class="expand-hint"></div>
       </div>
 
-      <div class="card">
-        <h2>Liquidity & Capital Flow</h2>
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Top by Turnover</h2>
         <table>
-          <thead><tr><th>Ticker</th><th>Turnover (KES)</th><th>Vol</th></tr></thead>
+          <thead><tr><th>Ticker</th><th>Turnover</th><th>Price</th></tr></thead>
           <tbody>
-            ${mostLiquid.length > 0 && trn(mostLiquid[0]) > 0 ? mostLiquid.map(t => `
-              <tr>
-                <td><strong>${t.symbol || t.stock || t.ticker}</strong></td>
-                <td style="color:#002060;font-weight:600;">${fmtNum(trn(t))}</td>
-                <td>${fmtNum(t.volume || t.vol, 0)}</td>
-              </tr>
-            `).join("") : '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px;">Detailed liquidity data bridging...</td></tr>'}
+            ${topTrn.filter(t => val(t, "turnover") > 0).map(t => `
+              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(val(t, "turnover"), 0, true)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, false)}</td></tr>
+            `).join("")}
           </tbody>
         </table>
+        <div class="expand-hint"></div>
       </div>
-    </div>
 
-    <div class="full-card">
-      <h2>Intraday Order Flow (Live Ticks)</h2>
-      <p class="section-note">Most recent executed transactions across the exchange.</p>
-      <div style="overflow-x:auto;">
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Top by Volume</h2>
         <table>
-          <thead><tr><th>Time</th><th>Security</th><th>Price</th><th>Quantity</th><th>Sub-Book</th></tr></thead>
+          <thead><tr><th>Ticker</th><th>Volume</th><th>Price</th></tr></thead>
           <tbody>
-            ${liveTrades.length > 0 ? liveTrades.slice(0, 5).map(r => `
-              <tr class="live-feed-row">
-                <td>${String(r["transaction_time"] || r.time).split(' ')[1] || "—"}</td>
-                <td><strong>${r.symbol || r.security_name}</strong></td>
-                <td>${kshPrice(r["price_(kshs)"] || r.price)}</td>
-                <td>${fmtNum(r.quantity || r.qty, 0)}</td>
-                <td><span class="badge nt">${r["sub-book"] || r.sub_book || "Regular"}</span></td>
-              </tr>
-            `).join("") : '<tr><td colspan="5" style="text-align:center;color:#888;padding:20px;">Live tick data not currently exposed by backend API.</td></tr>'}
+            ${topVol.filter(t => val(t, "volume") > 0).map(t => `
+              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td>${fmtNum(val(t, "volume"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
+            `).join("")}
           </tbody>
         </table>
+        <div class="expand-hint"></div>
+      </div>
+
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Top by Trades</h2>
+        <table>
+          <thead><tr><th>Ticker</th><th>Deals Executed</th><th>Price</th></tr></thead>
+          <tbody>
+            ${topTrd.filter(t => val(t, "trades") > 0).map(t => `
+              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td style="color:#002060;font-weight:bold;">${fmtNum(val(t, "trades"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="expand-hint"></div>
+      </div>
+
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Top Foreign Inflows (Buys)</h2>
+        <table>
+          <thead><tr><th>Ticker</th><th>Foreign Buy Qty</th><th>Price</th></tr></thead>
+          <tbody>
+            ${topFBuy.filter(t => val(t, "foreign_buy") > 0).map(t => `
+              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td style="color:#1a7f37;font-weight:bold;">${fmtNum(val(t, "foreign_buy"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="expand-hint"></div>
+      </div>
+
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Top Foreign Outflows (Sells)</h2>
+        <table>
+          <thead><tr><th>Ticker</th><th>Foreign Sell Qty</th><th>Price</th></tr></thead>
+          <tbody>
+            ${topFSel.filter(t => val(t, "foreign_sell") > 0).map(t => `
+              <tr><td><strong>${t.ticker || t.symbol}</strong></td><td style="color:#cf222e;font-weight:bold;">${fmtNum(val(t, "foreign_sell"), 0, false)}</td><td>${fmtNum(t.ltp || t["last_price_(kshs)"], 2, true)}</td></tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="expand-hint"></div>
       </div>
     </div>
 
-    <div class="full-card">
-      <h2>Complete Equity Heat Map</h2>
-      <div class="ticker-grid">
-        ${tickers.map(t => {
-          const p = pct(t);
-          const cls = p > 0 ? "up-cell" : p < 0 ? "dn-cell" : "nt-cell";
-          const chgCls = p > 0 ? "up" : p < 0 ? "dn" : "nt";
-          const sym = p > 0 ? "▲" : p < 0 ? "▼" : "—";
-          return `
-            <div class="ticker-cell ${cls}">
-              <div class="tc-sym">${t.symbol}</div>
-              <div class="tc-price">${kshPrice(t["last_price_(kshs)"])}</div>
-              <div class="tc-chg ${chgCls}">${sym} ${Math.abs(p).toFixed(2)}%</div>
-            </div>`;
-        }).join("")}
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div class="card">
-        <h2>Global Markets (Correlations)</h2>
+    <div class="section-title">Global Markets & FX</div>
+    <div class="grid3">
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Global Indices</h2>
         <table>
           <thead><tr><th>Index</th><th>Price</th><th>Change</th></tr></thead>
           <tbody>
-            ${indices.slice(0,5).map(r => `
-              <tr><td><strong>${r.name}</strong></td><td>${fmtNum(r.price,2)}</td><td>${fmtPct(r["%_change"] || r.percent_change, true)}</td></tr>
+            ${indices.map(r => `
+              <tr><td><strong>${r.name}</strong></td><td>${fmtNum(r.price, 2, true, "$")}</td><td>${fmtPct(r["%_change"] || r.percent_change, true)}</td></tr>
             `).join("")}
           </tbody>
         </table>
+        <div class="expand-hint"></div>
       </div>
       
-      <div class="card">
-        <h2>FX Yield Matrix (BOA)</h2>
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Yahoo US Most Active</h2>
+        <table>
+          <thead><tr><th>Symbol</th><th>Price</th><th>Change</th></tr></thead>
+          <tbody>
+            ${active.map(r => `
+              <tr><td><strong>${r.symbol}</strong></td><td>${fmtNum(r.price, 2, true, "$")}</td><td>${fmtPct(r["%_change"] || r.percent_change, true)}</td></tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="expand-hint"></div>
+      </div>
+
+      <div class="card interactive-card" onclick="toggleCard(this)">
+        <h2>Forex Rates (BOA)</h2>
         <table>
           <thead><tr><th>Currency</th><th>Buy (vs USD)</th><th>KES Buy</th><th>KES Sell</th></tr></thead>
           <tbody>
-            ${forex.slice(0,5).map(r => {
+            ${forex.map(r => {
               const keys = Object.keys(r);
               return `<tr>${keys.slice(0,4).map(k => `<td>${r[k]}</td>`).join("")}</tr>`;
             }).join("")}
           </tbody>
         </table>
+        <div class="expand-hint"></div>
       </div>
-    </div>`;
+    </div>
+  `;
 
   document.getElementById("app").innerHTML = html;
 }
