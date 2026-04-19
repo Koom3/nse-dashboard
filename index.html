@@ -6,46 +6,170 @@
   <title>NSE Market Dashboard</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;background:#f0f4f8;color:#1a1a2e}
-    header{background:#002060;color:#fff;padding:.9rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
-    header h1{font-size:1.15rem;font-weight:700}
-    #status-bar{font-size:.75rem;opacity:.75;display:flex;gap:1rem;align-items:center}
-    #refresh-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:.75rem}
-    #refresh-btn:hover{background:rgba(255,255,255,.25)}
-    .container{max-width:1400px;margin:0 auto;padding:1rem 1.25rem}
-    .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1rem}
-    .metric-card{background:#fff;border-radius:8px;padding:.85rem 1rem;border-top:3px solid #002060;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-    .metric-card .lbl{font-size:.68rem;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
-    .metric-card .val{font-size:1.35rem;font-weight:700;color:#002060}
-    .metric-card .sub{font-size:.68rem;color:#aaa;margin-top:2px}
-    .up{color:#1a7f37!important}.dn{color:#cf222e!important}.nt{color:#888}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
-    @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
-    .card{background:#fff;border-radius:8px;padding:1rem 1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-    .card h2{font-size:.72rem;color:#002060;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;border-bottom:1px solid #e8edf5;padding-bottom:.4rem}
-    table{width:100%;border-collapse:collapse;font-size:.8rem}
-    th{text-align:left;padding:4px 7px;color:#666;font-weight:600;border-bottom:1px solid #eee;font-size:.72rem;white-space:nowrap}
-    td{padding:4px 7px;border-bottom:1px solid #f5f5f5;white-space:nowrap}
-    tr:last-child td{border-bottom:none}
-    .badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:.7rem;font-weight:700}
-    .badge.up{background:#e8f5e9;color:#1a7f37}.badge.dn{background:#fdecea;color:#cf222e}.badge.nt{background:#f0f0f0;color:#888}
-    .loader{text-align:center;padding:3rem;color:#888;font-size:.95rem}
-    .error-box{background:#fdecea;border:1px solid #cf222e;border-radius:8px;padding:1rem 1.25rem;margin:1rem 0;font-size:.85rem;color:#7b1a1a;line-height:1.6}
-    .error-box strong{display:block;margin-bottom:.3rem}
-    .chart-wrap{position:relative;height:200px}
-    .full-card{background:#fff;border-radius:8px;padding:1rem 1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:1rem}
-    .full-card h2{font-size:.72rem;color:#002060;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;border-bottom:1px solid #e8edf5;padding-bottom:.4rem}
-    .ticker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:.4rem}
-    .ticker-cell{background:#f8fafc;border-radius:6px;padding:.45rem .6rem;border-left:3px solid #ccc}
-    .ticker-cell.up-cell{border-left-color:#1a7f37}.ticker-cell.dn-cell{border-left-color:#cf222e}.ticker-cell.nt-cell{border-left-color:#ccc}
-    .tc-sym{font-size:.72rem;font-weight:700;color:#002060}
-    .tc-price{font-size:.82rem;font-weight:600;color:#1a1a2e;margin:.1rem 0}
-    .tc-chg{font-size:.68rem;font-weight:700}
-    .section-note{font-size:.72rem;color:#aaa;margin-bottom:.6rem;font-style:italic}
-    .progress-bar{height:4px;background:#e0e0e0;border-radius:2px;overflow:hidden;margin-top:2px}
-    .progress-fill{height:100%;border-radius:2px;background:#002060;transition:width .3s}
+    /* FONT INTEGRATION NOTE: 
+      Since 'Hadassah Friedlaender' is a custom font, you must upload the font file 
+      (e.g., hadassah.woff2) to your GitHub repository folder and uncomment the block below. 
+    */
+    /*
+    @font-face {
+      font-family: 'Hadassah Friedlaender';
+      src: url('hadassah.woff2') format('woff2'),
+           url('hadassah.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Base text is 12px */
+    body { 
+      font-family: 'Hadassah Friedlaender', Georgia, serif; 
+      background: #f4f6f9; 
+      color: #2c3e50; 
+      font-size: 12px; 
+    }
+    
+    /* Header integration with #002060 and Gold accent */
+    header { 
+      background: linear-gradient(135deg, #002060 0%, #003b73 100%); 
+      color: #fff; 
+      padding: 1rem 1.5rem; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      flex-wrap: wrap; 
+      gap: 0.5rem; 
+      border-bottom: 4px solid #D4AF37; 
+    }
+    
+    /* Topics: 18px */
+    header h1 { font-size: 18px; font-weight: 700; margin: 0; }
+    .card h2, .full-card h2 { 
+      font-size: 18px; 
+      color: #002060; 
+      text-transform: uppercase; 
+      letter-spacing: 0.05em; 
+      margin-bottom: 1rem; 
+      border-bottom: 2px solid #f0f4f8; 
+      padding-bottom: 0.5rem; 
+    }
+    .metric-card .val { font-size: 18px; font-weight: 700; color: #002060; }
+
+    /* Subtopics: 14px */
+    th { 
+      text-align: left; 
+      padding: 8px; 
+      color: #002060; 
+      font-weight: 700; 
+      border-bottom: 2px solid #e2e8f0; 
+      font-size: 14px; 
+      white-space: nowrap; 
+      background: #f8fafc; 
+    }
+    .metric-card .lbl { 
+      font-size: 14px; 
+      color: #555; 
+      text-transform: uppercase; 
+      letter-spacing: 0.05em; 
+      margin-bottom: 5px; 
+      font-weight: 600; 
+    }
+    .tc-sym { font-size: 14px; font-weight: 700; color: #002060; }
+    .tc-price { font-size: 14px; font-weight: 600; color: #1a1a2e; margin: 0.25rem 0; }
+    .error-box strong { display: block; margin-bottom: 0.5rem; font-size: 14px; }
+    .loader { text-align: center; padding: 3rem; color: #64748b; font-size: 14px; }
+
+    /* Regular Text: 12px (inherits from body but strictly enforced on specifics) */
+    td { 
+      padding: 8px; 
+      border-bottom: 1px solid #f1f5f9; 
+      white-space: nowrap; 
+      color: #333; 
+      font-size: 12px;
+    }
+    #status-bar, #refresh-btn, .metric-card .sub, .badge, .tc-chg, .section-note, .error-box { 
+      font-size: 12px; 
+    }
+    
+    /* Layout & Styling details */
+    #status-bar { opacity: 0.9; display: flex; gap: 1rem; align-items: center; }
+    #refresh-btn { 
+      background: rgba(255,255,255,0.2); 
+      border: 1px solid rgba(255,255,255,0.4); 
+      color: #fff; 
+      padding: 4px 12px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-family: inherit; 
+      transition: background 0.3s; 
+    }
+    #refresh-btn:hover { background: rgba(255,255,255,0.3); }
+    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    
+    /* Metrics Grid */
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .metric-card { 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 1rem; 
+      border-top: 4px solid #002060; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+      transition: transform 0.2s; 
+    }
+    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+    .metric-card:nth-child(even) { border-top-color: #D4AF37; } /* Alternating Gold accent */
+    .metric-card .sub { color: #888; margin-top: 4px; }
+
+    /* Utility Colors */
+    .up { color: #1a7f37 !important; } 
+    .dn { color: #cf222e !important; } 
+    .nt { color: #888; }
+    
+    /* Grids & Cards */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media(max-width:900px){ .grid2, .grid3 { grid-template-columns: 1fr; } }
+    
+    .card, .full-card { 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 1.25rem; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+      margin-bottom: 1.5rem; 
+    }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; }
+    tr:hover td { background: #fdfdfd; }
+    tr:last-child td { border-bottom: none; }
+    
+    /* Badges */
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 700; }
+    .badge.up { background: #e8f5e9; color: #1a7f37; } 
+    .badge.dn { background: #fdecea; color: #cf222e; } 
+    .badge.nt { background: #f1f5f9; color: #64748b; }
+    
+    /* Errors & Charts */
+    .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; line-height: 1.6; }
+    .chart-wrap { position: relative; height: 250px; }
+    
+    /* Ticker Grid (Heat Map) */
+    .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; }
+    .ticker-cell { 
+      background: #fff; 
+      border-radius: 6px; 
+      padding: 0.75rem; 
+      border-left: 4px solid #ccc; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+      transition: transform 0.2s; 
+    }
+    .ticker-cell:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .ticker-cell.up-cell { border-left-color: #1a7f37; } 
+    .ticker-cell.dn-cell { border-left-color: #cf222e; } 
+    .ticker-cell.nt-cell { border-left-color: #94a3b8; }
+    .tc-chg { font-weight: 700; }
+    .section-note { color: #64748b; margin-bottom: 1rem; font-style: italic; }
   </style>
 </head>
 <body>
@@ -76,14 +200,10 @@ const CALLBACK_NAME    = "nseDashboardCallback";
 let   refreshTimer     = null;
 let   currentData      = null;
 let   moverChart       = null;
-let   sectorChart      = null;
 
-// ── JSONP loader (bypasses CORS — required for GitHub Pages → Apps Script) ──
 function loadData() {
-  // Remove previous script tag if present
   const old = document.getElementById("jsonp-loader");
   if (old) old.remove();
-  // Clear previous callback
   window[CALLBACK_NAME] = null;
   const timeout = setTimeout(() => {
     document.getElementById("app").innerHTML = buildErrorHtml(
@@ -167,7 +287,6 @@ function renderDashboard(data) {
   const active   = (data.mostactive || []).filter(r => r.symbol);
   const forex    = (data.forex || []).filter(r => r[Object.keys(r)[0]] && Object.keys(r).length > 1);
 
-  // ── Resolve prices and changes from tickers ──
   function pct(t) {
     const v = t["%_change"] || t["percent_change"] || t["change"] || 0;
     return parseFloat(String(v).replace("%","")) || 0;
@@ -181,14 +300,12 @@ function renderDashboard(data) {
   const losers    = tickers.filter(t => pct(t) < 0).sort((a,b) => pct(a) - pct(b));
   const unchanged = tickers.filter(t => pct(t) === 0);
 
-  // ── NSE Summary metrics ──
   const mktCap    = stats["MARKET CAPITALIZATION (Billions)"] || stats["market_capitalization_(billions)"] || "";
   const allShare  = stats["NSE ALL SHARE INDEX"]              || stats["nse_all_share_index"]              || "";
   const nse20     = stats["NSE 20 SHARE INDEX"]               || stats["nse_20_share_index"]               || "";
   const turnover  = stats["EQUITY TURNOVER"]                  || stats["equity_turnover"]                  || "";
   const deals     = stats["TOTAL EQUITY DEALS"]               || stats["total_equity_deals"]               || "";
 
-  // ── Build HTML ──
   const html = `
     <div class="metrics">
       <div class="metric-card">
@@ -341,7 +458,6 @@ function renderDashboard(data) {
 
   document.getElementById("app").innerHTML = html;
 
-  // ── Mover chart ──
   if (moverChart) { moverChart.destroy(); moverChart = null; }
   const moverCtx = document.getElementById("moverChart");
   if (moverCtx) {
@@ -363,7 +479,6 @@ function renderDashboard(data) {
   }
 }
 
-// ── Auto-refresh ──
 function startRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(loadData, REFRESH_SECONDS * 1000);
