@@ -33,7 +33,7 @@
     .metric-card .val { font-size: 18px; color: #002060; } 
     .metric-card .sub { font-size: 11px; color: #999; margin-top: 4px; }
 
-    /* SPECIFIC COLOR FORMATTING (Color10 Green & Pure Red) */
+    /* SPECIFIC COLOR FORMATTING */
     .up  { color: #00b050 !important; }
     .dn  { color: #ff0000 !important; }
     .nt  { color: #888 !important; }
@@ -52,7 +52,7 @@
     /* HORIZONTAL SCROLL FOR ALL TABLES */
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     
-    /* TAP TO EXPAND / CONTRACT 5-ROW LIMIT LOGIC */
+    /* TAP TO EXPAND / CONTRACT LOGIC */
     .interactive-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
     .interactive-card:hover { box-shadow: 0 6px 16px rgba(0,32,96,0.12); transform: translateY(-2px); }
     .table-collapsed tbody tr:nth-child(n+6) { display: none; }
@@ -90,15 +90,6 @@
     /* LOADER & ERROR */
     .loader { text-align: center; padding: 4rem; color: #64748b; font-size: 16px; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; font-size: 12px; line-height: 1.7; }
-
-    /* ── CHARTS (NEW — added only for chart section) ── */
-    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    @media(max-width:800px){ .charts-grid { grid-template-columns: 1fr; } }
-    .chart-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); padding: 1rem 1.25rem 1.25rem; }
-    .chart-card h2 { font-size: 14px; color: #002060; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; border-bottom: 2px solid #f0f4f8; padding-bottom: 0.5rem; }
-    .chart-card canvas { font-family: 'Hadassah Friedlaender', Georgia, serif !important; }
-    .chart-card-full { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); padding: 1rem 1.25rem 1.25rem; margin-bottom: 1.5rem; }
-    .chart-card-full h2 { font-size: 14px; color: #002060; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; border-bottom: 2px solid #f0f4f8; padding-bottom: 0.5rem; }
   </style>
 </head>
 <body>
@@ -280,106 +271,77 @@ function standardCard(title, bodyHtml) {
   </div>`;
 }
 
-// ─── SHARED CHART.JS CONFIG ───────────────────────────────────────
-// All charts use the same font, tooltip, and interaction config to
-// match the page typography. Hover/tap shows exact value at that point.
-const CHART_FONT = { family: "'Hadassah Friedlaender', Georgia, serif", size: 11, weight: 'bold' };
-const CHART_DEFAULTS = {
-  responsive: true,
-  maintainAspectRatio: true,
-  interaction: { mode: 'index', intersect: false },
-  plugins: {
-    legend: { labels: { font: CHART_FONT, color: '#2c3e50', boxWidth: 12, padding: 10 } },
-    tooltip: {
-      backgroundColor: '#002060',
-      titleFont: { ...CHART_FONT, size: 11 },
-      bodyFont: { ...CHART_FONT, size: 11 },
-      titleColor: '#D4AF37',
-      bodyColor: '#fff',
-      padding: 10,
-      cornerRadius: 6,
-      callbacks: {}
-    }
-  },
-  scales: {
-    x: { ticks: { font: CHART_FONT, color: '#555', maxRotation: 45 }, grid: { color: 'rgba(0,0,0,0.04)' } },
-    y: { ticks: { font: CHART_FONT, color: '#555' }, grid: { color: 'rgba(0,0,0,0.06)' } }
-  }
-};
-
-// Destroy and recreate a chart safely
-const _charts = {};
-function mkChart(id, config) {
-  if (_charts[id]) { _charts[id].destroy(); }
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  _charts[id] = new Chart(ctx, config);
-}
-
-// ─── PARSE MACRO DATA FROM API ────────────────────────────────────
-// The "macro" API key maps to the Macro Analysis sheet.
-// The sheet has two named tables: "Key Rates | Values" and
-// "Key Exchange | CROSS RATES | Cross Rates (Sell) | AGAINST KES | Against KES (Sell)"
-// buildJsonOutput maps headers to lowercase-underscore keys.
-// Key Rates rows: { key_rates: "Central Bank Rate", values: "8.75%" }
-// Forex rows:     { key_exchange: "USD", cross_rates: "", cross_rates_(sell): "", against_kes: "126.5", against_kes_(sell): "131.5" }
-
-function parseMacroData(macroRows) {
-  const rates = {};
-  const forexTable = [];
-
-  const rateLabels = new Set([
-    "central bank rate","kesonia","cbk discount window","91-day t-bill","repo",
-    "inflation rate","lending rate","savings rate","deposit rate","kbrr",
-    "kesonia compound rate"
-  ]);
-  const fxCurrencies = new Set(["usd","gbp","eur","jpy","zar","chf","cad","kes/ugx","kes/tzs"]);
-
-  macroRows.forEach(r => {
-    const keys = Object.keys(r);
-    if (!keys.length) return;
-
-    // ── Key Rates table: first key is "key_rates", second is "values" ──
-    const firstKey  = keys[0];
-    const secondKey = keys[1];
-    const firstVal  = String(r[firstKey] || "").trim();
-    const secondVal = String(r[secondKey] || "").trim();
-
-    if (rateLabels.has(firstVal.toLowerCase()) && secondVal) {
-      rates[firstVal] = secondVal;
-      return;
-    }
-
-    // ── Forex table: first key is "key_exchange" ──
-    if (fxCurrencies.has(firstVal.toLowerCase())) {
-      forexTable.push({
-        ccy:      firstVal,
-        crossB:   String(r[keys[1]] || "").trim(),
-        crossS:   String(r[keys[2]] || "").trim(),
-        kesB:     String(r[keys[3]] || "").trim(),
-        kesS:     String(r[keys[4]] || "").trim()
-      });
-    }
-  });
-
-  return { rates, forexTable };
-}
-
 // ─── MAIN RENDER ────────────────────────────────────────────────
 function render(data) {
-  // ── RAW DATASETS ──
   const tickers   = (data.tickers    || []).filter(t => t.symbol);
   const mw        = (data.marketwatch|| []).filter(t => t.symbol);
   const indices   = (data.indices || data.world_indices || []).filter(r => r.name && r.name !== "Name" && r.price && r.price !== "N/A");
   const active    = (data.mostactive || data.yahoo_most_active || []).filter(r => r.symbol && r.price);
   const statsArr  = (data.stats || []);
   
-  const status = computeMarketStatus(false);
-  setMarketStatus(status);
+  setMarketStatus(computeMarketStatus(false));
 
-  // ── MACRO ANALYSIS DATA (Key Rates + Forex from Macro Analysis sheet) ──
-  const macroRaw = data["macro"] || data["macro_analysis"] || [];
-  const { rates: keyRatesMap, forexTable } = parseMacroData(macroRaw);
+  // ── 🎯 AGGRESSIVE GLOBAL SCAN FOR MACRO & FOREX ──
+  const cbkMetricsMap = {};
+  const forexRows = [];
+  const keyRateLabels = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
+  const forexCurrencies = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
+
+  // Search through EVERY sheet in the API payload
+  Object.values(data).forEach(sheetData => {
+    if (Array.isArray(sheetData)) {
+      sheetData.forEach(r => {
+        // Collect all values in the row into a flat array of strings
+        const vals = Object.values(r).map(v => String(v !== null && v !== undefined ? v : "").trim());
+        
+        vals.forEach((v, idx) => {
+          let cleanV = v.toLowerCase();
+          
+          // 1. Match CBK Key Rates
+          let matchedCbk = keyRateLabels.find(l => l.toLowerCase() === cleanV);
+          if (matchedCbk) {
+            // Find the VERY NEXT non-empty value in the row
+            for (let i = idx + 1; i < vals.length; i++) {
+              if (vals[i] !== "") { 
+                cbkMetricsMap[matchedCbk.toLowerCase()] = vals[i]; 
+                break; 
+              }
+            }
+          }
+          
+          // 2. Match Forex Rates
+          if (forexCurrencies.includes(v)) {
+            let nums = [];
+            for (let i = idx + 1; i < vals.length; i++) {
+              if (vals[i] !== "" && vals[i] !== "—" && vals[i] !== "null" && vals[i] !== "undefined") {
+                nums.push(vals[i]);
+              }
+            }
+            if (nums.length > 0 || v === "USD") {
+              let bUsd = "—", sUsd = "—", kBuy = "—", kSel = "—";
+              if (v === "USD") {
+                kBuy = nums[0] || "—";
+                kSel = nums[1] || "—";
+              } else {
+                bUsd = nums[0] || "—";
+                sUsd = nums[1] || "—";
+                kBuy = nums[2] || "—";
+                kSel = nums[3] || "—";
+              }
+              if (!forexRows.some(row => row.includes(`<td>${v}</td>`))) {
+                forexRows.push(`<tr><td>${v}</td><td>${bUsd}</td><td>${sUsd}</td><td>${kBuy}</td><td>${kSel}</td></tr>`);
+              }
+            }
+          }
+        });
+      });
+    }
+  });
+
+  function getCBKVal(label) {
+     let target = label.toLowerCase();
+     return cbkMetricsMap[target] || "—";
+  }
 
   // ── NSE STATS MAP ──
   const statsMap = {};
@@ -439,65 +401,50 @@ function render(data) {
       </div>
     </div>`;
 
-  // ── 2. KEY MACRO RATES (from Macro Analysis sheet "Key Rates" table) ──
-  const displayRateLabels = [
-    "Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO",
-    "Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia Compound Rate"
-  ];
-  const ratesHtml = `<div class="rates-grid">
-    ${displayRateLabels.map(l => {
-      // Case-insensitive lookup
-      const v = keyRatesMap[l] || keyRatesMap[Object.keys(keyRatesMap).find(k => k.toLowerCase() === l.toLowerCase()) || ""] || "—";
-      return `<div class="rate-cell">
-        <div class="rate-label">${l}</div>
-        <div class="rate-value">${v}</div>
-      </div>`;
-    }).join("")}
-  </div>`;
+  // ── 2. KEY RATES ──
+  const displayRateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia Compound Rate"];
+  let ratesHtml = "";
+  if (Object.keys(cbkMetricsMap).length === 0) {
+    ratesHtml = `<div style="color:#ff0000; padding:1rem;">⚠️ API Error: Macro data not found. Ensure 'Macro Analysis' is exported by Code.gs.</div>`;
+  } else {
+    ratesHtml = `<div class="rates-grid">
+      ${displayRateLabels.map(l => `<div class="rate-cell"><div class="rate-label">${l}</div><div class="rate-value">${getCBKVal(l)}</div></div>`).join("")}
+    </div>`;
+  }
 
-  // ── 3. INDICATIVE FOREX RATES (from Macro Analysis sheet "Key Exchange" table) ──
-  const forexRows = forexTable.map(r =>
-    `<tr>
-      <td>${r.ccy}</td>
-      <td>${r.crossB || "—"}</td>
-      <td>${r.crossS || "—"}</td>
-      <td>${r.kesB || "—"}</td>
-      <td>${r.kesS || "—"}</td>
-    </tr>`
-  );
-
-  // ── 4. NSE MARKET STATS ──
+  // ── 3. NSE MARKET STATS FULL TABLE ──
   const statsRows = statsArr.filter(r => r.name && r.value !== undefined && r.value !== "").map(r =>
     `<tr><td>${r.name}</td><td>${fmtNum(r.value, 2)}</td>
      <td>${r.change !== undefined && r.change !== "" ? formatChange(r.change, false) : "—"}</td></tr>`
   );
 
-  // ── 5. TOP MOVERS ──
+  // ── 4. TOP MOVERS ──
   function tickerRow(t) {
     return `<tr><td>${t.symbol}</td>
       <td>${fmtKsh(t["last_price_(kshs)"])}</td>
       <td>${formatChange(percentKey(t), true)}</td></tr>`;
   }
 
-  // ── 6. RANKING TABLE ROWS ──
+  // ── 5. RANKING TABLES ROWS ──
   const rankRow_TO = r => `<tr><td>${r.symbol}</td><td>${r["security_name"] || ""}</td><td style="color:#002060;">${fmtKsh(r["turnover_(kshs)"])}</td><td>${fmtNum(r.volume, 0)}</td><td>${r.trades || "—"}</td></tr>`;
   const rankRow_Vol = r => `<tr><td>${r.symbol}</td><td>${r["security_name"] || ""}</td><td style="color:#002060;">${fmtNum(numMW(r,"volume"), 0)}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
   const rankRow_Trades = r => `<tr><td>${r.symbol}</td><td>${r["security_name"] || ""}</td><td style="color:#002060;">${fmtNum(r.trades, 0)}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
+  
   const rankRow_FB = r => {
     const net = numMW(r,"foreign_buy") - numMW(r,"foreign_sell");
     return `<tr><td>${r.symbol}</td><td>${r["security_name"] || ""}</td><td style="color:#00b050;">${fmtNum(numMW(r,"foreign_buy"), 0)}</td><td>${fmtNum(numMW(r,"foreign_sell"), 0)}</td><td style="color:${net>=0?'#00b050':'#ff0000'};">${fmtNum(net, 0)}</td></tr>`;
   };
   const rankRow_FS = r => `<tr><td>${r.symbol}</td><td>${r["security_name"] || ""}</td><td style="color:#ff0000;">${fmtNum(numMW(r,"foreign_sell"), 0)}</td><td>${fmtNum(numMW(r,"foreign_buy"), 0)}</td></tr>`;
 
-  // ── 7. GLOBAL INDICES & YAHOO ──
+  // ── 6. GLOBAL INDICES & YAHOO ──
   const indicesRows = indices.map(r => `<tr><td>${r.name}</td><td>${r.name === "US Dollar Index" ? r.price : fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${r.volume && r.volume !== "N/A" ? fmtNum(r.volume, 0) : "—"}</td></tr>`);
   const activeRows = active.map(r => `<tr><td>${r.symbol}</td><td>${r.name || "—"}</td><td>${fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${fmtNum(r.volume, 0)}</td><td>${fmtNum(r["market_cap"], 0)}</td></tr>`);
 
-  // ── 8. TICKER PRICES & MARKET WATCH ──
+  // ── 7. TICKER PRICES & MARKET WATCH FULL TABLES ──
   const tickerFullRows = tickers.map(t => `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(t["change"], false)}</td><td>${formatChange(percentKey(t), true)}</td><td><span style="color:#888">${t["last_updated"] || "—"}</span></td></tr>`);
   const mwRows = mw.filter(r => numMW(r,"ltp_(kshs)") > 0 || numMW(r,"volume") > 0).map(r => `<tr><td>${r.symbol}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r["security_name"] || ""}</td><td>${fmtKsh(r["ltp_(kshs)"])}</td><td>${fmtKsh(r["prev_close"])}</td><td>${fmtNum(r.volume, 0)}</td><td>${r.trades || "—"}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td><td style="color:#00b050;">${fmtNum(r["foreign_buy"], 0)}</td><td style="color:#ff0000;">${fmtNum(r["foreign_sell"], 0)}</td></tr>`);
 
-  // ── 9. EQUITY HEAT MAP ──
+  // ── 8. EQUITY HEAT MAP ──
   const heatCells = tickers.map(t => {
     const rawStr = percentKey(t);
     const n = getPctNumForSort(t, "%_change");
@@ -513,27 +460,7 @@ function render(data) {
     <input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol..." oninput="filterHeatmap(this.value)">
     <div class="ticker-grid" id="heatmap-grid">${heatCells}</div>`;
 
-  // ── BUILD CHART DATA INLINE FROM API ──────────────────────────
-  // All chart data is parsed from the CBK/macro sheets already fetched.
-  // The API returns each CBK sheet as objects with lowercase-underscore keys.
-  // We parse them here so charts always reflect live data from the spreadsheet.
-
-  // Helper: parse a numeric value out of a cell that may have commas, "KES", "Mn", "%" etc.
-  function parseN(v) {
-    if (v === null || v === undefined || v === "") return null;
-    const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
-    return isNaN(n) ? null : n;
-  }
-
-  // ── Parse Inflation data from API (key: "forex" sheet contains CBK data)
-  // Since the CBK data is inside "forex" key from the API (BOA Daily Market Update sheet),
-  // and the Macro Analysis sheet is not yet in the sheetMap, we embed the chart data
-  // directly from the known values read from the spreadsheet.
-  // These are hardcoded from the live read — the render function will re-read them
-  // when the page refreshes, by parsing macroRaw for any chart rows if they appear.
-  // For now the charts use the verified data read directly from the sheet today.
-
-  // ── ASSEMBLE FULL PAGE ──────────────────────────────────────────
+  // ── ASSEMBLE FULL PAGE ──
   document.getElementById("app").innerHTML = `
     ${metricsHtml}
 
@@ -546,7 +473,7 @@ function render(data) {
     </div>
 
     <div class="grid2">
-      ${tableCard("Indicative Forex Rates", ["Key Exchange","Cross Rates","Cross Rates (Sell)","Against KES","Against KES (Sell)"], forexRows, "Forex rates not yet loaded.")}
+      ${tableCard("Indicative Forex Rates", ["Key Exchange","Cross Rates","Cross Rates (Sell)","Against KES","Against KES (Sell)"], forexRows, "⚠️ API Error: Forex rates missing. Ensure 'Macro Analysis' is exported by Code.gs.")}
       ${tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded.")}
     </div>
 
@@ -565,159 +492,7 @@ function render(data) {
     ${standardCard("Equity Heat Map — All Tickers", heatHtml)}
     ${tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded.")}
     ${tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded.")}
-
-    <div class="chart-card-full">
-      <h2>Macro Analysis — CBK Charts</h2>
-      <div class="charts-grid">
-        <div class="chart-card">
-          <h2>Inflation Rates (%)</h2>
-          <canvas id="chartInflation" height="220"></canvas>
-        </div>
-        <div class="chart-card">
-          <h2>Commercial Banks Weighted Average Rates (%)</h2>
-          <canvas id="chartBanks" height="220"></canvas>
-        </div>
-        <div class="chart-card">
-          <h2>KEPSS RTGS — Settlement Volume</h2>
-          <canvas id="chartKepssVol" height="220"></canvas>
-        </div>
-        <div class="chart-card">
-          <h2>KEPSS RTGS — Settlement Value (KES Mn)</h2>
-          <canvas id="chartKepssVal" height="220"></canvas>
-        </div>
-      </div>
-      <div class="charts-grid">
-        <div class="chart-card">
-          <h2>Annual GDP (KES Billions)</h2>
-          <canvas id="chartGDP" height="220"></canvas>
-        </div>
-        <div class="chart-card">
-          <h2>Diaspora Remittances — Annual Total (USD Millions)</h2>
-          <canvas id="chartDiaspora" height="220"></canvas>
-        </div>
-      </div>
-    </div>
   `;
-
-  // ── RENDER CHARTS after DOM is ready ─────────────────────────────
-  // All data is from the verified live spreadsheet read.
-  // Charts use Chart.js 4.4.1 (already loaded in head).
-  // interaction: mode:'index', intersect:false → hover/tap anywhere on x-axis shows all series values.
-
-  const chartBase = () => JSON.parse(JSON.stringify(CHART_DEFAULTS));
-
-  // ── CHART 1: Inflation Rates — Line ──────────────────────────────
-  const inflLabels = ["Jun/22","Jul/22","Aug/22","Sep/22","Oct/22","Nov/22","Dec/22","Jan/23","Feb/23","Mar/23","Apr/23","May/23","Jun/23","Jul/23","Aug/23","Sep/23","Oct/23","Nov/23","Dec/23","Jan/24","Feb/24","Mar/24","Apr/24","May/24","Jun/24","Jul/24","Aug/24","Sep/24","Oct/24","Nov/24","Dec/24","Jan/25","Feb/25","Mar/25","Apr/25","May/25","Jun/25","Jul/25","Aug/25","Sep/25","Oct/25","Nov/25","Dec/25","Jan/26","Feb/26","Mar/26"];
-  const inflAvg    = [6.29,6.45,6.61,6.8,6.97,7.17,7.27,7.38,7.45,7.55,7.6,7.58,7.53,7.44,7.32,7.18,7.03,6.85,6.6,6.39,6.18,5.96,5.78,5.6,5.43,5.26,5.09,4.94,4.81,4.81,4.5,4.21,3.98,3.81,3.74,3.63,3.56,3.55,3.56,3.65,3.8,3.94,4.07,4.16,4.23,4.29];
-  const infl12m    = [7.91,8.32,8.53,9.21,9.57,9.51,9.1,9.0,9.22,9.2,7.97,8.0,7.9,7.3,6.34,6.8,6.9,6.81,6.57,6.96,6.26,5.5,5.0,4.14,4.58,4.28,4.35,3.99,2.72,2.75,2.99,3.28,3.45,3.62,4.11,3.75,3.82,4.15,4.53,4.58,4.56,4.46,4.49,4.4,4.25,4.39];
-  const inflCfg = chartBase();
-  inflCfg.plugins.tooltip.callbacks.label = ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`;
-  mkChart("chartInflation", {
-    type: "line",
-    data: {
-      labels: inflLabels,
-      datasets: [
-        { label: "Annual Average", data: inflAvg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.08)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35 },
-        { label: "12-Month",       data: infl12m, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.08)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35 }
-      ]
-    },
-    options: { ...inflCfg, scales: { ...inflCfg.scales,
-      y: { ...inflCfg.scales.y, ticks: { ...inflCfg.scales.y.ticks, callback: v => v + "%" } }
-    }}
-  });
-
-  // ── CHART 2: Commercial Banks Rates — Line ───────────────────────
-  const bkLabels  = ["Apr/25","May/25","Jun/25","Jul/25","Aug/25","Sep/25","Oct/25","Nov/25","Dec/25","Jan/26"];
-  const bkDep     = [8.87,8.70,8.37,8.07,7.74,7.63,7.50,7.28,7.13,7.03];
-  const bkSav     = [3.66,3.31,3.76,3.76,3.61,3.77,3.76,3.67,3.22,3.18];
-  const bkLend    = [15.65,15.44,15.28,15.24,15.17,15.07,15.00,14.88,14.82,14.81];
-  const bkOver    = [14.083,13.73,13.49,13.61,13.89,13.72,13.23,13.36,13.38,13.56];
-  const bkCfg = chartBase();
-  bkCfg.plugins.tooltip.callbacks.label = ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`;
-  mkChart("chartBanks", {
-    type: "line",
-    data: {
-      labels: bkLabels,
-      datasets: [
-        { label: "Deposit",   data: bkDep,  borderColor: "#002060", borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, tension: 0.3 },
-        { label: "Savings",   data: bkSav,  borderColor: "#D4AF37", borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, tension: 0.3 },
-        { label: "Lending",   data: bkLend, borderColor: "#00b050", borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, tension: 0.3 },
-        { label: "Overdraft", data: bkOver, borderColor: "#ff0000", borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, tension: 0.3 }
-      ]
-    },
-    options: { ...bkCfg, scales: { ...bkCfg.scales,
-      y: { ...bkCfg.scales.y, ticks: { ...bkCfg.scales.y.ticks, callback: v => v + "%" } }
-    }}
-  });
-
-  // ── CHART 3: KEPSS Volume — Bar ──────────────────────────────────
-  const kepLabels = ["Feb/22","Mar/22","Apr/22","May/22","Jun/22","Jul/22","Aug/22","Sep/22","Oct/22","Nov/22","Dec/22","Jan/23","Feb/23","Mar/23","Apr/23","May/23","Jun/23","Jul/23","Aug/23","Sep/23","Oct/23","Nov/23","Dec/23","Jan/24","Feb/24","Mar/24","Apr/24","May/24","Jun/24","Jul/24","Aug/24","Sep/24","Oct/24","Nov/24","Dec/24","Jan/25","Feb/25","Mar/25","Apr/25","May/25","Jun/25","Jul/25","Aug/25","Sep/25","Oct/25","Nov/25","Dec/25","Jan/26","Feb/26"];
-  const kepVol    = [533234,625911,534971,608117,608173,578964,587315,609514,598925,637546,651484,589618,606702,695873,564137,698299,677951,666810,674237,654807,707934,671652,639439,652794,667417,664779,685852,732268,641016,738258,691102,674230,819199,871879,895220,824269,823079,834290,863276,925514,876835,1059020,760931,875110,894521,886945,1024110,825398,890852];
-  const kepVolCfg = chartBase();
-  kepVolCfg.plugins.tooltip.callbacks.label = ctx => ` Volume: ${ctx.parsed.y.toLocaleString("en-KE")}`;
-  mkChart("chartKepssVol", {
-    type: "bar",
-    data: {
-      labels: kepLabels,
-      datasets: [{ label: "Settlement Volume", data: kepVol, backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37" }]
-    },
-    options: { ...kepVolCfg, scales: { ...kepVolCfg.scales,
-      x: { ...kepVolCfg.scales.x, ticks: { ...kepVolCfg.scales.x.ticks, maxTicksLimit: 12 } },
-      y: { ...kepVolCfg.scales.y, ticks: { ...kepVolCfg.scales.y.ticks, callback: v => (v/1000).toFixed(0)+"K" } }
-    }}
-  });
-
-  // ── CHART 4: KEPSS Value — Line ──────────────────────────────────
-  const kepVal = [2540790.99,3093312.85,3085538.66,3098910.19,3669498.76,3499539.32,3376618.49,3376713.00,2989334.81,3350286.75,3346761.00,3187584.45,3107813.04,3690184.69,3210584.16,3794768.07,4251106.22,3508074.74,3402035.69,3521815.85,3614243.14,3267367.90,3187368.94,3397702.89,3786455.35,3490671.26,3551932.79,3592018.29,3451537.41,4090763.61,3398234.85,3724112.41,4389444.96,3983884.34,4489170.79,4208216.09,3447025.28,3485986.01,4053263.97,3737279.97,3671311.71,3851274.12,3637165.17,4089511.94,3935535.01,3701624.55,4567894.54,3845143.89,3777065.47];
-  const kepValCfg = chartBase();
-  kepValCfg.plugins.tooltip.callbacks.label = ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", {maximumFractionDigits:0})} Mn`;
-  mkChart("chartKepssVal", {
-    type: "line",
-    data: {
-      labels: kepLabels,
-      datasets: [{ label: "Settlement Value (KES Mn)", data: kepVal, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.1)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.3, fill: true }]
-    },
-    options: { ...kepValCfg, scales: { ...kepValCfg.scales,
-      x: { ...kepValCfg.scales.x, ticks: { ...kepValCfg.scales.x.ticks, maxTicksLimit: 12 } },
-      y: { ...kepValCfg.scales.y, ticks: { ...kepValCfg.scales.y.ticks, callback: v => (v/1000000).toFixed(1)+"T" } }
-    }}
-  });
-
-  // ── CHART 5: Annual GDP — Bar + Line combo ────────────────────────
-  const gdpLabels  = ["2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023","2024"];
-  const gdpNominal = [967.8,1020.0,1035.4,1131.8,1274.3,1415.8,1622.6,1833.5,2107.6,3275.6,3597.6,4162.5,4767.2,5311.3,6003.8,6884.3,7594.1,8483.4,9340.3,10237.7,10715.1,12123.0,14069.4,16056.0,18000.0];
-  const gdpReal    = [982.9,1020.1,1025.6,1055.7,1109.3,1172.8,1249.5,1336.8,1357.3,5361.5,5793.5,6090.2,6368.4,6610.3,6942.2,7287.0,7594.1,7885.5,8330.9,8756.9,8730.6,9275.6,9890.0,10432.0,11095.0];
-  const gdpCfg = chartBase();
-  gdpCfg.plugins.tooltip.callbacks.label = ctx => ` ${ctx.dataset.label}: KES ${ctx.parsed.y.toLocaleString("en-KE", {maximumFractionDigits:0})}B`;
-  mkChart("chartGDP", {
-    type: "bar",
-    data: {
-      labels: gdpLabels,
-      datasets: [
-        { label: "Nominal GDP", data: gdpNominal, backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37", order: 2 },
-        { label: "Real GDP",    data: gdpReal,    type: "line", borderColor: "#00b050", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 }
-      ]
-    },
-    options: { ...gdpCfg, scales: { ...gdpCfg.scales,
-      y: { ...gdpCfg.scales.y, ticks: { ...gdpCfg.scales.y.ticks, callback: v => (v/1000).toFixed(0)+"T" } }
-    }}
-  });
-
-  // ── CHART 6: Diaspora Remittances — Bar ──────────────────────────
-  const diaLabels = ["2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023","2024","2025","2026"];
-  const diaTotal  = [344.9,380.3,443.7,579.4,609.4,608.1,773.3,1078.3,1167.7,1271.0,1431.4,1652.2,1724.9,1946.5,2390.4,2834.7,3094.9,3718.0,4027.9,4189.9,4945.2,5036.8,824.1];
-  const diaCfg = chartBase();
-  diaCfg.plugins.tooltip.callbacks.label = ctx => ` Total: USD ${ctx.parsed.y.toLocaleString("en-KE", {maximumFractionDigits:1})}M`;
-  mkChart("chartDiaspora", {
-    type: "bar",
-    data: {
-      labels: diaLabels,
-      datasets: [{ label: "Total Remittances (USD M)", data: diaTotal, backgroundColor: ctx => ctx.raw < 1000 ? "rgba(212,175,55,0.75)" : "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37" }]
-    },
-    options: { ...diaCfg, scales: { ...diaCfg.scales,
-      y: { ...diaCfg.scales.y, ticks: { ...diaCfg.scales.y.ticks, callback: v => "$" + (v/1000).toFixed(1)+"B" } }
-    }}
-  });
 }
 
 // ─── HEATMAP FILTER ──────────────────────────────────────────────
