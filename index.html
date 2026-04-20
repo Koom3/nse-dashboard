@@ -87,13 +87,12 @@
     .rate-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
     .rate-value { font-size: 16px; color: #002060; }
 
-    /* LOADER & ERROR */
+    /* LOADER, ERROR & CHARTS */
     .loader { text-align: center; padding: 4rem; color: #64748b; font-size: 16px; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; font-size: 12px; line-height: 1.7; }
-    
-    /* CHART CONTAINER */
-    .chart-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .chart-container h3 { font-size: 13px; color: #002060; margin-bottom: 10px; text-align: center; }
+    .chart-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s; }
+    .chart-container:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .chart-container h3 { font-size: 13px; color: #002060; margin-bottom: 10px; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; }
   </style>
 </head>
 <body>
@@ -285,62 +284,88 @@ function render(data) {
   
   setMarketStatus(computeMarketStatus(false));
 
-  // ── 🎯 MACRO ANALYSIS PARSING ──
-  const macroRaw = data["macro_analysis"] || data["macro"] || [];
+  // ── 🎯 EXPLICIT DATA FROM "MACRO ANALYSIS" WORKSHEET ──
+  const staticMacroData = [
+    ["", "Key Rates", "Values"],
+    ["", "Central Bank Rate", "8.75%"],
+    ["", "KESONIA", "8.76%"],
+    ["", "CBK Discount Window", "9.25%"],
+    ["", "91-Day T-Bill", "7.42%"],
+    ["", "REPO", "9.25%"],
+    ["", "Inflation Rate", "4.39%"],
+    ["", "Lending Rate", "14.78%"],
+    ["", "Savings Rate", "2.41%"],
+    ["", "Deposit Rate", "6.82%"],
+    ["", "KBRR", "8.90%"],
+    ["", "Kesonia", "8.76%"],
+    ["", "Kesonia Compound Rate", "0.00%"],
+    ["", "Key Exchange", "CROSS RATES", "Cross Rates (Sell)", "AGAINST KES", "Against KES (Sell)"],
+    ["", "USD", "", "", "126.5", "131.5"],
+    ["", "GBP", "1.3242", "1.3647", "167.51", "179.46"],
+    ["", "EUR", "1.1512", "1.1814", "145.63", "155.35"],
+    ["", "JPY", "157.31", "160.32", "0.789", "0.8359"],
+    ["", "ZAR", "14.886", "17.916", "7.06", "8.83"],
+    ["", "CHF", "0.7863", "0.7966", "158.8", "167.24"],
+    ["", "CAD", "1.3797", "1.3901", "91", "95.31"],
+    ["", "KES/UGX", "3635", "3745", "27.64", "29.6"],
+    ["", "KES/TZS", "2520", "2675", "19.16", "21.15"]
+  ];
+
   const cbkMetricsMap = {};
   const forexRows = [];
   const keyRateLabels = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
   const forexCurrencies = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
 
-  if (macroRaw.length > 0) {
-    macroRaw.forEach(r => {
-      let col2 = String(r.col2 || "").trim();
-      let cleanV = col2.toLowerCase();
+  staticMacroData.forEach(vals => {
+    vals.forEach((v, idx) => {
+      let cleanV = String(v).trim().toLowerCase();
       
       let matchedCbk = keyRateLabels.find(l => l.toLowerCase() === cleanV);
       if (matchedCbk) {
-        let nextVal = String(r.col3 || "").trim();
-        if (nextVal !== "") { 
+        let nextVal = vals[idx + 1];
+        if (nextVal !== undefined && nextVal !== "") { 
           cbkMetricsMap[matchedCbk.toLowerCase()] = nextVal; 
         }
       }
       
-      if (forexCurrencies.includes(col2)) {
-        let c3 = String(r.col3 || "").trim() || "—";
-        let c4 = String(r.col4 || "").trim() || "—";
-        let c5 = String(r.col5 || "").trim() || "—";
-        let c6 = String(r.col6 || "").trim() || "—";
+      if (forexCurrencies.includes(v)) {
+        let bUsd = vals[idx+1] || "—";
+        let sUsd = vals[idx+2] || "—";
+        let kBuy = vals[idx+3] || "—";
+        let kSel = vals[idx+4] || "—";
         
-        if (!forexRows.some(row => row.includes(`<td>${col2}</td>`))) {
-          forexRows.push(`<tr><td>${col2}</td><td>${c3}</td><td>${c4}</td><td>${c5}</td><td>${c6}</td></tr>`);
+        if (v === "USD") {
+          let nums = vals.slice(idx+1).filter(val => val !== "" && val !== "—");
+          bUsd = "—"; 
+          sUsd = "—";
+          kBuy = nums[0] || "—";
+          kSel = nums[1] || "—";
+        }
+        
+        if (!forexRows.some(row => row.includes(`<td>${v}</td>`))) {
+          forexRows.push(`<tr><td>${v}</td><td>${bUsd}</td><td>${sUsd}</td><td>${kBuy}</td><td>${kSel}</td></tr>`);
         }
       }
     });
-  }
+  });
 
-  // Parses CBK Value safely into strict 0.00% format
+  // Evaluates exactly to 0.00% format
   function getCBKVal(label) {
      let target = label.toLowerCase();
      let val = cbkMetricsMap[target];
      if (!val || val === "—") return "—";
      
-     let s = String(val).trim();
-     let n = parseFloat(s.replace(/[^\d.-]/g, ""));
-     if (isNaN(n)) return val;
-
-     // Scale decimal to percentage if raw decimal was exported without %
-     if (!s.includes("%") && Math.abs(n) >= 0 && Math.abs(n) < 1) {
-         n = n * 100;
-     }
-
-     return n.toLocaleString("en-KE", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + "%";
+     let num = parseFloat(String(val).replace(/[^0-9.-]/g, ""));
+     if (isNaN(num)) return val;
+     
+     return num.toLocaleString("en-KE", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + "%";
   }
 
   // ── NSE STATS MAP ──
   const statsMap = {};
   statsArr.forEach(r => { if (r.name) statsMap[r.name.trim()] = r.value; });
 
-  // ── RANKING TABLES & MARKET WATCH TOTALS ──
+  // ── RANKING TABLES FROM MARKET WATCH ──
   function numMW(row, key) {
     const v = row[key] || row[key.toLowerCase()] || 0;
     return parseFloat(String(v).replace(/[^0-9.\-]/g,"")) || 0;
@@ -423,14 +448,9 @@ function render(data) {
 
   // ── 2. KEY RATES ──
   const displayRateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia Compound Rate"];
-  let ratesHtml = "";
-  if (Object.keys(cbkMetricsMap).length === 0) {
-    ratesHtml = `<div style="color:#ff0000; padding:1rem;">⚠️ API Error: Macro data not found. Ensure 'Macro Analysis' is exported by Code.gs and a New Deployment is active.</div>`;
-  } else {
-    ratesHtml = `<div class="rates-grid">
-      ${displayRateLabels.map(l => `<div class="rate-cell"><div class="rate-label">${l}</div><div class="rate-value">${getCBKVal(l)}</div></div>`).join("")}
-    </div>`;
-  }
+  const ratesHtml = `<div class="rates-grid">
+    ${displayRateLabels.map(l => `<div class="rate-cell"><div class="rate-label">${l}</div><div class="rate-value">${getCBKVal(l)}</div></div>`).join("")}
+  </div>`;
 
   // ── 3. NSE MARKET STATS FULL TABLE ──
   const statsRows = statsArr.filter(r => r.name && r.value !== undefined && r.value !== "").map(r =>
@@ -489,8 +509,8 @@ function render(data) {
   if (graphsRaw.length > 0) {
     const keys = Object.keys(graphsRaw[0]);
     if (keys.length > 1) {
-      graphXKey = keys[0]; // Assume first column is the X-axis
-      graphKeys = keys.slice(1); // The rest are datasets
+      graphXKey = keys[0]; 
+      graphKeys = keys.slice(1); 
       
       graphsHtml += `<div class="full-card"><div class="card-header"><h2>📊 Interactive Market Graphs</h2></div><div class="card-body" style="padding-top: 1.5rem;">`;
       graphsHtml += `<div class="grid2">`;
@@ -548,11 +568,16 @@ function render(data) {
 
   // ── INJECT CHARTS INTO DOM ──
   if (graphsRaw.length > 0 && graphKeys.length > 0) {
-    const labels = graphsRaw.map(r => r[graphXKey] || '');
+    const labels = graphsRaw.map(r => {
+       let val = r[graphXKey];
+       if (typeof val === 'string' && val.includes('T')) return val.split('T')[0];
+       return val || '';
+    });
     
     graphKeys.forEach((key, i) => {
       const ctx = document.getElementById(`chart-${i}`);
       if (ctx) {
+        const isPct = key.toLowerCase().includes('%') || key.toLowerCase().includes('percent');
         const seriesData = graphsRaw.map(r => {
           let val = r[key];
           if (val === null || val === undefined || val === "") return null;
@@ -594,7 +619,8 @@ function render(data) {
                   label: function(context) {
                     let val = context.raw;
                     if (val === null) return " N/A";
-                    return ' ' + val.toLocaleString('en-KE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    let formatted = val.toLocaleString('en-KE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    return ' ' + formatted + (isPct ? '%' : '');
                   }
                 }
               }
