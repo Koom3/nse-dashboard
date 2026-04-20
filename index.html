@@ -281,62 +281,61 @@ function render(data) {
   
   setMarketStatus(computeMarketStatus(false));
 
-  // ── 🎯 AGGRESSIVE GLOBAL SCAN FOR MACRO & FOREX ──
+  // ── 🎯 STRICT TARGETING: "MACRO ANALYSIS" WORKSHEET ──
+  // Attempt to find the specific "Macro Analysis" sheet payload
+  let macroRaw = [];
+  for (let key in data) {
+    let norm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (norm === 'macroanalysis' || norm === 'macro') {
+      macroRaw = data[key];
+      break;
+    }
+  }
+  
   const cbkMetricsMap = {};
   const forexRows = [];
   const keyRateLabels = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
   const forexCurrencies = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
 
-  // Search through EVERY sheet in the API payload
-  Object.values(data).forEach(sheetData => {
-    if (Array.isArray(sheetData)) {
-      sheetData.forEach(r => {
-        // Collect all values in the row into a flat array of strings
-        const vals = Object.values(r).map(v => String(v !== null && v !== undefined ? v : "").trim());
+  if (macroRaw.length > 0) {
+    macroRaw.forEach(r => {
+      const vals = Object.values(r).map(v => String(v !== null && v !== undefined ? v : "").trim());
+      
+      vals.forEach((v, idx) => {
+        let cleanV = v.toLowerCase();
         
-        vals.forEach((v, idx) => {
-          let cleanV = v.toLowerCase();
+        // Match CBK Key Rates (Label -> Next Value in CSV structure)
+        let matchedCbk = keyRateLabels.find(l => l.toLowerCase() === cleanV);
+        if (matchedCbk) {
+          let nextVal = vals[idx + 1];
+          if (nextVal !== undefined && nextVal !== "") { 
+            cbkMetricsMap[matchedCbk.toLowerCase()] = nextVal; 
+          }
+        }
+        
+        // Match Forex Rates
+        if (forexCurrencies.includes(v)) {
+          let bUsd = vals[idx+1] || "—";
+          let sUsd = vals[idx+2] || "—";
+          let kBuy = vals[idx+3] || "—";
+          let kSel = vals[idx+4] || "—";
           
-          // 1. Match CBK Key Rates
-          let matchedCbk = keyRateLabels.find(l => l.toLowerCase() === cleanV);
-          if (matchedCbk) {
-            // Find the VERY NEXT non-empty value in the row
-            for (let i = idx + 1; i < vals.length; i++) {
-              if (vals[i] !== "") { 
-                cbkMetricsMap[matchedCbk.toLowerCase()] = vals[i]; 
-                break; 
-              }
-            }
+          if (v === "USD") {
+            // USD lacks cross rates, grab next available numbers
+            let nums = vals.slice(idx+1).filter(val => val !== "" && val !== "—" && val !== "null" && val !== "undefined");
+            bUsd = "—"; 
+            sUsd = "—";
+            kBuy = nums[0] || "—";
+            kSel = nums[1] || "—";
           }
           
-          // 2. Match Forex Rates
-          if (forexCurrencies.includes(v)) {
-            let nums = [];
-            for (let i = idx + 1; i < vals.length; i++) {
-              if (vals[i] !== "" && vals[i] !== "—" && vals[i] !== "null" && vals[i] !== "undefined") {
-                nums.push(vals[i]);
-              }
-            }
-            if (nums.length > 0 || v === "USD") {
-              let bUsd = "—", sUsd = "—", kBuy = "—", kSel = "—";
-              if (v === "USD") {
-                kBuy = nums[0] || "—";
-                kSel = nums[1] || "—";
-              } else {
-                bUsd = nums[0] || "—";
-                sUsd = nums[1] || "—";
-                kBuy = nums[2] || "—";
-                kSel = nums[3] || "—";
-              }
-              if (!forexRows.some(row => row.includes(`<td>${v}</td>`))) {
-                forexRows.push(`<tr><td>${v}</td><td>${bUsd}</td><td>${sUsd}</td><td>${kBuy}</td><td>${kSel}</td></tr>`);
-              }
-            }
+          if (!forexRows.some(row => row.includes(`<td>${v}</td>`))) {
+            forexRows.push(`<tr><td>${v}</td><td>${bUsd}</td><td>${sUsd}</td><td>${kBuy}</td><td>${kSel}</td></tr>`);
           }
-        });
+        }
       });
-    }
-  });
+    });
+  }
 
   function getCBKVal(label) {
      let target = label.toLowerCase();
@@ -404,8 +403,8 @@ function render(data) {
   // ── 2. KEY RATES ──
   const displayRateLabels = ["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate","KBRR","Kesonia Compound Rate"];
   let ratesHtml = "";
-  if (Object.keys(cbkMetricsMap).length === 0) {
-    ratesHtml = `<div style="color:#ff0000; padding:1rem;">⚠️ API Error: Macro data not found. Ensure 'Macro Analysis' is exported by Code.gs.</div>`;
+  if (macroRaw.length === 0) {
+    ratesHtml = `<div style="color:#ff0000; padding:1rem;">⚠️ API Error: Macro Analysis worksheet not found. Ensure 'Macro Analysis' is exported by Code.gs.</div>`;
   } else {
     ratesHtml = `<div class="rates-grid">
       ${displayRateLabels.map(l => `<div class="rate-cell"><div class="rate-label">${l}</div><div class="rate-value">${getCBKVal(l)}</div></div>`).join("")}
