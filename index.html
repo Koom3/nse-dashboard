@@ -162,7 +162,7 @@
       font-size: 13px; color: #002060; text-transform: uppercase;
       letter-spacing: 0.05em; margin-bottom: 0.75rem; text-align: center;
     }
-    .chart-wrapper { position: relative; height: 250px; width: 100%; }
+    .chart-wrapper { position: relative; height: 250px; width: 100%; display: block; }
     .chart-wrapper canvas { position: absolute; left: 0; top: 0; width: 100% !important; height: 100% !important; }
 
     /* ── LOADER / ERROR ──────────────────────────────────────── */
@@ -182,7 +182,10 @@
     <span id="market-status" class="closed">⬤ STATUS PENDING</span>
     <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.5;">
       <span id="last-updated">Loading…</span>
-      <span id="live-clock">EAT: --:--:--</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="live-clock">EAT: --:--:--</span>
+        <span id="market-countdown" style="font-size: 11px; color: #fff; opacity: 0.9;"></span>
+      </div>
     </div>
     <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
   </div>
@@ -265,42 +268,69 @@ let refreshTimer = null;
 const chartInstances = {};  // keyed by canvas id
 
 /* ═══════════════════════════════════════════════════════════════
-   LIVE CLOCK  (Nairobi / EAT)
+   LIVE CLOCK & COUNTDOWN TIMER (Nairobi / EAT)
 ═══════════════════════════════════════════════════════════════ */
 function updateClock() {
-  document.getElementById("live-clock").textContent =
-    "EAT: " + new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
+  const nbi = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
+  const timeString = nbi.toLocaleTimeString("en-KE", { hour12: false });
+  document.getElementById("live-clock").textContent = "EAT: " + timeString;
+
+  // Countdown Logic (09:30 to 15:00 EAT)
+  const day = nbi.getDay();
+  const h = nbi.getHours();
+  const m = nbi.getMinutes();
+  const s = nbi.getSeconds();
+  
+  const currentSecs = h * 3600 + m * 60 + s;
+  const openSecs = 9 * 3600 + 30 * 60; // 09:30 (34200)
+  const closeSecs = 15 * 3600;         // 15:00 (54000)
+
+  let cdText = "";
+  if (day === 0 || day === 6) {
+    cdText = "Market Opens Monday";
+  } else {
+    if (currentSecs < openSecs) {
+      const diff = openSecs - currentSecs;
+      const hrs = Math.floor(diff / 3600);
+      const mins = Math.floor((diff % 3600) / 60);
+      const secs = diff % 60;
+      cdText = `Opens in ${hrs}h ${mins}m ${secs}s`;
+    } else if (currentSecs >= openSecs && currentSecs < closeSecs) {
+      const diff = closeSecs - currentSecs;
+      const hrs = Math.floor(diff / 3600);
+      const mins = Math.floor((diff % 3600) / 60);
+      const secs = diff % 60;
+      cdText = `Closes in ${hrs}h ${mins}m ${secs}s`;
+    } else {
+      cdText = day === 5 ? "Market Opens Monday" : "Market Opens Tomorrow";
+    }
+  }
+  
+  const cdEl = document.getElementById("market-countdown");
+  if (cdEl) cdEl.textContent = cdText;
 }
 setInterval(updateClock, 1000);
 updateClock();
 
 /* ═══════════════════════════════════════════════════════════════
-   MARKET STATUS  (always computed in Nairobi timezone)
-   NSE session: 09:00 – 15:00 EAT, Mon–Fri
+   MARKET STATUS (Reads from API D1 Cell)
 ═══════════════════════════════════════════════════════════════ */
-function computeMarketStatus() {
-  // Parse current Nairobi time properly regardless of client TZ
-  const nbi = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
-  const day  = nbi.getDay();                          // 0=Sun, 6=Sat
-  if (day === 0 || day === 6) return "CLOSED";
-  const mins = nbi.getHours() * 60 + nbi.getMinutes();
-  return (mins >= 9 * 60 && mins < 15 * 60) ? "OPEN" : "CLOSED";
-}
-
 function setMarketStatus(status) {
   const el = document.getElementById("market-status");
-  if (status === "OPEN") { el.textContent = "⬤ OPEN";   el.className = "open";   }
-  else                   { el.textContent = "⬤ CLOSED"; el.className = "closed"; }
+  if (status === "OPEN") { 
+    el.textContent = "⬤ OPEN";   
+    el.className = "open";   
+  } else { 
+    el.textContent = "⬤ CLOSED"; 
+    el.className = "closed"; 
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
    JSONP DATA LOADER
 ═══════════════════════════════════════════════════════════════ */
 function loadData() {
-  // Invalidate any pending old callback to prevent ghost renders
-  window[CB_NAME] = function() {};
-
-  // Remove stale script tag
+  window[CB_NAME] = function() {}; // Prevent ghost renders
   const old = document.getElementById("jsonp-script");
   if (old) old.remove();
 
@@ -340,12 +370,6 @@ function buildError(msg) {
 /* ═══════════════════════════════════════════════════════════════
    FORMATTING HELPERS
 ═══════════════════════════════════════════════════════════════ */
-
-/**
- * Renders a coloured up/down change indicator.
- * FIX: old code used `< 10` threshold which wrongly scaled 5.5 → 550%.
- *      Correct threshold is `< 1` — only true decimal fractions (e.g. 0.055) need ×100.
- */
 function formatChange(val, isPct) {
   if (val === null || val === undefined || val === "" || val === "N/A" || val === "—")
     return '<span class="nt">—</span>';
@@ -353,33 +377,21 @@ function formatChange(val, isPct) {
   const s = String(val).trim();
   if (!s || s === "-" || s === "0" || s === "0.00") return '<span class="nt">—</span>';
 
-  // Detect negative direction from string content
   const isNeg = s.startsWith("-") || s.startsWith("(") || s.includes("▼");
-
-  // Extract absolute numeric value (strip everything except digits and decimal point)
   const cleaned = s.replace(/[^0-9.]/g, "");
   let n = parseFloat(cleaned);
   if (isNaN(n) || n === 0) return '<span class="nt">—</span>';
 
-  // Only scale to percentage when value is clearly a decimal fraction (e.g. 0.055 → 5.5%)
   if (isPct && !s.includes("%") && n > 0 && n < 1) n *= 100;
 
   const fmt = n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   if (isPct) {
-    return isNeg
-      ? `<span class="dn">▼ (${fmt}%)</span>`
-      : `<span class="up">▲ ${fmt}%</span>`;
+    return isNeg ? `<span class="dn">▼ (${fmt}%)</span>` : `<span class="up">▲ ${fmt}%</span>`;
   }
-  return isNeg
-    ? `<span class="dn">▼ (${fmt})</span>`
-    : `<span class="up">▲ ${fmt}</span>`;
+  return isNeg ? `<span class="dn">▼ (${fmt})</span>` : `<span class="up">▲ ${fmt}</span>`;
 }
 
-/**
- * Returns a signed numeric value for sorting by % change.
- * FIX: same threshold bug as formatChange — was `< 10`, now `< 1`.
- */
 function getPctNumForSort(t, key) {
   const raw = String(t[key] || "").trim();
   if (!raw || raw === "N/A" || raw === "—") return 0;
@@ -390,15 +402,11 @@ function getPctNumForSort(t, key) {
   return isNeg ? -scaled : scaled;
 }
 
-/**
- * Formats a number with suffix (M, B, T) or locale format.
- * FIX: `dec || 2` evaluates 0 as falsy → was always using 2 dp. Fixed with explicit check.
- */
 function fmtNum(v, dec) {
   if (v === null || v === undefined || v === "" || v === "N/A") return "—";
   const n  = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
   if (isNaN(n)) return String(v);
-  const dp = (dec !== undefined && dec !== null) ? dec : 2;  // FIX
+  const dp = (dec !== undefined && dec !== null) ? dec : 2; 
   if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(dp) + "T";
   if (Math.abs(n) >= 1e9)  return (n / 1e9 ).toFixed(dp) + "B";
   if (Math.abs(n) >= 1e6)  return (n / 1e6 ).toFixed(dp) + "M";
@@ -426,11 +434,11 @@ function fmtUSD(v) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CHART MANAGER  (prevents stale/double canvas errors on re-render)
+   CHART MANAGER
 ═══════════════════════════════════════════════════════════════ */
 function destroyChart(id) {
   if (chartInstances[id]) {
-    try { chartInstances[id].destroy(); } catch (e) { /* already gone */ }
+    try { chartInstances[id].destroy(); } catch (e) {}
     delete chartInstances[id];
   }
 }
@@ -483,18 +491,20 @@ function render(data) {
   /* ── normalise data arrays ── */
   const tickers  = (data.tickers     || []).filter(t => t && t.symbol);
   const mw       = (data.marketwatch || []).filter(t => t && t.symbol);
-  const indices  = (data.indices || data.world_indices || [])
-                     .filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A");
-  const active   = (data.mostactive || data.yahoo_most_active || [])
-                     .filter(r => r && r.symbol && r.price);
+  const indices  = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A");
+  const active   = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price);
   const statsArr = (data.stats || []);
 
-  /* ── market status ── */
-  setMarketStatus(computeMarketStatus());
+  /* ── Extract Market Status from D1 dynamically ── */
+  let apiStatus = "CLOSED";
+  if (data.market_assumptions && data.market_assumptions.length > 0) {
+    const keys = Object.keys(data.market_assumptions[0]);
+    if (keys.includes("open")) apiStatus = "OPEN";
+    else if (keys.includes("closed")) apiStatus = "CLOSED";
+  }
+  setMarketStatus(apiStatus);
 
-  /* ── stats map
-        FIX: also capture the `change` field, not just `value`
-  ── */
+  /* ── stats map ── */
   const statsMap    = {};
   const statsChange = {};
   statsArr.forEach(r => {
@@ -537,10 +547,8 @@ function render(data) {
 
   /* ── ticker movers ── */
   function pctKey(t) { return t["%_change"] || t["percent_change"] || t["change_%"] || ""; }
-  const gainers   = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0)
-                                .sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change"));
-  const losers    = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0)
-                                .sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change"));
+  const gainers   = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change"));
+  const losers    = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change"));
   const unchanged = tickers.filter(t => getPctNumForSort(t, "%_change") === 0);
 
   /* ── 1. SUMMARY METRICS ── */
@@ -729,7 +737,7 @@ function render(data) {
            oninput="filterHeatmap(this.value)">
     <div class="ticker-grid" id="heatmap-grid">${heatCells}</div>`;
 
-  /* ── 11. CHART SECTION HTML (canvases only) ── */
+  /* ── 11. CHART SECTION HTML ── */
   const graphsHtml = `
     <div class="graphs-section">
       <div class="card-header"><h2>Graphs — Macro &amp; CBK Data</h2></div>
@@ -779,7 +787,7 @@ function render(data) {
 
     '<div class="grid2">',
       tableCard("Top Foreign Inflows (Buys)",   ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB),  "No foreign buy data."),
-      tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"],            topFSell.map(rankRow_FS), "No foreign sell data."),
+      tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"],             topFSell.map(rankRow_FS), "No foreign sell data."),
     '</div>',
 
     tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."),
@@ -789,10 +797,7 @@ function render(data) {
     graphsHtml,
   ].join("");
 
-  /* ── INIT CHARTS ──
-       FIX: charts are destroyed then re-created with unique IDs via the
-       chartInstances map. setTimeout gives the DOM one frame to paint.
-  ── */
+  /* ── INIT CHARTS ── */
   setTimeout(initCharts, 50);
 }
 
@@ -908,8 +913,6 @@ function filterHeatmap(q) {
 
 /* ═══════════════════════════════════════════════════════════════
    AUTO-REFRESH
-   FIX: `startRefresh` clears any existing interval before creating
-   a new one, preventing duplicate intervals from multiple calls.
 ═══════════════════════════════════════════════════════════════ */
 function startRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
@@ -922,8 +925,6 @@ function startRefresh() {
 loadData();
 startRefresh();
 
-// Keep market status dot accurate every minute independently of data refresh
-setInterval(() => setMarketStatus(computeMarketStatus()), 60000);
 </script>
 </body>
 </html>
