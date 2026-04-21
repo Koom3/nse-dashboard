@@ -8,7 +8,7 @@
   <style>
     /* ── RESET & BASE ───────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-weight: bold; }
-    body { font-family: Georgia, 'Times New Roman', serif; background: #f4f6f9; color: #2c3e50; font-size: 12px; }
+    body { font-family: 'Hadassah Friedlaender', Georgia, serif; background: #f4f6f9; color: #2c3e50; font-size: 10pt; }
 
     /* ── HEADER ─────────────────────────────────────────────── */
     header {
@@ -18,23 +18,23 @@
       flex-wrap: wrap; gap: 0.5rem;
       border-bottom: 4px solid #D4AF37;
     }
-    header h1 { font-size: 18px; letter-spacing: 0.02em; }
+    header h1 { font-size: 14pt; letter-spacing: 0.02em; }
     .header-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 
     #market-status {
-      font-size: 13px; padding: 4px 14px; border-radius: 20px;
+      font-size: 11pt; padding: 4px 14px; border-radius: 20px;
       border: 2px solid rgba(255,255,255,0.4); white-space: nowrap;
     }
     #market-status.open   { color: #00e676; border-color: #00e676; }
     #market-status.closed { color: #ff5252; border-color: #ff5252; }
 
-    #last-updated { font-size: 12px; opacity: 0.85; }
-    #live-clock   { font-size: 11px; color: #D4AF37; }
+    #last-updated { font-size: 9pt; opacity: 0.85; }
+    #live-clock   { font-size: 9pt; color: #D4AF37; }
 
     #refresh-btn {
       background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4);
       color: #fff; padding: 5px 14px; border-radius: 4px; cursor: pointer;
-      font-family: inherit; font-size: 12px; font-weight: bold;
+      font-family: inherit; font-size: 10pt; font-weight: bold;
       transition: background 0.2s;
     }
     #refresh-btn:hover  { background: rgba(255,255,255,0.3); }
@@ -62,9 +62,9 @@
     }
     .metric-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.11); }
     .metric-card:nth-child(even) { border-top-color: #D4AF37; }
-    .metric-card .lbl { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
-    .metric-card .val { font-size: 18px; color: #002060; }
-    .metric-card .sub { font-size: 11px; color: #999; margin-top: 4px; }
+    .metric-card .lbl { font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+    .metric-card .val { font-size: 14pt; color: #002060; }
+    .metric-card .sub { font-size: 9pt; color: #999; margin-top: 4px; }
 
     /* ── CARD COMPONENTS ─────────────────────────────────────── */
     .card, .full-card {
@@ -77,7 +77,7 @@
       border-bottom: 2px solid #f0f4f8;
     }
     .card-header h2 {
-      font-size: 14px; color: #002060;
+      font-size: 11pt; color: #002060;
       text-transform: uppercase; letter-spacing: 0.05em; margin: 0;
     }
     .card-body { padding: 1rem 1.25rem 1.25rem; }
@@ -87,7 +87,7 @@
     .interactive-card:hover { box-shadow: 0 6px 16px rgba(0,32,96,0.12); transform: translateY(-2px); }
     .table-collapsed tbody tr:nth-child(n+6) { display: none; }
     .expand-hint {
-      text-align: center; font-size: 11px; color: #D4AF37;
+      text-align: center; font-size: 9pt; color: #D4AF37;
       padding-top: 8px; margin-top: 8px;
       border-top: 1px dashed #e2e8f0; user-select: none;
     }
@@ -99,9 +99,9 @@
     table { width: 100%; border-collapse: collapse; white-space: nowrap; }
     th {
       text-align: left; padding: 8px 10px; color: #002060;
-      border-bottom: 2px solid #e2e8f0; font-size: 12px; background: #f8fafc;
+      border-bottom: 2px solid #e2e8f0; font-size: 10pt; background: #f8fafc;
     }
-    td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #333; }
+    td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 10pt; color: #333; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #fafbfd; }
     .cell-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -117,15 +117,15 @@
       background: #f8fafc; border-radius: 6px;
       padding: 0.65rem 0.85rem; border-left: 3px solid #D4AF37;
     }
-    .rate-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
-    .rate-value { font-size: 16px; color: #002060; }
+    .rate-label { font-size: 8.5pt; color: #666; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .rate-value { font-size: 12pt; color: #002060; }
 
     /* ── HEAT MAP ────────────────────────────────────────────── */
-    .section-note { color: #64748b; margin-bottom: 0.75rem; font-style: italic; font-size: 11px; }
+    .section-note { color: #64748b; margin-bottom: 0.75rem; font-style: italic; font-size: 9pt; }
     .heatmap-search {
       width: 100%; margin-bottom: 0.85rem; padding: 7px 12px;
       border: 1px solid #d1d5db; border-radius: 6px;
-      font-size: 12px; font-family: inherit; font-weight: bold;
+      font-size: 10pt; font-family: inherit; font-weight: bold;
       outline: none; transition: border-color 0.2s;
     }
     .heatmap-search:focus { border-color: #002060; }
@@ -140,9 +140,9 @@
     .ticker-cell.up-cell { border-left-color: #00b050; background: #f8fff9; }
     .ticker-cell.dn-cell { border-left-color: #ff0000; background: #fff8f8; }
     .ticker-cell.nt-cell { border-left-color: #94a3b8; }
-    .tc-sym   { font-size: 13px; color: #002060; }
-    .tc-price { font-size: 12px; color: #1a1a2e; margin: 3px 0 2px; }
-    .tc-chg   { font-size: 11px; }
+    .tc-sym   { font-size: 10pt; color: #002060; }
+    .tc-price { font-size: 9pt; color: #1a1a2e; margin: 3px 0 2px; }
+    .tc-chg   { font-size: 8pt; }
 
     /* ── CHARTS ──────────────────────────────────────────────── */
     .graphs-section {
@@ -159,24 +159,24 @@
       border-radius: 8px; padding: 1rem 1rem 0.75rem;
     }
     .graph-card h3 {
-      font-size: 13px; color: #002060; text-transform: uppercase;
+      font-size: 10pt; color: #002060; text-transform: uppercase;
       letter-spacing: 0.05em; margin-bottom: 0.75rem; text-align: center;
     }
     .chart-wrapper { position: relative; height: 250px; width: 100%; display: block; }
     .chart-wrapper canvas { position: absolute; left: 0; top: 0; width: 100% !important; height: 100% !important; }
 
     /* ── LOADER / ERROR ──────────────────────────────────────── */
-    .loader { text-align: center; padding: 4rem; color: #64748b; font-size: 16px; }
+    .loader { text-align: center; padding: 4rem; color: #64748b; font-size: 12pt; }
     .error-box {
       background: #fdecea; border: 1px solid #cf222e; border-radius: 8px;
       padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a;
-      font-size: 12px; line-height: 1.8;
+      font-size: 10pt; line-height: 1.8;
     }
 
     /* ── GLOBAL EQUITIES CONTINENT SELECTOR ──────────────────── */
     .continent-filter { text-align: center; margin: 2rem 0 1rem; padding-top: 1rem; border-top: 2px dashed #e2e8f0; }
     .continent-filter select {
-      padding: 8px 16px; font-size: 14px; font-family: inherit; font-weight: bold;
+      padding: 8px 16px; font-size: 10pt; font-family: inherit; font-weight: bold;
       border: 2px solid #002060; border-radius: 6px; color: #002060;
       background: #fff; cursor: pointer; outline: none; transition: all 0.2s;
     }
@@ -196,10 +196,10 @@
       <span id="last-updated">Loading…</span>
       <div style="display: flex; align-items: center; gap: 8px;">
         <span id="live-clock">EAT: --:--:--</span>
-        <span id="market-countdown" style="font-size: 11px; color: #fff; opacity: 0.9;"></span>
+        <span id="market-countdown" style="font-size: 9pt; color: #fff; opacity: 0.9;"></span>
       </div>
     </div>
-    <button id="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    <button id="refresh-btn" onclick="triggerRefresh()">↻ Refresh</button>
   </div>
 </header>
 
@@ -209,12 +209,13 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   CONFIGURATION
+   CONFIGURATION (UPDATED WITH GLOBAL URL)
 ═══════════════════════════════════════════════════════════════ */
-const API_BASE         = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
+const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
+const API_GLOBAL = "https://script.google.com/macros/s/AKfycbwBmdDQhmHdhfNIi7JkfhNeMT4ZsAsnnlJVZyj57YiN_m7z3ikGKIwzFKRc7Gb1_cOQKg/exec"; 
+
 const REFRESH_SECONDS  = 60;
 const JSONP_TIMEOUT_MS = 30000;
-const CB_NAME          = "nseDashboardCallback";
 
 /* ═══════════════════════════════════════════════════════════════
    HARDCODED MACRO / CBK DATA  (sourced from Macro Analysis sheet)
@@ -277,7 +278,9 @@ const CHART_DATA = {
    STATE
 ═══════════════════════════════════════════════════════════════ */
 let refreshTimer = null;
-const chartInstances = {};  // keyed by canvas id
+const chartInstances = {};  
+let stateLocalData = null;
+let stateGlobalData = null;
 
 /* ═══════════════════════════════════════════════════════════════
    LIVE CLOCK & COUNTDOWN TIMER (Nairobi / EAT)
@@ -287,15 +290,14 @@ function updateClock() {
   const timeString = nbi.toLocaleTimeString("en-KE", { hour12: false });
   document.getElementById("live-clock").textContent = "EAT: " + timeString;
 
-  // Countdown Logic (09:30 to 15:00 EAT)
   const day = nbi.getDay();
   const h = nbi.getHours();
   const m = nbi.getMinutes();
   const s = nbi.getSeconds();
   
   const currentSecs = h * 3600 + m * 60 + s;
-  const openSecs = 9 * 3600 + 30 * 60; // 09:30 (34200)
-  const closeSecs = 15 * 3600;         // 15:00 (54000)
+  const openSecs = 9 * 3600 + 30 * 60; // 09:30
+  const closeSecs = 15 * 3600;         // 15:00
 
   let cdText = "";
   if (day === 0 || day === 6) {
@@ -325,7 +327,7 @@ setInterval(updateClock, 1000);
 updateClock();
 
 /* ═══════════════════════════════════════════════════════════════
-   MARKET STATUS (Reads from API D1 Cell)
+   MARKET STATUS
 ═══════════════════════════════════════════════════════════════ */
 function setMarketStatus(status) {
   const el = document.getElementById("market-status");
@@ -347,40 +349,52 @@ function showContinent(regionId) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   JSONP DATA LOADER
+   MULTI-API JSONP DATA LOADER
 ═══════════════════════════════════════════════════════════════ */
+function triggerRefresh() {
+  stateLocalData = null;
+  stateGlobalData = null;
+  loadData();
+}
+
 function loadData() {
-  window[CB_NAME] = function() {}; // Prevent ghost renders
-  const old = document.getElementById("jsonp-script");
-  if (old) old.remove();
+  document.getElementById("app").innerHTML = `<div class="loader">⏳ Aggregating global and domestic datasets…</div>`;
+  
+  // Setup callbacks
+  window["localCallback"] = function(data) {
+    if (data && typeof data === "object") stateLocalData = data;
+    checkAndRender();
+  };
+  window["globalCallback"] = function(data) {
+    if (data && typeof data === "object") stateGlobalData = data;
+    checkAndRender();
+  };
 
   const timeoutId = setTimeout(() => {
-    document.getElementById("app").innerHTML =
-      buildError("Request timed out (30s). Check the API deployment URL in the script.");
+    if (!stateLocalData || !stateGlobalData) {
+      document.getElementById("app").innerHTML = buildError("Request timed out. Please check API URLs.");
+    }
   }, JSONP_TIMEOUT_MS);
 
-  window[CB_NAME] = function(data) {
-    clearTimeout(timeoutId);
-    window[CB_NAME] = function() {};   // Prevent double-fire
-
-    if (!data || typeof data !== "object") {
-      document.getElementById("app").innerHTML = buildError("API returned invalid data.");
-      return;
+  function checkAndRender() {
+    if (stateLocalData && stateGlobalData) {
+      clearTimeout(timeoutId);
+      const mergedData = { ...stateLocalData, ...stateGlobalData };
+      const ts = mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
+      document.getElementById("last-updated").textContent = "Updated: " + ts;
+      render(mergedData);
     }
-    const ts = data.timestamp || new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
-    document.getElementById("last-updated").textContent = "Updated: " + ts;
-    render(data);
-  };
+  }
 
-  const s   = document.createElement("script");
-  s.id      = "jsonp-script";
-  s.src     = API_BASE + "?callback=" + CB_NAME + "&sheet=all&_t=" + Date.now();
-  s.onerror = () => {
-    clearTimeout(timeoutId);
-    document.getElementById("app").innerHTML =
-      buildError("Failed to load the API script. Verify the Web App URL is correct and publicly accessible.");
-  };
-  document.head.appendChild(s);
+  // Inject Script 1
+  const s1 = document.createElement("script");
+  s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now();
+  document.head.appendChild(s1);
+
+  // Inject Script 2
+  const s2 = document.createElement("script");
+  s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now();
+  document.head.appendChild(s2);
 }
 
 function buildError(msg) {
@@ -499,7 +513,6 @@ function tableCard(title, headers, rows, emptyMsg) {
 
 function buildGenericTableRows(sheetData) {
   if (!sheetData || sheetData.length === 0) return { headers: [], rows: [] };
-  // Dynamically extract headers from the JSON payload keys
   const keys = Object.keys(sheetData[0]);
   const displayHeaders = keys.map(k => k.replace(/_/g, ' ').toUpperCase());
   
@@ -532,7 +545,6 @@ function render(data) {
   const active   = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price);
   const statsArr = (data.stats || []);
 
-  /* ── Extract Market Status from D1 dynamically ── */
   let apiStatus = "CLOSED";
   if (data.market_assumptions && data.market_assumptions.length > 0) {
     const keys = Object.keys(data.market_assumptions[0]);
@@ -541,7 +553,6 @@ function render(data) {
   }
   setMarketStatus(apiStatus);
 
-  /* ── stats map ── */
   const statsMap    = {};
   const statsChange = {};
   statsArr.forEach(r => {
@@ -551,7 +562,6 @@ function render(data) {
     statsChange[k] = r.change;
   });
 
-  /* ── market watch helpers ── */
   function numMW(row, key) {
     const v = row[key] || row[key.toLowerCase()] || 0;
     return parseFloat(String(v).replace(/[^0-9.\-]/g, "")) || 0;
@@ -575,14 +585,12 @@ function render(data) {
     });
   }
 
-  /* ── ranking tables ── */
   const topTurnover = [...validMW].sort((a, b) => numMW(b, "turnover_(kshs)") - numMW(a, "turnover_(kshs)"));
   const topVolume   = [...validMW].sort((a, b) => numMW(b, "volume")           - numMW(a, "volume"));
   const topTrades   = [...validMW].sort((a, b) => numMW(b, "trades")           - numMW(a, "trades"));
   const topFBuy     = [...validMW].filter(r => numMW(r, "foreign_buy")  > 0).sort((a, b) => numMW(b, "foreign_buy")  - numMW(a, "foreign_buy"));
   const topFSell    = [...validMW].filter(r => numMW(r, "foreign_sell") > 0).sort((a, b) => numMW(b, "foreign_sell") - numMW(a, "foreign_sell"));
 
-  /* ── ticker movers ── */
   function pctKey(t) { return t["%_change"] || t["percent_change"] || t["change_%"] || ""; }
   const gainers   = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change"));
   const losers    = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change"));
@@ -863,7 +871,7 @@ function render(data) {
       tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."),
     '</div>',
 
-    globalEquitiesHtml, // NEW ASSET INJECTED HERE
+    globalEquitiesHtml,
 
     '<div class="grid3">',
       tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."),
@@ -891,10 +899,10 @@ function render(data) {
    CHART INITIALISATION
 ═══════════════════════════════════════════════════════════════ */
 function initCharts() {
-  const CFONT = { family: "Georgia, 'Times New Roman', serif", size: 11, weight: "bold" };
+  const CFONT = { family: "'Hadassah Friedlaender', Georgia, 'Times New Roman', serif", size: 10, weight: "bold" };
   const CTOOLTIP = {
     backgroundColor: "#002060", padding: 10, cornerRadius: 6,
-    titleFont: { ...CFONT, size: 11 }, bodyFont:  { ...CFONT, size: 11 },
+    titleFont: { ...CFONT, size: 10 }, bodyFont:  { ...CFONT, size: 10 },
     titleColor: "#D4AF37", bodyColor: "#fff",
   };
   const CSCALES = {
@@ -1002,13 +1010,13 @@ function filterHeatmap(q) {
 ═══════════════════════════════════════════════════════════════ */
 function startRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(loadData, REFRESH_SECONDS * 1000);
+  refreshTimer = setInterval(triggerRefresh, REFRESH_SECONDS * 1000);
 }
 
 /* ═══════════════════════════════════════════════════════════════
    BOOT
 ═══════════════════════════════════════════════════════════════ */
-loadData();
+triggerRefresh();
 startRefresh();
 
 </script>
