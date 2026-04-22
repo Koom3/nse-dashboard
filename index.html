@@ -272,20 +272,10 @@ const REFRESH_SECONDS  = 60;
 const JSONP_TIMEOUT_MS = 45000; 
 
 /* ═══════════════════════════════════════════════════════════════
-   DYNAMIC MACRO & CHART DATA (FALLBACKS)
+   DYNAMIC DATA VARIABLES (INITIALIZED EMPTY - NO HARDCODING)
 ═══════════════════════════════════════════════════════════════ */
-let KEY_RATES = [
-  { label: "Central Bank Rate", value: "8.75%" }, { label: "KESONIA", value: "8.76%" },
-  { label: "CBK Discount Window", value: "9.25%" }, { label: "91-Day T-Bill", value: "7.42%" },
-  { label: "Inflation Rate", value: "4.39%" }, { label: "Lending Rate", value: "14.78%" }
-];
-
-let FOREX_RATES = [
-  { ccy: "USD/KES", crBuy: "—", crSell: "—", kBuy: "126.50", kSell: "131.50" },
-  { ccy: "GBP/KES", crBuy: "1.3242", crSell: "1.3647", kBuy: "167.51", kSell: "179.46" },
-  { ccy: "EUR/KES", crBuy: "1.1512", crSell: "1.1814", kBuy: "145.63", kSell: "155.35" }
-];
-
+let KEY_RATES = [];
+let FOREX_RATES = [];
 let CHART_DATA = {
   inflation: { labels: [], avg: [], m12: [] },
   gdp: { labels: [], nominal: [], real: [] },
@@ -325,7 +315,6 @@ function toggleTheme() {
   }
 }
 
-// Load saved theme on boot
 if (localStorage.getItem("theme") === "dark") {
   document.documentElement.setAttribute("data-theme", "dark");
   document.addEventListener("DOMContentLoaded", () => {
@@ -415,7 +404,7 @@ function showContinent(regionId) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MULTI-API JSONP DATA LOADER (SILENT BACKGROUND REFRESH)
+   MULTI-API JSONP DATA LOADER
 ═══════════════════════════════════════════════════════════════ */
 function triggerRefresh() {
   if (isFetching) return;
@@ -449,7 +438,7 @@ function loadData() {
     isFetching = false;
     if (retryCount < MAX_RETRIES) {
       retryCount++;
-      loadData();
+      loadData(); 
     } else {
       if (isFirstLoad) {
         document.getElementById("app").innerHTML = buildError("Request timed out. Please check your network or API URLs.");
@@ -489,33 +478,66 @@ function buildError(msg) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DYNAMIC DATA EXTRACTORS
+   OMNI-DIRECTIONAL DYNAMIC PARSER (ZERO HARDCODING)
 ═══════════════════════════════════════════════════════════════ */
 function extractDynamicData(data) {
-  if (data.macro && data.macro.length > 0) {
-    const parsedRates = [];
-    data.macro.forEach(row => {
+  
+  // 1. MACRO RATES (Hunting for Labels)
+  const targetRates = [
+    { name: "Central Bank Rate", id: "Central Bank Rate" }, { name: "KESONIA", id: "KESONIA" },
+    { name: "CBK Discount Window", id: "CBK Discount Window" }, { name: "91-Day T-Bill", id: "91-Day" },
+    { name: "REPO", id: "REPO" }, { name: "Inflation Rate", id: "Inflation Rate" },
+    { name: "Lending Rate", id: "Lending Rate" }, { name: "Savings Rate", id: "Savings Rate" },
+    { name: "Deposit Rate", id: "Deposit Rate" }, { name: "KBRR", id: "KBRR" },
+    { name: "Kesonia Compound Rate", id: "Kesonia Compound" }
+  ];
+
+  const extractedRatesMap = {};
+  [data.cbk, data.macro, data.stats].forEach(sheetData => {
+    if (!sheetData) return;
+    sheetData.forEach(row => {
       const cells = Object.values(row).map(v => String(v).trim());
-      const label = cells[1]; const val = cells[2];
-      if (label && val && !label.toLowerCase().includes("usd") && !label.toLowerCase().includes("gbp") && !label.toLowerCase().includes("col")) {
-        parsedRates.push({ label, value: val });
+      for (let i = 0; i < cells.length - 1; i++) {
+        const lbl = cells[i];
+        targetRates.forEach(tr => {
+          if (lbl.toLowerCase().includes(tr.id.toLowerCase())) {
+            let val = cells[i+1];
+            if (val && val !== "" && !extractedRatesMap[tr.name]) {
+              extractedRatesMap[tr.name] = val;
+            }
+          }
+        });
       }
     });
-    if (parsedRates.length > 0) { KEY_RATES.length = 0; parsedRates.forEach(r => KEY_RATES.push(r)); }
-  }
+  });
 
+  const finalRates = [];
+  targetRates.forEach(tr => { if (extractedRatesMap[tr.name]) finalRates.push({ label: tr.name, value: extractedRatesMap[tr.name] }); });
+  if (finalRates.length > 0) KEY_RATES = finalRates;
+
+  // 2. FOREX RATES (Hunting for Currency Codes)
   if (data.forex && data.forex.length > 0) {
     const parsedForex = [];
+    const validCcys = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
+    
     data.forex.forEach(row => {
       const cells = Object.values(row).map(v => String(v).trim());
-      const ccy = cells[0];
-      if (ccy && (ccy === "USD" || ccy === "GBP" || ccy === "EUR" || ccy === "JPY" || ccy === "ZAR" || ccy === "CHF" || ccy === "CAD" || ccy.includes("/"))) {
-        parsedForex.push({ ccy: ccy, crBuy: cells[1] || "—", crSell: cells[2] || "—", kBuy: cells[3] || "—", kSell: cells[4] || "—" });
+      const ccy = cells[0].toUpperCase();
+      if (validCcys.includes(ccy)) {
+        let crBuy = "—", crSell = "—", kBuy = "—", kSell = "—";
+        if (cells.length >= 5) {
+          crBuy = cells[1] || "—"; crSell = cells[2] || "—";
+          kBuy = cells[3] || "—"; kSell = cells[4] || "—";
+        }
+        if (crBuy === "") crBuy = "—"; if (crSell === "") crSell = "—";
+        if (kBuy === "") kBuy = "—"; if (kSell === "") kSell = "—";
+        parsedForex.push({ ccy, crBuy, crSell, kBuy, kSell });
       }
     });
-    if (parsedForex.length > 0) { FOREX_RATES.length = 0; parsedForex.forEach(r => FOREX_RATES.push(r)); }
+    if (parsedForex.length > 0) FOREX_RATES = parsedForex;
   }
 
+  // 3. CHART DATA (Aggressive Block Scanning)
   if (data.cbk && data.cbk.length > 0) {
     let currentTable = null;
     const inf = { labels: [], avg: [], m12: [] };
@@ -525,45 +547,63 @@ function extractDynamicData(data) {
 
     data.cbk.forEach(row => {
       const cells = Object.values(row).map(v => String(v).trim());
-      const c0 = cells[0]; const c1 = cells[1] || ""; const c2 = cells[2] || ""; 
-      const c3 = cells[3] || ""; const c4 = cells[4] || ""; const c5 = cells[5] || "";
+      const textConcat = cells.join(" ").toLowerCase();
 
-      if (c0.includes("Inflation Rates")) { currentTable = "inflation"; return; }
-      if (c0.includes("Annual GDP")) { currentTable = "gdp"; return; }
-      if (c0.includes("Commercial Banks Weighted")) { currentTable = "banks"; return; }
-      if (c0.includes("KEPSS RTGS")) { currentTable = "kepss"; return; }
-      if (c0.includes("Central Bank") || c0.includes("KESONIA") || c0.includes("Exchange Rates") || c0.includes("Diaspora")) {
-        if (!c0.includes("Inflation") && !c0.includes("GDP") && !c0.includes("Commercial Banks") && !c0.includes("KEPSS")) currentTable = null;
+      if (textConcat.includes("inflation rate")) { currentTable = "inflation"; return; }
+      if (textConcat.includes("annual gdp")) { currentTable = "gdp"; return; }
+      if (textConcat.includes("commercial banks weighted")) { currentTable = "banks"; return; }
+      if (textConcat.includes("kepss rtgs")) { currentTable = "kepss"; return; }
+      
+      if (textConcat.includes("diaspora") || textConcat.includes("exchange") || textConcat.includes("kesonia") || textConcat.includes("key rates")) {
+        if (!textConcat.includes("inflation") && !textConcat.includes("gdp") && !textConcat.includes("commercial") && !textConcat.includes("kepss")) {
+           currentTable = null;
+        }
       }
 
-      if (c0.toLowerCase() === "year" || c0.toLowerCase() === "month" || c0 === "") return;
+      if (!currentTable) return;
+      if (cells[0].toLowerCase() === "year" || cells[0].toLowerCase() === "month" || cells[0].toLowerCase().includes("date") || cells[0] === "") return;
+
+      const cleanNum = (str) => parseFloat(str.replace(/,/g, '').replace(/%/g, ''));
 
       if (currentTable === "inflation") {
-        const year = c0.slice(-2); const month = c1.substring(0, 3);
-        const avg = parseFloat(c2); const m12 = parseFloat(c3);
-        if (!isNaN(avg)) { inf.labels.push(`${month}/${year}`); inf.avg.push(avg); inf.m12.push(isNaN(m12) ? null : m12); }
+         let year = cells[0]; let month = cells[1];
+         let avg = cleanNum(cells[2]); let m12 = cleanNum(cells[3]);
+         if (!isNaN(avg)) {
+            let label = (year.length > 2) ? year.slice(-2) : year;
+            if (month && month.length >= 3) label = month.substring(0,3) + "/" + label;
+            inf.labels.push(label); inf.avg.push(avg); inf.m12.push(isNaN(m12) ? null : m12);
+         }
       } 
       else if (currentTable === "gdp") {
-        const year = c0;
-        const nominal = parseFloat(c1.replace(/,/g, '')); const real = parseFloat(c2.replace(/,/g, ''));
-        if (!isNaN(nominal)) { gdp.labels.push(year); gdp.nominal.push(nominal); gdp.real.push(isNaN(real) ? null : real); }
+         let year = cells[0];
+         let nominal = cleanNum(cells[1]); let real = cleanNum(cells[2]);
+         if (!isNaN(nominal)) { gdp.labels.push(year); gdp.nominal.push(nominal); gdp.real.push(isNaN(real) ? null : real); }
       }
       else if (currentTable === "banks") {
-        const year = c0.slice(-2); const month = c1.substring(0, 3);
-        const dep = parseFloat(c2); const sav = parseFloat(c3); const len = parseFloat(c4); const ovr = parseFloat(c5);
-        if (!isNaN(dep)) { banks.labels.push(`${month}/${year}`); banks.deposit.push(dep); banks.savings.push(isNaN(sav) ? null : sav); banks.lending.push(isNaN(len) ? null : len); banks.overdraft.push(isNaN(ovr) ? null : ovr); }
+         let year = cells[0]; let month = cells[1];
+         let dep = cleanNum(cells[2]); let sav = cleanNum(cells[3]); let len = cleanNum(cells[4]); let ovr = cleanNum(cells[5]);
+         if (!isNaN(dep)) {
+            let label = (year.length > 2) ? year.slice(-2) : year;
+            if (month && month.length >= 3) label = month.substring(0,3) + "/" + label;
+            banks.labels.push(label); banks.deposit.push(dep); banks.savings.push(isNaN(sav) ? null : sav); banks.lending.push(isNaN(len) ? null : len); banks.overdraft.push(isNaN(ovr) ? null : ovr);
+         }
       }
       else if (currentTable === "kepss") {
-        const year = c0; const month = c1.substring(0, 3);
-        const val = parseFloat(c3.replace(/,/g, '')); 
-        if (!isNaN(val)) { kepss.labels.push(`${month}/${year}`); kepss.values.push(val); }
+         let year = cells[0]; let month = cells[1];
+         let val = cleanNum(cells[3]); 
+         if (!isNaN(val)) {
+            let label = (year.length > 2) ? year.slice(-2) : year;
+            if (month && month.length >= 3) label = month.substring(0,3) + "/" + label;
+            kepss.labels.push(label); kepss.values.push(val);
+         }
       }
     });
 
-    if (inf.labels.length > 0) CHART_DATA.inflation = inf;
-    if (gdp.labels.length > 0) CHART_DATA.gdp = gdp;
-    if (banks.labels.length > 0) CHART_DATA.banks = banks;
-    if (kepss.labels.length > 0) CHART_DATA.kepss = kepss;
+    // Reverse to display oldest to newest (left to right)
+    if (inf.labels.length > 0) { inf.labels.reverse(); inf.avg.reverse(); inf.m12.reverse(); CHART_DATA.inflation = inf; }
+    if (gdp.labels.length > 0) { gdp.labels.reverse(); gdp.nominal.reverse(); gdp.real.reverse(); CHART_DATA.gdp = gdp; }
+    if (banks.labels.length > 0) { banks.labels.reverse(); banks.deposit.reverse(); banks.savings.reverse(); banks.lending.reverse(); banks.overdraft.reverse(); CHART_DATA.banks = banks; }
+    if (kepss.labels.length > 0) { kepss.labels.reverse(); kepss.values.reverse(); CHART_DATA.kepss = kepss; }
   }
 }
 
@@ -571,23 +611,16 @@ function extractDynamicData(data) {
    FORMATTING HELPERS
 ═══════════════════════════════════════════════════════════════ */
 function formatChange(val, isPct) {
-  if (val === null || val === undefined || val === "" || val === "N/A" || val === "—")
-    return '<span class="nt">—</span>';
-
+  if (val === null || val === undefined || val === "" || val === "N/A" || val === "—") return '<span class="nt">—</span>';
   const s = String(val).trim();
   if (!s || s === "-" || s === "0" || s === "0.00") return '<span class="nt">—</span>';
-
   const isNeg = s.startsWith("-") || s.startsWith("(") || s.includes("▼");
   const cleaned = s.replace(/[^0-9.]/g, "");
   let n = parseFloat(cleaned);
   if (isNaN(n) || n === 0) return '<span class="nt">—</span>';
-
   if (isPct && !s.includes("%") && n > 0 && n < 1) n *= 100;
   const fmt = n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  if (isPct) {
-    return isNeg ? `<span class="dn">▼ (${fmt}%)</span>` : `<span class="up">▲ ${fmt}%</span>`;
-  }
+  if (isPct) return isNeg ? `<span class="dn">▼ (${fmt}%)</span>` : `<span class="up">▲ ${fmt}%</span>`;
   return isNeg ? `<span class="dn">▼ (${fmt})</span>` : `<span class="up">▲ ${fmt}</span>`;
 }
 
@@ -595,7 +628,7 @@ function getPctNumForSort(t, key) {
   const raw = String(t[key] || "").trim();
   if (!raw || raw === "N/A" || raw === "—") return 0;
   const isNeg = raw.startsWith("-") || raw.startsWith("(") || raw.includes("▼");
-  const n     = parseFloat(raw.replace(/[^0-9.]/g, ""));
+  const n = parseFloat(raw.replace(/[^0-9.]/g, ""));
   if (isNaN(n)) return 0;
   const scaled = (!raw.includes("%") && n > 0 && n < 1) ? n * 100 : n;
   return isNeg ? -scaled : scaled;
@@ -655,38 +688,25 @@ function createChart(id, config) {
 ═══════════════════════════════════════════════════════════════ */
 function tableCard(title, headers, rows, emptyMsg) {
   if (!rows || rows.length === 0) {
-    return `<div class="card">
-      <div class="card-header"><h2>${title}</h2></div>
-      <div class="card-body"><p style="color:#888;padding:0.5rem 0;font-style:italic;">${emptyMsg || "No data available."}</p></div>
-    </div>`;
+    return `<div class="card"><div class="card-header"><h2>${title}</h2></div><div class="card-body"><p style="color:#888;padding:0.5rem 0;font-style:italic;">${emptyMsg || "No data available."}</p></div></div>`;
   }
-  const many       = rows.length > 5;
-  const cls        = many ? "card table-collapsed interactive-card" : "card";
-  const onclick    = many ? `onclick="this.classList.toggle('table-collapsed')"` : "";
-  const hdrHtml    = headers.map(h => `<th>${h} <span class="sort-icon">↕</span></th>`).join("");
-  const bodyHtml   = rows.join("");
-  const hint       = many ? '<div class="expand-hint"></div>' : "";
-  return `<div class="${cls}" ${onclick}>
-    <div class="card-header"><h2>${title}</h2></div>
-    <div class="card-body">
-      <div class="table-responsive">
-        <table><thead><tr>${hdrHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>
-      </div>${hint}
-    </div>
-  </div>`;
+  const many = rows.length > 5;
+  const cls = many ? "card table-collapsed interactive-card" : "card";
+  const onclick = many ? `onclick="this.classList.toggle('table-collapsed')"` : "";
+  const hdrHtml = headers.map(h => `<th>${h} <span class="sort-icon">↕</span></th>`).join("");
+  const bodyHtml = rows.join("");
+  const hint = many ? '<div class="expand-hint"></div>' : "";
+  return `<div class="${cls}" ${onclick}><div class="card-header"><h2>${title}</h2></div><div class="card-body"><div class="table-responsive"><table><thead><tr>${hdrHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>${hint}</div></div>`;
 }
 
 function buildGenericTableRows(sheetData) {
   if (!sheetData || sheetData.length === 0) return { headers: [], rows: [] };
-  
   const excludeKeys = ["index_symbol", "%_change"];
   const keys = Object.keys(sheetData[0]).filter(k => !k.match(/_\d+$/) && !excludeKeys.includes(k) && k !== "");
   const displayHeaders = keys.map(k => k.replace(/_/g, ' ').toUpperCase());
-  
   const rows = sheetData.map(rowObj => {
     const rowHTML = keys.map(k => {
       let val = rowObj[k] !== null && rowObj[k] !== undefined ? rowObj[k] : "—";
-      
       if (k.includes("change")) {
         if (String(val).includes("▲")) val = `<span class="up">${val}</span>`;
         else if (String(val).includes("▼") || String(val).includes("(")) val = `<span class="dn">${val}</span>`;
@@ -695,15 +715,11 @@ function buildGenericTableRows(sheetData) {
     }).join("");
     return `<tr>${rowHTML}</tr>`;
   });
-  
   return { headers: displayHeaders, rows: rows };
 }
 
 function standardCard(title, bodyHtml) {
-  return `<div class="full-card">
-    <div class="card-header"><h2>${title}</h2></div>
-    <div class="card-body">${bodyHtml}</div>
-  </div>`;
+  return `<div class="full-card"><div class="card-header"><h2>${title}</h2></div><div class="card-body">${bodyHtml}</div></div>`;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -712,12 +728,11 @@ function standardCard(title, bodyHtml) {
 function attachTableSorting() {
   document.querySelectorAll('th').forEach(th => {
     th.title = "Click to sort";
-    
     const newTh = th.cloneNode(true);
     th.parentNode.replaceChild(newTh, th);
 
     newTh.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevents the card from collapsing when sorting
+      e.stopPropagation(); 
 
       const table = newTh.closest('table');
       const tbody = table.querySelector('tbody');
@@ -749,16 +764,13 @@ function attachTableSorting() {
 
         const parseVal = (str) => {
           if (str === '—' || str === 'N/A' || str === '-') return -Infinity;
-          
           if (str.match(/^\d{2}\/\d{2}\/\d{4}/)) {
              const parts = str.split(',')[0].split('/');
              return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
           }
-
           const isNegative = str.includes('▼') || str.includes('(') || str.startsWith('-');
           let numStr = str.replace(/[^0-9.]/g, '');
           if (numStr === '') return str; 
-          
           let num = parseFloat(numStr);
           if (isNegative) num = -num;
           return num;
@@ -767,9 +779,7 @@ function attachTableSorting() {
         const aVal = parseVal(aText);
         const bVal = parseVal(bText);
 
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return (aVal - bVal) * direction;
-        }
+        if (typeof aVal === 'number' && typeof bVal === 'number') { return (aVal - bVal) * direction; }
         return String(aVal).localeCompare(String(bVal)) * direction;
       });
 
@@ -783,7 +793,7 @@ function attachTableSorting() {
    MAIN RENDER
 ═══════════════════════════════════════════════════════════════ */
 function render(data) {
-  extractDynamicData(data); // Overwrite hardcoded tables with Google Sheet Data
+  extractDynamicData(data);
 
   const tickers  = (data.tickers     || []).filter(t => t && t.symbol);
   const mw       = (data.marketwatch || []).filter(t => t && t.symbol);
@@ -935,13 +945,10 @@ function render(data) {
     </div>`;
 
   /* ── 2. KEY RATES ── */
-  const ratesHtml = `<div class="rates-grid">
-    ${KEY_RATES.map(r => `
-      <div class="rate-cell">
-        <div class="rate-label">${r.label}</div>
-        <div class="rate-value">${r.value}</div>
-      </div>`).join("")}
-  </div>`;
+  let ratesHtml = `<div class="rates-grid">`;
+  if (KEY_RATES.length === 0) ratesHtml += `<div style="color:var(--text-muted);font-style:italic;">Data unavailable.</div>`;
+  KEY_RATES.forEach(r => { ratesHtml += `<div class="rate-cell"><div class="rate-label">${r.label}</div><div class="rate-value">${r.value}</div></div>`; });
+  ratesHtml += `</div>`;
 
   /* ── 3. NSE STATS TABLE ── */
   const statsRows = statsArr
@@ -1166,71 +1173,79 @@ function initCharts() {
 
   const { inflation, gdp, banks, kepss } = CHART_DATA;
 
-  createChart("gc_inflation", {
-    type: "line",
-    data: {
-      labels: inflation.labels,
-      datasets: [
-        { label: "Annual Average", data: inflation.avg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true },
-        { label: "12-Month",       data: inflation.m12, borderColor: "#D4AF37", backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false },
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
-      plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } },
-      scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } },
-    },
-  });
-
-  createChart("gc_gdp", {
-    type: "bar",
-    data: {
-      labels: gdp.labels,
-      datasets: [
-        { label: "Nominal GDP (KES B)", data: gdp.nominal, type: "bar", backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37", order: 2 },
-        { label: "Real GDP (KES B)",    data: gdp.real, type: "line", borderColor: "#00b050", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 },
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
-      plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })}B` } } },
-      scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => (v >= 1000 ? (v / 1000).toFixed(0) + "T" : v + "B") } } },
-    },
-  });
-
-  createChart("gc_banks", {
-    type: "line",
-    data: {
-      labels: banks.labels,
-      datasets: [
-        { label: "Deposit",   data: banks.deposit,   borderColor: "#002060", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
-        { label: "Savings",   data: banks.savings,   borderColor: "#D4AF37", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
-        { label: "Lending",   data: banks.lending,   borderColor: "#00b050", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
-        { label: "Overdraft", data: banks.overdraft, borderColor: "#ff0000", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
-      plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } },
-      scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } },
-    },
-  });
-
-  createChart("gc_kepss", {
-    type: "line",
-    data: {
-      labels: kepss.labels,
-      datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
-      plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })} Mn` } } },
-      scales: {
-        x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } },
-        y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => (v / 1000000).toFixed(1) + "T" } },
+  if(inflation.labels.length > 0) {
+    createChart("gc_inflation", {
+      type: "line",
+      data: {
+        labels: inflation.labels,
+        datasets: [
+          { label: "Annual Average", data: inflation.avg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true },
+          { label: "12-Month",       data: inflation.m12, borderColor: "#D4AF37", backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false },
+        ],
       },
-    },
-  });
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
+        plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } },
+        scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } },
+      },
+    });
+  }
+
+  if(gdp.labels.length > 0) {
+    createChart("gc_gdp", {
+      type: "bar",
+      data: {
+        labels: gdp.labels,
+        datasets: [
+          { label: "Nominal GDP (KES B)", data: gdp.nominal, type: "bar", backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37", order: 2 },
+          { label: "Real GDP (KES B)",    data: gdp.real, type: "line", borderColor: "#00b050", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
+        plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })}B` } } },
+        scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => (v >= 1000 ? (v / 1000).toFixed(0) + "T" : v + "B") } } },
+      },
+    });
+  }
+
+  if(banks.labels.length > 0) {
+    createChart("gc_banks", {
+      type: "line",
+      data: {
+        labels: banks.labels,
+        datasets: [
+          { label: "Deposit",   data: banks.deposit,   borderColor: "#002060", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
+          { label: "Savings",   data: banks.savings,   borderColor: "#D4AF37", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
+          { label: "Lending",   data: banks.lending,   borderColor: "#00b050", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
+          { label: "Overdraft", data: banks.overdraft, borderColor: "#ff5252", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
+        plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } },
+        scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } },
+      },
+    });
+  }
+
+  if(kepss.labels.length > 0) {
+    createChart("gc_kepss", {
+      type: "line",
+      data: {
+        labels: kepss.labels,
+        datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
+        plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })} Mn` } } },
+        scales: {
+          x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } },
+          y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => (v / 1000000).toFixed(1) + "T" } },
+        },
+      },
+    });
+  }
 }
 
 function filterHeatmap(q) {
