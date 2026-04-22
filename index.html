@@ -204,39 +204,31 @@
 </header>
 
 <div class="container">
-  <div id="app"><div class="loader">⏳ Aggregating global and domestic datasets…</div></div>
+  <div id="app"></div>
 </div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   CONFIGURATION (UPDATED WITH GLOBAL URL)
+   CONFIGURATION 
 ═══════════════════════════════════════════════════════════════ */
 const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
 const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxWyka818Db5LwlH5MpOgvOLkHe99yAf4YTScbyLdPLI0NYWSkGqf0PnUyRKqFnfGeOIg/exec"; 
 
 const REFRESH_SECONDS  = 60;
-const JSONP_TIMEOUT_MS = 30000;
+const JSONP_TIMEOUT_MS = 45000; // Extended timeout for cold starts
 
 /* ═══════════════════════════════════════════════════════════════
-   HARDCODED MACRO / CBK DATA  (sourced from Macro Analysis sheet)
+   HARDCODED MACRO / CBK DATA 
 ═══════════════════════════════════════════════════════════════ */
-
-/** CBK Key Policy Rates */
 const KEY_RATES = [
-  { label: "Central Bank Rate",    value: "8.75%" },
-  { label: "KESONIA",              value: "8.76%" },
-  { label: "CBK Discount Window",  value: "9.25%" },
-  { label: "91-Day T-Bill",        value: "7.42%" },
-  { label: "REPO",                 value: "9.25%" },
-  { label: "Inflation Rate",       value: "4.39%" },
-  { label: "Lending Rate",         value: "14.78%" },
-  { label: "Savings Rate",         value: "2.41%" },
-  { label: "Deposit Rate",         value: "6.82%" },
-  { label: "KBRR",                 value: "8.90%" },
+  { label: "Central Bank Rate",    value: "8.75%" }, { label: "KESONIA",              value: "8.76%" },
+  { label: "CBK Discount Window",  value: "9.25%" }, { label: "91-Day T-Bill",        value: "7.42%" },
+  { label: "REPO",                 value: "9.25%" }, { label: "Inflation Rate",       value: "4.39%" },
+  { label: "Lending Rate",         value: "14.78%" }, { label: "Savings Rate",         value: "2.41%" },
+  { label: "Deposit Rate",         value: "6.82%" }, { label: "KBRR",                 value: "8.90%" },
   { label: "Kesonia Compound Rate",value: "0.00%" },
 ];
 
-/** Indicative Forex Rates (CBK) */
 const FOREX_RATES = [
   { ccy: "USD/KES",  crBuy: "—",       crSell: "—",       kBuy: "126.50", kSell: "131.50" },
   { ccy: "GBP/KES",  crBuy: "1.3242",  crSell: "1.3647",  kBuy: "167.51", kSell: "179.46" },
@@ -249,7 +241,6 @@ const FOREX_RATES = [
   { ccy: "KES/TZS",  crBuy: "2520",    crSell: "2675",    kBuy: "19.16",  kSell: "21.15"  },
 ];
 
-/** Historical chart data (CBK / KNBS) */
 const CHART_DATA = {
   inflation: {
     labels: ["Feb/11","Mar/11","Apr/11","May/11","Jun/11","Jul/11","Aug/11","Sep/11","Oct/11","Nov/11","Dec/11","Jan/12","Feb/12","Mar/12","Apr/12","May/12","Jun/12","Jul/12","Aug/12","Sep/12","Oct/12","Nov/12","Dec/12","Jan/13","Feb/13","Mar/13","Apr/13","May/13","Jun/13","Jul/13","Aug/13","Sep/13","Oct/13","Nov/13","Dec/13","Jan/14","Feb/14","Mar/14","Apr/14","May/14","Jun/14","Jul/14","Aug/14","Sep/14","Oct/14","Nov/14","Dec/14","Jan/15","Feb/15","Mar/15","Apr/15","May/15","Jun/15","Jul/15","Aug/15","Sep/15","Oct/15","Nov/15","Dec/15","Jan/16","Feb/16","Mar/16","Apr/16","May/16","Jun/16","Jul/16","Aug/16","Sep/16","Oct/16","Nov/16","Dec/16","Jan/17","Feb/17","Mar/17","Apr/17","May/17","Jun/17","Jul/17","Aug/17","Sep/17","Oct/17","Nov/17","Dec/17","Jan/18","Feb/18","Mar/18","Apr/18","May/18","Jun/18","Jul/18","Aug/18","Sep/18","Oct/18","Nov/18","Dec/18","Jan/19","Feb/19","Mar/19","Apr/19","May/19","Jun/19","Jul/19","Aug/19","Sep/19","Oct/19","Nov/19","Dec/19","Jan/20","Feb/20","Mar/20","Apr/20","May/20","Jun/20","Jul/20","Aug/20","Sep/20","Oct/20","Nov/20","Dec/20","Jan/21","Feb/21","Mar/21","Apr/21","May/21","Jun/21","Jul/21","Aug/21","Sep/21","Oct/21","Nov/21","Dec/21","Jan/22","Feb/22","Mar/22","Apr/22","May/22","Jun/22","Jul/22","Aug/22","Sep/22","Oct/22","Nov/22","Dec/22","Jan/23","Feb/23","Mar/23","Apr/23","May/23","Jun/23","Jul/23","Aug/23","Sep/23","Oct/23","Nov/23","Dec/23","Jan/24","Feb/24","Mar/24","Apr/24","May/24","Jun/24","Jul/24","Aug/24","Sep/24","Oct/24","Nov/24","Dec/24","Jan/25","Feb/25","Mar/25","Apr/25","May/25","Jun/25","Jul/25","Aug/25","Sep/25","Oct/25","Nov/25","Dec/25","Jan/26","Feb/26","Mar/26"],
@@ -281,6 +272,10 @@ let refreshTimer = null;
 const chartInstances = {};  
 let stateLocalData = null;
 let stateGlobalData = null;
+let isFirstLoad = true;
+let isFetching = false;
+let retryCount = 0;
+const MAX_RETRIES = 3;
 
 /* ═══════════════════════════════════════════════════════════════
    LIVE CLOCK & COUNTDOWN TIMER (Nairobi / EAT)
@@ -326,9 +321,6 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ═══════════════════════════════════════════════════════════════
-   MARKET STATUS
-═══════════════════════════════════════════════════════════════ */
 function setMarketStatus(status) {
   const el = document.getElementById("market-status");
   if (status === "OPEN") { 
@@ -340,27 +332,34 @@ function setMarketStatus(status) {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   GLOBAL EQUITIES UI TOGGLE
-═══════════════════════════════════════════════════════════════ */
 function showContinent(regionId) {
   document.querySelectorAll('.continent-section').forEach(el => el.classList.remove('active-region'));
   document.getElementById('region-' + regionId).classList.add('active-region');
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MULTI-API JSONP DATA LOADER
+   MULTI-API JSONP DATA LOADER (SILENT BACKGROUND REFRESH)
 ═══════════════════════════════════════════════════════════════ */
 function triggerRefresh() {
+  if (isFetching) return;
   stateLocalData = null;
   stateGlobalData = null;
   loadData();
 }
 
 function loadData() {
-  document.getElementById("app").innerHTML = `<div class="loader">⏳ Aggregating global and domestic datasets…</div>`;
+  isFetching = true;
+  const btn = document.getElementById("refresh-btn");
   
-  // Setup callbacks
+  if (isFirstLoad) {
+    if (!document.querySelector(".metrics")) {
+      document.getElementById("app").innerHTML = `<div class="loader">⏳ Aggregating global and domestic datasets…</div>`;
+    }
+  } else {
+    if (btn) btn.innerHTML = "↻ Refreshing...";
+  }
+  
+  // Callbacks
   window["localCallback"] = function(data) {
     if (data && typeof data === "object") stateLocalData = data;
     checkAndRender();
@@ -371,14 +370,28 @@ function loadData() {
   };
 
   const timeoutId = setTimeout(() => {
-    if (!stateLocalData || !stateGlobalData) {
-      document.getElementById("app").innerHTML = buildError("Request timed out. Please check API URLs.");
+    isFetching = false;
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      loadData(); // Auto Retry
+    } else {
+      if (isFirstLoad) {
+        document.getElementById("app").innerHTML = buildError("Request timed out. Please check your network or API URLs.");
+      } else {
+        if (btn) btn.innerHTML = "↻ Refresh Failed";
+        setTimeout(() => { if (btn) btn.innerHTML = "↻ Refresh"; }, 3000);
+      }
     }
   }, JSONP_TIMEOUT_MS);
 
   function checkAndRender() {
     if (stateLocalData && stateGlobalData) {
       clearTimeout(timeoutId);
+      isFetching = false;
+      retryCount = 0;
+      isFirstLoad = false;
+      if (btn) btn.innerHTML = "↻ Refresh";
+
       const mergedData = { ...stateLocalData, ...stateGlobalData };
       const ts = mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
       document.getElementById("last-updated").textContent = "Updated: " + ts;
@@ -386,12 +399,10 @@ function loadData() {
     }
   }
 
-  // Inject Script 1
   const s1 = document.createElement("script");
   s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now();
   document.head.appendChild(s1);
 
-  // Inject Script 2
   const s2 = document.createElement("script");
   s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now();
   document.head.appendChild(s2);
@@ -417,7 +428,6 @@ function formatChange(val, isPct) {
   if (isNaN(n) || n === 0) return '<span class="nt">—</span>';
 
   if (isPct && !s.includes("%") && n > 0 && n < 1) n *= 100;
-
   const fmt = n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   if (isPct) {
@@ -513,12 +523,21 @@ function tableCard(title, headers, rows, emptyMsg) {
 
 function buildGenericTableRows(sheetData) {
   if (!sheetData || sheetData.length === 0) return { headers: [], rows: [] };
-  const keys = Object.keys(sheetData[0]);
+  
+  // Filter out index columns ending in _1, _2 so we strictly only display the Stock Table
+  const excludeKeys = ["index_symbol", "%_change"];
+  const keys = Object.keys(sheetData[0]).filter(k => !k.match(/_\d+$/) && !excludeKeys.includes(k) && k !== "");
   const displayHeaders = keys.map(k => k.replace(/_/g, ' ').toUpperCase());
   
   const rows = sheetData.map(rowObj => {
     const rowHTML = keys.map(k => {
-      const val = rowObj[k] !== null && rowObj[k] !== undefined ? rowObj[k] : "—";
+      let val = rowObj[k] !== null && rowObj[k] !== undefined ? rowObj[k] : "—";
+      
+      // Smart color formatting for Change columns
+      if (k.includes("change")) {
+        if (String(val).includes("▲")) val = `<span class="up">${val}</span>`;
+        else if (String(val).includes("▼") || String(val).includes("(")) val = `<span class="dn">${val}</span>`;
+      }
       return `<td>${val}</td>`;
     }).join("");
     return `<tr>${rowHTML}</tr>`;
@@ -538,7 +557,6 @@ function standardCard(title, bodyHtml) {
    MAIN RENDER
 ═══════════════════════════════════════════════════════════════ */
 function render(data) {
-  /* ── normalise data arrays ── */
   const tickers  = (data.tickers     || []).filter(t => t && t.symbol);
   const mw       = (data.marketwatch || []).filter(t => t && t.symbol);
   const indices  = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A");
@@ -562,6 +580,7 @@ function render(data) {
     statsChange[k] = r.change;
   });
 
+  // Helper to reliably strip commas and extract numbers
   function numMW(row, key) {
     const v = row[key] || row[key.toLowerCase()] || 0;
     return parseFloat(String(v).replace(/[^0-9.\-]/g, "")) || 0;
@@ -572,16 +591,17 @@ function render(data) {
   let totalTurnover = 0, totalTrades = 0, totalFBuy = 0, totalFSell = 0;
   const mwTotals = mw.find(r => String(r.symbol).toUpperCase() === "TOTALS");
   if (mwTotals) {
-    totalTurnover = parseFloat(mwTotals["turnover_(kshs)"]) || 0;
-    totalTrades   = parseFloat(mwTotals.trades)             || 0;
-    totalFBuy     = parseFloat(mwTotals.foreign_buy)        || 0;
-    totalFSell    = parseFloat(mwTotals.foreign_sell)       || 0;
+    // FIX: Using numMW properly extracts numbers larger than 999 
+    totalTurnover = numMW(mwTotals, "turnover_(kshs)");
+    totalTrades   = numMW(mwTotals, "trades");
+    totalFBuy     = numMW(mwTotals, "foreign_buy");
+    totalFSell    = numMW(mwTotals, "foreign_sell");
   } else {
     validMW.forEach(r => {
-      totalTurnover += parseFloat(r["turnover_(kshs)"]) || 0;
-      totalTrades   += parseFloat(r.trades)             || 0;
-      totalFBuy     += parseFloat(r.foreign_buy)        || 0;
-      totalFSell    += parseFloat(r.foreign_sell)       || 0;
+      totalTurnover += numMW(r, "turnover_(kshs)");
+      totalTrades   += numMW(r, "trades");
+      totalFBuy     += numMW(r, "foreign_buy");
+      totalFSell    += numMW(r, "foreign_sell");
     });
   }
 
@@ -759,7 +779,7 @@ function render(data) {
   /* ── 6. GLOBAL INDICES & YAHOO ── */
   const indicesRows = indices.map(r => `<tr>
     <td>${r.name}</td>
-    <td>${r.name === "US Dollar Index" ? r.price : fmtUSD(r.price)}</td>
+    <td>${fmtUSD(r.price)}</td>
     <td>${formatChange(r["%_change"] || r.percent_change, true)}</td>
     <td>${(r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—"}</td>
   </tr>`);
@@ -914,18 +934,13 @@ function initCharts() {
 
   const { inflation, gdp, banks, kepss } = CHART_DATA;
 
-  /* Inflation */
   createChart("gc_inflation", {
     type: "line",
     data: {
       labels: inflation.labels,
       datasets: [
-        { label: "Annual Average", data: inflation.avg,
-          borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)",
-          borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true },
-        { label: "12-Month",       data: inflation.m12,
-          borderColor: "#D4AF37", backgroundColor: "transparent",
-          borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false },
+        { label: "Annual Average", data: inflation.avg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true },
+        { label: "12-Month",       data: inflation.m12, borderColor: "#D4AF37", backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false },
       ],
     },
     options: {
@@ -935,18 +950,13 @@ function initCharts() {
     },
   });
 
-  /* GDP */
   createChart("gc_gdp", {
     type: "bar",
     data: {
       labels: gdp.labels,
       datasets: [
-        { label: "Nominal GDP (KES B)", data: gdp.nominal, type: "bar",
-          backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1,
-          hoverBackgroundColor: "#D4AF37", order: 2 },
-        { label: "Real GDP (KES B)",    data: gdp.real, type: "line",
-          borderColor: "#00b050", backgroundColor: "transparent",
-          borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 },
+        { label: "Nominal GDP (KES B)", data: gdp.nominal, type: "bar", backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37", order: 2 },
+        { label: "Real GDP (KES B)",    data: gdp.real, type: "line", borderColor: "#00b050", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 },
       ],
     },
     options: {
@@ -956,7 +966,6 @@ function initCharts() {
     },
   });
 
-  /* Commercial bank rates */
   createChart("gc_banks", {
     type: "line",
     data: {
@@ -975,14 +984,11 @@ function initCharts() {
     },
   });
 
-  /* KEPSS RTGS */
   createChart("gc_kepss", {
     type: "line",
     data: {
       labels: kepss.labels,
-      datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values,
-        borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)",
-        borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }],
+      datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }],
     },
     options: {
       responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
@@ -995,9 +1001,6 @@ function initCharts() {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   HEATMAP FILTER
-═══════════════════════════════════════════════════════════════ */
 function filterHeatmap(q) {
   const qU = (q || "").toUpperCase();
   document.querySelectorAll(".ticker-cell").forEach(cell => {
@@ -1005,17 +1008,11 @@ function filterHeatmap(q) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   AUTO-REFRESH
-═══════════════════════════════════════════════════════════════ */
 function startRefresh() {
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(triggerRefresh, REFRESH_SECONDS * 1000);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BOOT
-═══════════════════════════════════════════════════════════════ */
 triggerRefresh();
 startRefresh();
 
