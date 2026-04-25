@@ -379,9 +379,7 @@
    CONFIGURATION 
 ═══════════════════════════════════════════════════════════════ */
 const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
-const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
-
-// ⚠️ PASTE YOUR NEW AI MIDDLEWARE URL HERE:
+const API_GLOBAL = "https://script.google.com/macros/s/AKfycbwym566Tmz1LOaOvFdimT75P5ODgVJ6yvYCy2fPWBUgWSzeEtWRkSd2uib39A57yAL1/exec"; 
 const API_AI = "https://script.google.com/macros/s/AKfycbxzhisvbAfZyHPF0hEAmlF579b1ayHUAB-RnrkGoePv6NvMzKuWurjoCWYdGTYkLVQR5g/exec";
 
 const REFRESH_SECONDS  = 60;
@@ -568,6 +566,110 @@ google.charts.setOnLoadCallback(() => {
 window.addEventListener('resize', () => {
   if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME TOGGLE (LIGHT/DARK MODE)
+═══════════════════════════════════════════════════════════════ */
+function toggleTheme() {
+  const root = document.documentElement;
+  const btn = document.getElementById("theme-btn");
+  
+  if (root.getAttribute("data-theme") === "dark") {
+    root.removeAttribute("data-theme");
+    btn.innerHTML = "🌙 Dark Mode";
+    localStorage.setItem("theme", "light");
+    updateChartTheme("light");
+  } else {
+    root.setAttribute("data-theme", "dark");
+    btn.innerHTML = "☀️ Light Mode";
+    localStorage.setItem("theme", "dark");
+    updateChartTheme("dark");
+  }
+  if(isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
+}
+
+if (localStorage.getItem("theme") === "dark") {
+  document.documentElement.setAttribute("data-theme", "dark");
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("theme-btn").innerHTML = "☀️ Light Mode";
+  });
+}
+
+function updateChartTheme(mode) {
+  const textColor = mode === "dark" ? "#aaaaaa" : "#555555";
+  const gridColor = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
+  
+  for (const id in chartInstances) {
+    const chart = chartInstances[id];
+    if (chart.options.scales.x) {
+      chart.options.scales.x.ticks.color = textColor;
+      chart.options.scales.x.grid.color = gridColor;
+    }
+    if (chart.options.scales.y) {
+      chart.options.scales.y.ticks.color = textColor;
+      chart.options.scales.y.grid.color = gridColor;
+    }
+    if (chart.options.plugins.legend) {
+      chart.options.plugins.legend.labels.color = mode === "dark" ? "#e0e0e0" : "#2c3e50";
+    }
+    chart.update();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LIVE CLOCK & COUNTDOWN TIMER (Nairobi / EAT)
+═══════════════════════════════════════════════════════════════ */
+function updateClock() {
+  const nbi = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
+  const timeString = nbi.toLocaleTimeString("en-KE", { hour12: false });
+  document.getElementById("live-clock").textContent = "EAT: " + timeString;
+
+  const day = nbi.getDay();
+  const h = nbi.getHours();
+  const m = nbi.getMinutes();
+  const s = nbi.getSeconds();
+  
+  const currentSecs = h * 3600 + m * 60 + s;
+  const openSecs = 9 * 3600 + 30 * 60; // 09:30
+  const closeSecs = 15 * 3600;         // 15:00
+
+  let cdText = "";
+  if (day === 0 || day === 6) {
+    cdText = "Market Opens Monday";
+  } else {
+    if (currentSecs < openSecs) {
+      const diff = openSecs - currentSecs;
+      const hrs = Math.floor(diff / 3600);
+      const mins = Math.floor((diff % 3600) / 60);
+      const secs = diff % 60;
+      cdText = `Opens in ${hrs}h ${mins}m ${secs}s`;
+    } else if (currentSecs >= openSecs && currentSecs < closeSecs) {
+      const diff = closeSecs - currentSecs;
+      const hrs = Math.floor(diff / 3600);
+      const mins = Math.floor((diff % 3600) / 60);
+      const secs = diff % 60;
+      cdText = `Closes in ${hrs}h ${mins}m ${secs}s`;
+    } else {
+      cdText = day === 5 ? "Market Opens Monday" : "Market Opens Tomorrow";
+    }
+  }
+  
+  const cdEl = document.getElementById("market-countdown");
+  if (cdEl) cdEl.textContent = cdText;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function setMarketStatus(status) {
+  const el = document.getElementById("market-status");
+  if (status === "OPEN") { 
+    el.textContent = "⬤ OPEN";   
+    el.className = "open";   
+  } else { 
+    el.textContent = "⬤ CLOSED"; 
+    el.className = "closed"; 
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL EQUITIES MAP DRAWING
