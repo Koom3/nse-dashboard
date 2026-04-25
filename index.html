@@ -6,6 +6,7 @@
   <title>🇰🇪 Market Data Analysis</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     /* ── CSS VARIABLES FOR LIGHT/DARK MODE ──────────────────── */
     :root {
@@ -26,6 +27,9 @@
       --map-bg: #ffffff;
       --map-dataless: #f1f5f9;
       --map-unselected: #e2e8f0;
+      --ai-bubble-user: #002060;
+      --ai-bubble-bot: #f1f5f9;
+      --ai-text-bot: #2c3e50;
     }
 
     [data-theme="dark"] {
@@ -46,6 +50,9 @@
       --map-bg: #1e1e1e;
       --map-dataless: #2a2a2a;
       --map-unselected: #333333;
+      --ai-bubble-user: #66a3ff;
+      --ai-bubble-bot: #2a2a2a;
+      --ai-text-bot: #e0e0e0;
     }
 
     /* ── RESET & BASE ───────────────────────────────────────── */
@@ -143,7 +150,7 @@
     /* ── TABLES & SORTING ────────────────────────────────────── */
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; white-space: nowrap; }
-    table[data-id] { width: 100%; } /* Identifier for persistent sorting */
+    table[data-id] { width: 100%; } 
     th {
       text-align: left; padding: 8px 10px; color: #002060;
       border-bottom: 2px solid var(--border-color); font-size: 10pt; background: var(--table-header-bg);
@@ -261,6 +268,69 @@
     [data-theme="dark"] .news-title { color: #66a3ff; }
     .news-desc { font-size: 9pt; color: var(--text-muted); line-height: 1.4; font-weight: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .news-date { font-size: 8pt; color: #D4AF37; margin-top: auto; font-weight: normal; }
+
+    /* ── AI AGENT WIDGET ─────────────────────────────────────── */
+    .ai-widget {
+      position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+      display: flex; flex-direction: column; align-items: flex-end;
+    }
+    .ai-toggle-btn {
+      background: #002060; color: #fff; border: 2px solid #D4AF37;
+      width: 60px; height: 60px; border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 24px; transition: transform 0.2s;
+    }
+    [data-theme="dark"] .ai-toggle-btn { background: #66a3ff; color: #1e1e1e; border-color: #1e1e1e; }
+    .ai-toggle-btn:hover { transform: scale(1.05); }
+    
+    .ai-chat-box {
+      width: 360px; height: 500px; max-height: 80vh;
+      background: var(--bg-card); border-radius: 12px;
+      box-shadow: var(--card-shadow-hover); border: 1px solid var(--border-color);
+      display: none; flex-direction: column; overflow: hidden;
+      margin-bottom: 15px; animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .ai-chat-header {
+      background: linear-gradient(135deg, #002060 0%, #003b73 100%);
+      color: #fff; padding: 12px 16px; font-size: 11pt;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 3px solid #D4AF37;
+    }
+    .ai-chat-messages {
+      flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;
+      font-weight: normal; background: var(--bg-body);
+    }
+    .chat-bubble {
+      max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 9.5pt; line-height: 1.4;
+    }
+    .chat-bubble.user {
+      align-self: flex-end; background: var(--ai-bubble-user); color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.bot {
+      align-self: flex-start; background: var(--ai-bubble-bot); color: var(--ai-text-bot);
+      border-bottom-left-radius: 4px; border: 1px solid var(--border-color);
+    }
+    .chat-bubble.bot p { margin-bottom: 8px; }
+    .chat-bubble.bot p:last-child { margin-bottom: 0; }
+    .ai-chat-input-area {
+      padding: 10px; background: var(--bg-card); border-top: 1px solid var(--border-color);
+      display: flex; gap: 8px;
+    }
+    .ai-chat-input-area input {
+      flex: 1; padding: 8px 12px; border: 1px solid var(--input-border);
+      border-radius: 20px; font-family: inherit; font-size: 9.5pt;
+      background: var(--input-bg); color: var(--text-main); outline: none;
+    }
+    .ai-chat-input-area input:focus { border-color: #002060; }
+    [data-theme="dark"] .ai-chat-input-area input:focus { border-color: #66a3ff; }
+    .ai-send-btn {
+      background: #D4AF37; color: #002060; border: none; border-radius: 50%;
+      width: 36px; height: 36px; cursor: pointer; display: flex; justify-content: center; align-items: center;
+    }
+    .typing-indicator { font-style: italic; color: var(--text-sub); font-size: 8.5pt; }
   </style>
 </head>
 <body>
@@ -285,6 +355,25 @@
   <div id="app"><div class="loader">⏳ Aggregating global and domestic datasets…</div></div>
 </div>
 
+<div class="ai-widget">
+  <div class="ai-chat-box" id="ai-chat-box">
+    <div class="ai-chat-header">
+      <span>🤖 Analyst Agent</span>
+      <span style="cursor:pointer;" onclick="toggleChat()">✖</span>
+    </div>
+    <div class="ai-chat-messages" id="ai-chat-messages">
+      <div class="chat-bubble bot">
+        Hi! I'm your dedicated Financial Analyst AI. I'm connected to the live data on this dashboard. Ask me anything!
+      </div>
+    </div>
+    <div class="ai-chat-input-area">
+      <input type="text" id="ai-input" placeholder="Ask about the market..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+      <button class="ai-send-btn" onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>
+  <button class="ai-toggle-btn" onclick="toggleChat()">💬</button>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════════════════════════
    CONFIGURATION 
@@ -292,11 +381,14 @@
 const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
 const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
 
+// ⚠️ PASTE YOUR NEW AI MIDDLEWARE URL HERE:
+const API_AI = "https://script.google.com/macros/s/AKfycbxzhisvbAfZyHPF0hEAmlF579b1ayHUAB-RnrkGoePv6NvMzKuWurjoCWYdGTYkLVQR5g/exec";
+
 const REFRESH_SECONDS  = 60;
 const JSONP_TIMEOUT_MS = 45000; 
 
 /* ═══════════════════════════════════════════════════════════════
-   DYNAMIC DATA VARIABLES (INITIALIZED EMPTY - NO HARDCODING)
+   DYNAMIC DATA VARIABLES
 ═══════════════════════════════════════════════════════════════ */
 let KEY_RATES = [];
 let FOREX_RATES = [];
@@ -347,6 +439,64 @@ const countryMap = {
 };
 
 /* ═══════════════════════════════════════════════════════════════
+   AI AGENT INTERFACE
+═══════════════════════════════════════════════════════════════ */
+function toggleChat() {
+  const box = document.getElementById("ai-chat-box");
+  box.style.display = (box.style.display === "flex") ? "none" : "flex";
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById("ai-input");
+  const msg = input.value.trim();
+  if (!msg) return;
+  
+  appendMessage("user", msg);
+  input.value = "";
+  
+  const typingId = appendMessage("bot", '<span class="typing-indicator">Analyzing live data...</span>');
+  
+  // Compress context to keep payload efficient
+  const context = {
+    nse_stats: stateLocalData?.stats || [],
+    cbk_rates: KEY_RATES,
+    forex: FOREX_RATES,
+    world_indices: stateLocalData?.indices || [],
+    active_global_region: currentGlobalSelection,
+    active_global_data: stateGlobalData ? stateGlobalData[currentGlobalSelection]?.slice(0, 15) : "Not Loaded"
+  };
+
+  try {
+    const response = await fetch(API_AI, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ message: msg, context: context })
+    });
+    
+    const data = await response.json();
+    const el = document.getElementById(typingId);
+    if(el) {
+      el.innerHTML = typeof marked !== 'undefined' ? marked.parse(data.reply) : data.reply;
+    }
+  } catch (err) {
+    const el = document.getElementById(typingId);
+    if(el) el.innerHTML = "⚠️ Connection error. Please ensure your API_AI URL is correct.";
+  }
+}
+
+function appendMessage(sender, textHtml) {
+  const container = document.getElementById("ai-chat-messages");
+  const msgDiv = document.createElement("div");
+  msgDiv.className = `chat-bubble ${sender}`;
+  const uniqueId = 'msg-' + Date.now();
+  msgDiv.id = uniqueId;
+  msgDiv.innerHTML = textHtml;
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
+  return uniqueId;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    LIVE NEWS API SCRAPER
 ═══════════════════════════════════════════════════════════════ */
 async function loadLiveNews() {
@@ -365,7 +515,7 @@ async function loadLiveNews() {
         if (data.status === 'ok') {
           allArticles = allArticles.concat(data.items.slice(0, 6)); 
         }
-      } catch (err) { console.warn("Failed to load feed:", feed); }
+      } catch (err) {}
     }
     
     allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
@@ -416,117 +566,11 @@ google.charts.setOnLoadCallback(() => {
 });
 
 window.addEventListener('resize', () => {
-  if (isGeoChartLoaded && document.getElementById('regions_div')) {
-    drawRegionsMap();
-  }
+  if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   THEME TOGGLE (LIGHT/DARK MODE)
-═══════════════════════════════════════════════════════════════ */
-function toggleTheme() {
-  const root = document.documentElement;
-  const btn = document.getElementById("theme-btn");
-  
-  if (root.getAttribute("data-theme") === "dark") {
-    root.removeAttribute("data-theme");
-    btn.innerHTML = "🌙 Dark Mode";
-    localStorage.setItem("theme", "light");
-    updateChartTheme("light");
-  } else {
-    root.setAttribute("data-theme", "dark");
-    btn.innerHTML = "☀️ Light Mode";
-    localStorage.setItem("theme", "dark");
-    updateChartTheme("dark");
-  }
-  if(isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
-}
-
-if (localStorage.getItem("theme") === "dark") {
-  document.documentElement.setAttribute("data-theme", "dark");
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("theme-btn").innerHTML = "☀️ Light Mode";
-  });
-}
-
-function updateChartTheme(mode) {
-  const textColor = mode === "dark" ? "#aaaaaa" : "#555555";
-  const gridColor = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
-  
-  for (const id in chartInstances) {
-    const chart = chartInstances[id];
-    if (chart.options.scales.x) {
-      chart.options.scales.x.ticks.color = textColor;
-      chart.options.scales.x.grid.color = gridColor;
-    }
-    if (chart.options.scales.y) {
-      chart.options.scales.y.ticks.color = textColor;
-      chart.options.scales.y.grid.color = gridColor;
-    }
-    if (chart.options.plugins.legend) {
-      chart.options.plugins.legend.labels.color = mode === "dark" ? "#e0e0e0" : "#2c3e50";
-    }
-    chart.update();
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   LIVE CLOCK & COUNTDOWN TIMER (Nairobi / EAT)
-═══════════════════════════════════════════════════════════════ */
-function updateClock() {
-  const nbi = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
-  const timeString = nbi.toLocaleTimeString("en-KE", { hour12: false });
-  document.getElementById("live-clock").textContent = "EAT: " + timeString;
-
-  const day = nbi.getDay();
-  const h = nbi.getHours();
-  const m = nbi.getMinutes();
-  const s = nbi.getSeconds();
-  
-  const currentSecs = h * 3600 + m * 60 + s;
-  const openSecs = 9 * 3600 + 30 * 60; // 09:30
-  const closeSecs = 15 * 3600;         // 15:00
-
-  let cdText = "";
-  if (day === 0 || day === 6) {
-    cdText = "Market Opens Monday";
-  } else {
-    if (currentSecs < openSecs) {
-      const diff = openSecs - currentSecs;
-      const hrs = Math.floor(diff / 3600);
-      const mins = Math.floor((diff % 3600) / 60);
-      const secs = diff % 60;
-      cdText = `Opens in ${hrs}h ${mins}m ${secs}s`;
-    } else if (currentSecs >= openSecs && currentSecs < closeSecs) {
-      const diff = closeSecs - currentSecs;
-      const hrs = Math.floor(diff / 3600);
-      const mins = Math.floor((diff % 3600) / 60);
-      const secs = diff % 60;
-      cdText = `Closes in ${hrs}h ${mins}m ${secs}s`;
-    } else {
-      cdText = day === 5 ? "Market Opens Monday" : "Market Opens Tomorrow";
-    }
-  }
-  
-  const cdEl = document.getElementById("market-countdown");
-  if (cdEl) cdEl.textContent = cdText;
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-function setMarketStatus(status) {
-  const el = document.getElementById("market-status");
-  if (status === "OPEN") { 
-    el.textContent = "⬤ OPEN";   
-    el.className = "open";   
-  } else { 
-    el.textContent = "⬤ CLOSED"; 
-    el.className = "closed"; 
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   GLOBAL EQUITIES UI SELECTION & MAP DRAWING
+   GLOBAL EQUITIES MAP DRAWING
 ═══════════════════════════════════════════════════════════════ */
 function showGlobalCountry(countryKey) {
   if (!countryKey) return;
