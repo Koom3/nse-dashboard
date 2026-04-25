@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🇰🇪 Market Data Analysis</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
     /* ── CSS VARIABLES FOR LIGHT/DARK MODE ──────────────────── */
     :root {
@@ -22,6 +23,9 @@
       --card-shadow: 0 2px 6px rgba(0,0,0,0.07);
       --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.11);
       --ticker-cell-bg: #ffffff;
+      --map-bg: #ffffff;
+      --map-dataless: #f1f5f9;
+      --map-unselected: #e2e8f0;
     }
 
     [data-theme="dark"] {
@@ -39,6 +43,9 @@
       --card-shadow: 0 2px 6px rgba(0,0,0,0.4);
       --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.6);
       --ticker-cell-bg: #2a2a2a;
+      --map-bg: #1e1e1e;
+      --map-dataless: #2a2a2a;
+      --map-unselected: #333333;
     }
 
     /* ── RESET & BASE ───────────────────────────────────────── */
@@ -136,6 +143,7 @@
     /* ── TABLES & SORTING ────────────────────────────────────── */
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    table[data-id] { width: 100%; } /* Identifier for persistent sorting */
     th {
       text-align: left; padding: 8px 10px; color: #002060;
       border-bottom: 2px solid var(--border-color); font-size: 10pt; background: var(--table-header-bg);
@@ -164,7 +172,7 @@
     .rate-value { font-size: 12pt; color: #002060; }
     [data-theme="dark"] .rate-value { color: #66a3ff; }
 
-    /* ── HEAT MAP ────────────────────────────────────────────── */
+    /* ── HEAT MAP & MAP COMPONENTS ───────────────────────────── */
     .section-note { color: var(--text-muted); margin-bottom: 0.75rem; font-style: italic; font-size: 9pt; }
     .heatmap-search {
       width: 100%; margin-bottom: 0.85rem; padding: 7px 12px;
@@ -225,17 +233,18 @@
       font-size: 10pt; line-height: 1.8;
     }
 
-    /* ── GLOBAL EQUITIES CONTINENT SELECTOR ──────────────────── */
-    .continent-filter { text-align: center; margin: 2rem 0 1rem; padding-top: 1rem; border-top: 2px dashed var(--border-color); }
-    .continent-filter select {
+    /* ── GLOBAL EQUITIES MAP SELECTOR ────────────────────────── */
+    .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1rem; }
+    .country-filter { display: flex; justify-content: center; padding-bottom: 1rem; border-bottom: 2px dashed var(--border-color); }
+    .country-filter select {
       padding: 8px 16px; font-size: 10pt; font-family: inherit; font-weight: bold;
       border: 2px solid #002060; border-radius: 6px; color: #002060;
-      background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s;
+      background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px;
     }
-    [data-theme="dark"] .continent-filter select { border-color: #66a3ff; color: #66a3ff; }
-    .continent-filter select:hover { background: var(--table-hover); }
-    .continent-section { display: none; }
-    .continent-section.active-region { display: block; animation: fadeIn 0.4s ease; }
+    [data-theme="dark"] .country-filter select { border-color: #66a3ff; color: #66a3ff; }
+    .country-filter select:hover { background: var(--table-hover); }
+    .global-tables-section { display: none; }
+    .global-tables-section.active-country { display: block; animation: fadeIn 0.4s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
@@ -266,7 +275,7 @@
    CONFIGURATION 
 ═══════════════════════════════════════════════════════════════ */
 const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
-const API_GLOBAL = "https://script.google.com/macros/s/AKfycbwym566Tmz1LOaOvFdimT75P5ODgVJ6yvYCy2fPWBUgWSzeEtWRkSd2uib39A57yAL1/exec"; 
+const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
 
 const REFRESH_SECONDS  = 60;
 const JSONP_TIMEOUT_MS = 45000; 
@@ -284,7 +293,7 @@ let CHART_DATA = {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   STATE
+   STATE & MAPS
 ═══════════════════════════════════════════════════════════════ */
 let refreshTimer = null;
 const chartInstances = {};  
@@ -294,6 +303,45 @@ let isFirstLoad = true;
 let isFetching = false;
 let retryCount = 0;
 const MAX_RETRIES = 3;
+
+let isGeoChartLoaded = false;
+let currentGlobalSelection = "usa";
+
+const countryMap = {
+  "usa": { name: "USA", code: "US" },
+  "canada": { name: "Canada", code: "CA" },
+  "south_africa": { name: "South Africa", code: "ZA" },
+  "morocco": { name: "Morocco", code: "MA" },
+  "nigeria": { name: "Nigeria", code: "NG" },
+  "egypt": { name: "Egypt", code: "EG" },
+  "france": { name: "France", code: "FR" },
+  "belgium": { name: "Belgium", code: "BE" },
+  "switzerland": { name: "Switzerland", code: "CH" },
+  "spain": { name: "Spain", code: "ES" },
+  "united_kingdom": { name: "United Kingdom", code: "GB" },
+  "russia": { name: "Russia", code: "RU" },
+  "australia": { name: "Australia", code: "AU" },
+  "japan": { name: "Japan", code: "JP" },
+  "south_korea": { name: "South Korea", code: "KR" },
+  "mainland_china": { name: "Mainland China", code: "CN" },
+  "hong_kong": { name: "Hong Kong", code: "HK" },
+  "taiwan": { name: "Taiwan", code: "TW" }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   INITIALIZE GOOGLE GEOCHART
+═══════════════════════════════════════════════════════════════ */
+google.charts.load('current', { 'packages': ['geochart'] });
+google.charts.setOnLoadCallback(() => {
+  isGeoChartLoaded = true;
+  if(document.getElementById('regions_div')) drawRegionsMap();
+});
+
+window.addEventListener('resize', () => {
+  if (isGeoChartLoaded && document.getElementById('regions_div')) {
+    drawRegionsMap();
+  }
+});
 
 /* ═══════════════════════════════════════════════════════════════
    THEME TOGGLE (LIGHT/DARK MODE)
@@ -313,6 +361,7 @@ function toggleTheme() {
     localStorage.setItem("theme", "dark");
     updateChartTheme("dark");
   }
+  if(isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
 }
 
 if (localStorage.getItem("theme") === "dark") {
@@ -398,9 +447,84 @@ function setMarketStatus(status) {
   }
 }
 
-function showContinent(regionId) {
-  document.querySelectorAll('.continent-section').forEach(el => el.classList.remove('active-region'));
-  document.getElementById('region-' + regionId).classList.add('active-region');
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL EQUITIES UI SELECTION & MAP DRAWING
+═══════════════════════════════════════════════════════════════ */
+function showGlobalCountry(countryKey) {
+  if (!countryKey) return;
+  currentGlobalSelection = countryKey;
+  
+  // Hide all
+  document.querySelectorAll('.global-tables-section').forEach(el => el.classList.remove('active-country'));
+  
+  // Show selected
+  const el = document.getElementById('country-' + countryKey);
+  if (el) el.classList.add('active-country');
+
+  // Special case for China: show HK and Taiwan as well
+  if (countryKey === "mainland_china") {
+    const hk = document.getElementById('country-hong_kong');
+    const tw = document.getElementById('country-taiwan');
+    if (hk) hk.classList.add('active-country');
+    if (tw) tw.classList.add('active-country');
+  }
+
+  // Sync Dropdown
+  const selectEl = document.getElementById("globalSearch");
+  if (selectEl && selectEl.value !== countryKey) selectEl.value = countryKey;
+
+  // Sync Map
+  if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
+}
+
+function drawRegionsMap() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const data = new google.visualization.DataTable();
+  data.addColumn('string', 'Country');
+  data.addColumn('number', 'Selected');
+
+  const mapData = [];
+  Object.values(countryMap).forEach(info => mapData.push([info.code, 0]));
+
+  // Highlight Selection
+  if (currentGlobalSelection && countryMap[currentGlobalSelection]) {
+    const mainCode = countryMap[currentGlobalSelection].code;
+    const row = mapData.find(r => r[0] === mainCode);
+    if (row) row[1] = 1;
+    
+    // Group China Highlight
+    if (mainCode === 'CN') {
+      const hkRow = mapData.find(r => r[0] === 'HK'); if (hkRow) hkRow[1] = 1;
+      const twRow = mapData.find(r => r[0] === 'TW'); if (twRow) twRow[1] = 1;
+    }
+  }
+
+  data.addRows(mapData);
+
+  const options = {
+    colorAxis: { colors: [
+      isDark ? '#333333' : '#e2e8f0', // Unselected matched color
+      '#D4AF37'                       // Selected Gold
+    ]},
+    backgroundColor: isDark ? '#1e1e1e' : '#ffffff',
+    datalessRegionColor: isDark ? '#2a2a2a' : '#f1f5f9',
+    defaultColor: isDark ? '#333333' : '#e2e8f0',
+    legend: 'none',
+    tooltip: { trigger: 'focus' }
+  };
+
+  const chart = new google.visualization.GeoChart(document.getElementById('regions_div'));
+
+  google.visualization.events.addListener(chart, 'select', function() {
+    const selection = chart.getSelection();
+    if (selection.length > 0) {
+      const countryCode = data.getValue(selection[0].row, 0);
+      const selectedKey = Object.keys(countryMap).find(k => countryMap[k].code === countryCode);
+      if (selectedKey) showGlobalCountry(selectedKey);
+    }
+  });
+
+  chart.draw(data, options);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -481,7 +605,6 @@ function buildError(msg) {
    OMNI-DIRECTIONAL DYNAMIC PARSER (ZERO HARDCODING)
 ═══════════════════════════════════════════════════════════════ */
 function extractDynamicData(data) {
-  // 1. Precise Extraction of Macro Rates & Forex
   KEY_RATES = [];
   FOREX_RATES = [];
   
@@ -497,25 +620,16 @@ function extractDynamicData(data) {
       const col5 = String(row[keys[4]] || "").trim(); 
       const col6 = String(row[keys[5]] || "").trim(); 
 
-      // Match Exactly for Macro Rates (Ignore Forex/Random Text)
-      if (targetRates.includes(col2) && col3 !== "") {
-        KEY_RATES.push({ label: col2, value: col3 });
-      }
+      if (targetRates.includes(col2) && col3 !== "") KEY_RATES.push({ label: col2, value: col3 });
 
-      // Match Exactly for Forex (Ignore Rates/Random Text)
       if (validCcys.includes(col2.toUpperCase())) {
         FOREX_RATES.push({
-          ccy: col2.toUpperCase(),
-          crBuy: col3 || "—",
-          crSell: col4 || "—",
-          kBuy: col5 || "—",
-          kSell: col6 || "—"
+          ccy: col2.toUpperCase(), crBuy: col3 || "—", crSell: col4 || "—", kBuy: col5 || "—", kSell: col6 || "—"
         });
       }
     });
   }
 
-  // 2. Precise Extraction of Chart Data
   CHART_DATA = {
     inflation: { labels: [], avg: [], m12: [] },
     gdp: { labels: [], nominal: [], real: [] },
@@ -539,7 +653,6 @@ function extractDynamicData(data) {
       if (c0.includes("Commercial Banks Weighted")) { currentTable = "banks"; return; }
       if (c0.includes("KEPSS RTGS")) { currentTable = "kepss"; return; }
       
-      // Stop parsing if we hit a different table section
       if (c0.includes("Central Bank") || c0.includes("KESONIA") || c0.includes("Exchange Rates") || c0.includes("Diaspora") || c0.includes("Payment Cards") || c0.includes("Key Rates")) {
         currentTable = null; return;
       }
@@ -581,8 +694,9 @@ function extractDynamicData(data) {
       }
       else if (currentTable === "kepss") {
          let year = c0.slice(-2); let month = c1.substring(0,3);
-         let val = cleanNum(c3); 
-         if (!isNaN(val)) {
+         // Aggressively find the Settlement Value which is the largest valid number in the row
+         let val = Math.max(cleanNum(c2)||0, cleanNum(c3)||0, cleanNum(c4)||0, cleanNum(c5)||0); 
+         if (val > 0) {
             let label = month ? `${month}/${year}` : year;
             CHART_DATA.kepss.labels.unshift(label); 
             CHART_DATA.kepss.values.unshift(val);
@@ -681,7 +795,10 @@ function tableCard(title, headers, rows, emptyMsg) {
   const hdrHtml = headers.map(h => `<th>${h} <span class="sort-icon">↕</span></th>`).join("");
   const bodyHtml = rows.join("");
   const hint = many ? '<div class="expand-hint"></div>' : "";
-  return `<div class="${cls}" ${onclick}><div class="card-header"><h2>${title}</h2></div><div class="card-body"><div class="table-responsive"><table><thead><tr>${hdrHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>${hint}</div></div>`;
+  // Assign ID based on title for persistent sorting
+  const tId = "tbl-" + title.replace(/\W+/g, '-').toLowerCase();
+  
+  return `<div class="${cls}" ${onclick}><div class="card-header"><h2>${title}</h2></div><div class="card-body"><div class="table-responsive"><table data-id="${tId}"><thead><tr>${hdrHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>${hint}</div></div>`;
 }
 
 function buildGenericTableRows(sheetData) {
@@ -708,69 +825,92 @@ function standardCard(title, bodyHtml) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TABLE SORTING ENGINE
+   TABLE SORTING ENGINE (PERSISTENT & ACCURATE)
 ═══════════════════════════════════════════════════════════════ */
-function attachTableSorting() {
-  document.querySelectorAll('th').forEach(th => {
-    th.title = "Click to sort";
-    const newTh = th.cloneNode(true);
-    th.parentNode.replaceChild(newTh, th);
+function runSort(table, colIndex, direction, th) {
+  const tbody = table.querySelector('tbody');
+  const allRows = Array.from(tbody.querySelectorAll('tr'));
+  
+  const dataRows = allRows.filter(r => !r.innerText.toUpperCase().includes('TOTAL'));
+  const totalRows = allRows.filter(r => r.innerText.toUpperCase().includes('TOTAL'));
 
-    newTh.addEventListener('click', (e) => {
-      e.stopPropagation(); 
+  table.querySelectorAll('th').forEach(t => {
+     t.classList.remove('asc', 'desc');
+     const icon = t.querySelector('.sort-icon');
+     if(icon) { icon.innerText = '↕'; icon.style.color = 'var(--text-sub)'; }
+  });
 
-      const table = newTh.closest('table');
-      const tbody = table.querySelector('tbody');
-      const allRows = Array.from(tbody.querySelectorAll('tr'));
-      
-      const dataRows = allRows.filter(r => !r.innerText.toUpperCase().includes('TOTAL'));
-      const totalRows = allRows.filter(r => r.innerText.toUpperCase().includes('TOTAL'));
-      
-      const colIndex = Array.from(newTh.parentNode.children).indexOf(newTh);
-      const isAsc = newTh.classList.contains('asc');
-      const direction = isAsc ? -1 : 1; 
+  th.classList.add(direction === 1 ? 'asc' : 'desc');
+  const icon = th.querySelector('.sort-icon');
+  if(icon) {
+    icon.innerText = direction === 1 ? '▲' : '▼';
+    icon.style.color = '#D4AF37';
+  }
 
-      table.querySelectorAll('th').forEach(t => {
-         t.classList.remove('asc', 'desc');
-         const icon = t.querySelector('.sort-icon');
-         if(icon) { icon.innerText = '↕'; icon.style.color = 'var(--text-sub)'; }
-      });
+  dataRows.sort((a, b) => {
+    const aText = a.children[colIndex].innerText.trim();
+    const bText = b.children[colIndex].innerText.trim();
 
-      newTh.classList.add(isAsc ? 'desc' : 'asc');
-      const icon = newTh.querySelector('.sort-icon');
-      if(icon) {
-        icon.innerText = isAsc ? '▼' : '▲';
-        icon.style.color = '#D4AF37';
+    const parseVal = (str) => {
+      if (str === '—' || str === 'N/A' || str === '-') return -Infinity;
+      if (str.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+         const parts = str.split(',')[0].split('/');
+         return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
       }
+      const isNegative = str.includes('▼') || str.includes('(') || str.startsWith('-');
+      let numStr = str.replace(/[^0-9.]/g, '');
+      if (numStr === '') return str; 
+      let num = parseFloat(numStr);
+      if (isNegative) num = -num;
+      return num;
+    };
 
-      dataRows.sort((a, b) => {
-        const aText = a.children[colIndex].innerText.trim();
-        const bText = b.children[colIndex].innerText.trim();
+    const aVal = parseVal(aText);
+    const bVal = parseVal(bText);
 
-        const parseVal = (str) => {
-          if (str === '—' || str === 'N/A' || str === '-') return -Infinity;
-          if (str.match(/^\d{2}\/\d{2}\/\d{4}/)) {
-             const parts = str.split(',')[0].split('/');
-             return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
-          }
-          const isNegative = str.includes('▼') || str.includes('(') || str.startsWith('-');
-          let numStr = str.replace(/[^0-9.]/g, '');
-          if (numStr === '') return str; 
-          let num = parseFloat(numStr);
-          if (isNegative) num = -num;
-          return num;
-        };
+    if (typeof aVal === 'number' && typeof bVal === 'number') { return (aVal - bVal) * direction; }
+    return String(aText).localeCompare(String(bText), undefined, {numeric: true}) * direction;
+  });
 
-        const aVal = parseVal(aText);
-        const bVal = parseVal(bText);
+  dataRows.forEach(row => tbody.appendChild(row));
+  totalRows.forEach(row => tbody.appendChild(row));
+}
 
-        if (typeof aVal === 'number' && typeof bVal === 'number') { return (aVal - bVal) * direction; }
-        return String(aVal).localeCompare(String(bVal)) * direction;
+function attachTableSorting() {
+  const savedState = JSON.parse(localStorage.getItem('tableSortState') || '{}');
+  
+  document.querySelectorAll('table').forEach(table => {
+    const tableId = table.getAttribute('data-id');
+    const ths = table.querySelectorAll('th');
+    
+    ths.forEach((th, colIndex) => {
+      th.title = "Click to sort";
+      const newTh = th.cloneNode(true);
+      th.parentNode.replaceChild(newTh, th);
+
+      newTh.addEventListener('click', (e) => {
+        e.stopPropagation(); 
+        const isAsc = newTh.classList.contains('asc');
+        const direction = isAsc ? -1 : 1; 
+
+        runSort(table, colIndex, direction, newTh);
+        
+        // Save State
+        if (tableId) {
+           savedState[tableId] = { colIndex, direction };
+           localStorage.setItem('tableSortState', JSON.stringify(savedState));
+        }
       });
-
-      dataRows.forEach(row => tbody.appendChild(row));
-      totalRows.forEach(row => tbody.appendChild(row));
     });
+
+    // Apply persistent sorting on load
+    if (tableId && savedState[tableId]) {
+      const state = savedState[tableId];
+      const activeTh = table.querySelectorAll('th')[state.colIndex];
+      if (activeTh) {
+        runSort(table, state.colIndex, state.direction, activeTh);
+      }
+    }
   });
 }
 
@@ -835,54 +975,51 @@ function render(data) {
   function pctKey(t) { return t["%_change"] || t["percent_change"] || t["change_%"] || ""; }
   const gainers   = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change"));
   const losers    = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change"));
-  const unchanged = tickers.filter(t => getPctNumForSort(t, "%_change") === 0);
+  const unchanged = [...tickers].filter(t => getPctNumForSort(t, "%_change") === 0);
 
-  /* ── GLOBAL EQUITIES MAP ── */
-  const globalRegions = {
-    "Africa": ["south_africa", "morocco", "nigeria", "egypt"],
-    "NorthAmerica": ["usa", "canada"],
-    "Europe": ["france", "belgium", "switzerland", "spain", "united_kingdom", "russia"],
-    "AsiaPacific": ["australia", "japan", "south_korea", "mainland_china", "hong_kong", "taiwan"]
-  };
-  const regionNames = {
-    "south_africa": "South Africa", "morocco": "Morocco", "nigeria": "Nigeria", "egypt": "Egypt",
-    "usa": "USA", "canada": "Canada",
-    "france": "France", "belgium": "Belgium", "switzerland": "Switzerland", "spain": "Spain", "united_kingdom": "United Kingdom", "russia": "Russia",
-    "australia": "Australia", "japan": "Japan", "south_korea": "South Korea", "mainland_china": "Mainland China", "hong_kong": "Hong Kong", "taiwan": "Taiwan"
-  };
-
+  /* ── GLOBAL EQUITIES MAP HTML ── */
   let globalEquitiesHtml = `
     <div class="full-card">
-      <div class="card-header"><h2>Global Equity Analysis</h2></div>
+      <div class="card-header"><h2>Global Equity Explorer</h2></div>
       <div class="card-body">
-        <div class="continent-filter">
-          <label for="continentSelect" style="margin-right:10px;">Select Region:</label>
-          <select id="continentSelect" onchange="showContinent(this.value)">
-            <option value="Africa">Africa</option>
-            <option value="NorthAmerica">North America</option>
-            <option value="Europe">Europe</option>
-            <option value="AsiaPacific">Asia & Pacific</option>
-          </select>
-        </div>
+        <div class="global-explorer-wrapper">
+          <div class="country-filter">
+            <select id="globalSearch" onchange="showGlobalCountry(this.value)">
   `;
 
-  for (const [regionId, countries] of Object.entries(globalRegions)) {
-    const activeClass = regionId === "Africa" ? "active-region" : "";
-    globalEquitiesHtml += `<div id="region-${regionId}" class="continent-section ${activeClass}">`;
-    
-    countries.forEach(countryKey => {
-      const cData = data[countryKey];
-      if (cData && cData.length > 0) {
-        const tableData = buildGenericTableRows(cData);
-        globalEquitiesHtml += tableCard(regionNames[countryKey], tableData.headers, tableData.rows, "No data available");
-      } else {
-        globalEquitiesHtml += tableCard(regionNames[countryKey], ["Status"], [], "Data not loaded yet.");
-      }
-    });
+  Object.keys(countryMap).forEach(key => {
+    const isSelected = key === currentGlobalSelection ? "selected" : "";
+    globalEquitiesHtml += `<option value="${key}" ${isSelected}>${countryMap[key].name}</option>`;
+  });
 
+  globalEquitiesHtml += `
+            </select>
+          </div>
+          <div id="regions_div" style="width: 100%; height: 350px;"></div>
+          <div id="global-tables-container">
+  `;
+
+  Object.keys(countryMap).forEach(countryKey => {
+    const cData = data[countryKey];
+    let isActive = countryKey === currentGlobalSelection ? "active-country" : "";
+    
+    // Auto-show HK and TW if Mainland China is selected
+    if (currentGlobalSelection === "mainland_china" && (countryKey === "hong_kong" || countryKey === "taiwan")) {
+      isActive = "active-country";
+    }
+
+    globalEquitiesHtml += `<div id="country-${countryKey}" class="global-tables-section ${isActive}">`;
+    
+    if (cData && cData.length > 0) {
+      const tableData = buildGenericTableRows(cData);
+      globalEquitiesHtml += tableCard(countryMap[countryKey].name, tableData.headers, tableData.rows, "No data available");
+    } else {
+      globalEquitiesHtml += tableCard(countryMap[countryKey].name, ["Status"], [], "Data not loaded yet.");
+    }
     globalEquitiesHtml += `</div>`;
-  }
-  globalEquitiesHtml += `</div></div>`;
+  });
+
+  globalEquitiesHtml += `</div></div></div>`;
 
   /* ── 1. SUMMARY METRICS ── */
   const metricsHtml = `
@@ -1101,12 +1238,17 @@ function render(data) {
     '<div class="grid3">',
       tableCard("Top Gainers",  ["Ticker","Price","Change"],   gainers.map(tickerRow), "No gainers today."),
       tableCard("Top Losers",   ["Ticker","Price","Change"],   losers.map(tickerRow),  "No losers today."),
+      tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."),
+    '</div>',
+
+    '<div class="grid2">',
       tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."),
+      tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."),
     '</div>',
 
     '<div class="grid2">',
       tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, ""),
-      tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."),
+      tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."),
     '</div>',
 
     globalEquitiesHtml,
@@ -1122,7 +1264,6 @@ function render(data) {
       tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"],             topFSell.map(rankRow_FS), "No foreign sell data."),
     '</div>',
 
-    tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."),
     standardCard("Equity Heat Map — All Tickers", heatHtml),
     tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded."),
     tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
@@ -1136,6 +1277,8 @@ function render(data) {
     if (document.documentElement.getAttribute("data-theme") === "dark") {
       updateChartTheme("dark");
     }
+    // Draw GeoChart if loaded
+    if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
   }, 50);
 }
 
@@ -1189,7 +1332,19 @@ function initCharts() {
       options: {
         responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
         plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })}B` } } },
-        scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => (v >= 1000 ? (v / 1000).toFixed(0) + "T" : v + "B") } } },
+        scales: { 
+          x: CSCALES.x, 
+          y: { 
+            ...CSCALES.y, 
+            ticks: { 
+              ...CSCALES.y.ticks, 
+              callback: function(value) {
+                if (value >= 1000) return (value / 1000).toPrecision(2).replace(/\.0+$/, '') + 'T';
+                return value + 'B';
+              }
+            } 
+          } 
+        },
       },
     });
   }
@@ -1226,7 +1381,16 @@ function initCharts() {
         plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })} Mn` } } },
         scales: {
           x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } },
-          y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => (v / 1000000).toFixed(1) + "T" } },
+          y: { 
+            ...CSCALES.y, 
+            ticks: { 
+              ...CSCALES.y.ticks, 
+              callback: function(value) {
+                if (value >= 1000000) return (value / 1000000).toPrecision(2).replace(/\.0+$/, '') + 'T';
+                return value;
+              }
+            } 
+          },
         },
       },
     });
