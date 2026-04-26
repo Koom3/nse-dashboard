@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🇰🇪 Market Data Analysis</title>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
   <style>
     /* ── CSS VARIABLES ──────────────────── */
     :root {
@@ -71,6 +73,16 @@
     .rate-label { font-size: 8.5pt; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
     .rate-value { font-size: 12pt; color: #002060; } [data-theme="dark"] .rate-value { color: #66a3ff; }
 
+    /* ── FIX: GLOBAL EQUITIES MAP SELECTOR CSS ────────────────── */
+    .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1rem; }
+    .country-filter { display: flex; justify-content: center; padding-bottom: 1rem; border-bottom: 2px dashed var(--border-color); }
+    .country-filter select { padding: 8px 16px; font-size: 10pt; font-family: inherit; font-weight: bold; border: 2px solid #002060; border-radius: 6px; color: #002060; background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; }
+    [data-theme="dark"] .country-filter select { border-color: #66a3ff; color: #66a3ff; }
+    .country-filter select:hover { background: var(--table-hover); }
+    .global-tables-section { display: none; }
+    .global-tables-section.active-country { display: block; animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
     .heatmap-search { width: 100%; margin-bottom: 0.85rem; padding: 7px 12px; border: 1px solid var(--input-border); border-radius: 6px; font-size: 10pt; background: var(--input-bg); color: var(--text-main); outline: none; }
     .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 0.6rem; }
     .ticker-cell { background: var(--ticker-cell-bg); border-radius: 6px; padding: 0.6rem 0.75rem; border-left: 4px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -83,7 +95,7 @@
     .graph-card h3 { font-size: 10pt; color: #002060; text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; } [data-theme="dark"] .graph-card h3 { color: #66a3ff; }
     .chart-wrapper { position: relative; height: 250px; width: 100%; display: block; }
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
-    .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; font-size: 10pt; line-height: 1.8; text-align: center; }
+    .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: #7b1a1a; font-size: 11pt; line-height: 1.8; text-align: center; }
     
     /* ── PHASE 2 UI ADDITIONS ───────────────────────────────── */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; justify-content: center; align-items: center; }
@@ -198,7 +210,7 @@ const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe
 const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
 const API_AI = "https://script.google.com/macros/s/AKfycbxzhisvbAfZyHPF0hEAmlF579b1ayHUAB-RnrkGoePv6NvMzKuWurjoCWYdGTYkLVQR5g/exec";
 
-const JSONP_TIMEOUT_MS = 15000; // Fast fail if APIs are dead
+const JSONP_TIMEOUT_MS = 15000; 
 
 /* ═══════════════════════════════════════════════════════════════
    DYNAMIC DATA VARIABLES
@@ -235,7 +247,7 @@ const countryMap = {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   PHASE 2: PDF TEAR SHEET EXPORT & SUBSCRIPTION
+   PHASE 2: PDF EXPORT & SUBSCRIPTION
 ═══════════════════════════════════════════════════════════════ */
 function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
 function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
@@ -271,15 +283,13 @@ async function submitSubscription() {
 
   try {
     const response = await fetch(API_LOCAL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" }, 
-      body: JSON.stringify({ action: "subscribe", email, time, days })
+      method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "subscribe", email, time, days })
     });
     btn.innerText = "Subscribe via Email";
     document.getElementById('sub-feedback').style.display = 'block';
     setTimeout(() => { document.getElementById('sub-feedback').style.display = 'none'; closeExportModal(); }, 2500);
   } catch (err) {
-    alert("Error saving subscription. Ensure Apps Script is updated.");
+    alert("Error saving subscription. Ensure Apps Script is deployed properly.");
     btn.innerText = "Subscribe via Email";
   }
 }
@@ -299,7 +309,7 @@ async function sendChatMessage() {
   appendMessage("user", msg);
   input.value = "";
   const typingId = appendMessage("bot", '<span class="typing-indicator">Analyzing live data...</span>');
-  const context = { nse_stats: stateLocalData?.stats || [], cbk_rates: KEY_RATES, forex: FOREX_RATES };
+  const context = { nse_stats: stateLocalData?.stats || [], cbk_rates: KEY_RATES, forex: FOREX_RATES, world_indices: stateLocalData?.indices || [] };
   try {
     const response = await fetch(API_AI, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ message: msg, context: context }) });
     const data = await response.json();
@@ -429,7 +439,7 @@ function loadData() {
   const timeoutId = setTimeout(() => {
     isFetching = false;
     if (!localFired || !globalFired) {
-       document.getElementById("app").innerHTML = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond.<br><br><b>Local API Fired:</b> ${localFired}<br><b>Global API Fired:</b> ${globalFired}<br><br><b>Fix:</b> You must go into the failing script and select <b>Deploy > Manage Deployments > Edit (Pencil) > New Version</b> and ensure 'Who has access' is set to 'Anyone'.`);
+       document.getElementById("app").innerHTML = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond within 15 seconds.<br><br><b>Local API (AIB/NSE):</b> ${localFired ? "Success ✅" : "Failed ❌"}<br><b>Global API (TradingView):</b> ${globalFired ? "Success ✅" : "Failed ❌"}<br><br><b>Fix:</b> You must go into the failing Google Apps Script, click <b>Deploy > Manage Deployments > Edit (Pencil) > New Version > Deploy</b> and ensure 'Who has access' is set to 'Anyone'.`);
     }
   }, JSONP_TIMEOUT_MS);
 
@@ -439,12 +449,12 @@ function loadData() {
       if (btn) btn.innerHTML = "↻ Refresh";
       const mergedData = { ...stateLocalData, ...stateGlobalData };
       const ts = mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
-      document.getElementById("last-updated").textContent = "Updated: " + ts;
       
       try {
         render(mergedData);
+        document.getElementById("last-updated").textContent = "Updated: " + ts;
       } catch(err) {
-        document.getElementById("app").innerHTML = buildError(`Rendering Error: <br><br>${err.stack}`);
+        document.getElementById("app").innerHTML = buildError(`Rendering Error: <br><br>${err.message}`);
       }
     }
   }
@@ -458,7 +468,7 @@ function loadData() {
   document.head.appendChild(s2);
 }
 
-function buildError(msg) { return `<div class="error-box" style="margin-top:50px;"><h2>🚨 Connection Failure</h2><p>${msg}</p></div>`; }
+function buildError(msg) { return `<div class="error-box" style="margin-top:50px;"><h2>🚨 Dashboard Error</h2><p>${msg}</p></div>`; }
 
 function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
@@ -637,7 +647,6 @@ function attachTableSorting() {
    MAIN RENDER & CHART INIT
 ═══════════════════════════════════════════════════════════════ */
 function render(data) {
-  extractDynamicData(data);
   const tickers = (data.tickers || []).filter(t => t && t.symbol), mw = (data.marketwatch || []).filter(t => t && t.symbol), indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"), active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price), statsArr = (data.stats || []), corpActions = (data.corporate_actions || []);
   let apiStatus = "CLOSED"; if (data.market_assumptions && data.market_assumptions.length > 0) { const keys = Object.keys(data.market_assumptions[0]); if (keys.includes("open")) apiStatus = "OPEN"; else if (keys.includes("closed")) apiStatus = "CLOSED"; } setMarketStatus(apiStatus);
   const statsMap = {}, statsChange = {}; statsArr.forEach(r => { if (!r || !r.name) return; const k = r.name.trim(); statsMap[k] = r.value; statsChange[k] = r.change; });
@@ -716,7 +725,9 @@ function render(data) {
   ].join("");
 
   setTimeout(() => {
-    initCharts(); attachTableSorting();
+    extractDynamicData(data);
+    initCharts(); 
+    attachTableSorting();
     if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark");
     if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
   }, 50);
@@ -729,42 +740,43 @@ function initCharts() {
   const CINTERACT = { mode: "index", intersect: false }, CLEGEND = { labels: { font: CFONT, color: "#2c3e50", boxWidth: 12 } };
   const { inflation, gdp, banks, kepss, yieldCurve } = CHART_DATA;
 
-  if(inflation.labels.length > 0) {
-    createChart("gc_inflation", { type: "line", data: { labels: inflation.labels, datasets: [{ label: "Annual Average", data: inflation.avg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true }, { label: "12-Month", data: inflation.m12, borderColor: "#D4AF37", backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } } } });
-  }
+  try {
+    if(inflation.labels.length > 0) {
+      createChart("gc_inflation", { type: "line", data: { labels: inflation.labels, datasets: [{ label: "Annual Average", data: inflation.avg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true }, { label: "12-Month", data: inflation.m12, borderColor: "#D4AF37", backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } } } });
+    }
+  } catch(e) {}
 
-  // Phase 2: Y-Axis GDP formatting (Ksh 0.00 Tn)
-  if(gdp.labels.length > 0) {
-    createChart("gc_gdp", {
-      type: "bar",
-      data: { labels: gdp.labels, datasets: [{ label: "Nominal GDP", data: gdp.nominal, type: "bar", backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37", order: 2 }, { label: "Real GDP", data: gdp.real, type: "line", borderColor: "#00b050", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 }] },
-      options: {
-        responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
-        plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: Ksh ${(ctx.parsed.y/1000000).toFixed(2)} Tn` } } },
-        scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: function(value) { return 'Ksh ' + (value / 1000000).toFixed(2) + ' Tn'; } } } }
-      }
-    });
-  }
+  try {
+    if(gdp.labels.length > 0) {
+      createChart("gc_gdp", {
+        type: "bar",
+        data: { labels: gdp.labels, datasets: [{ label: "Nominal GDP", data: gdp.nominal, type: "bar", backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37", order: 2 }, { label: "Real GDP", data: gdp.real, type: "line", borderColor: "#00b050", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 }] },
+        options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: Ksh ${(ctx.parsed.y/1000000).toFixed(2)} Tn` } } }, scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: function(value) { return 'Ksh ' + (value / 1000000).toFixed(2) + ' Tn'; } } } } }
+      });
+    }
+  } catch(e) {}
 
-  if(banks.labels.length > 0) {
-    createChart("gc_banks", { type: "line", data: { labels: banks.labels, datasets: [{ label: "Deposit", data: banks.deposit, borderColor: "#002060", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Savings", data: banks.savings, borderColor: "#D4AF37", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Lending", data: banks.lending, borderColor: "#00b050", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Overdraft", data: banks.overdraft, borderColor: "#ff5252", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } } } });
-  }
+  try {
+    if(banks.labels.length > 0) {
+      createChart("gc_banks", { type: "line", data: { labels: banks.labels, datasets: [{ label: "Deposit", data: banks.deposit, borderColor: "#002060", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Savings", data: banks.savings, borderColor: "#D4AF37", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Lending", data: banks.lending, borderColor: "#00b050", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Overdraft", data: banks.overdraft, borderColor: "#ff5252", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } } } });
+    }
+  } catch(e) {}
 
-  if(kepss.labels.length > 0) {
-    createChart("gc_kepss", { type: "line", data: { labels: kepss.labels, datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })} Mn` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: function(value) { if (value >= 1000000) return (value / 1000000).toPrecision(2).replace(/\.0+$/, '') + 'T'; return value; } } } } } });
-  }
+  try {
+    if(kepss.labels.length > 0) {
+      createChart("gc_kepss", { type: "line", data: { labels: kepss.labels, datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })} Mn` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: function(value) { if (value >= 1000000) return (value / 1000000).toPrecision(2).replace(/\.0+$/, '') + 'T'; return value; } } } } } });
+    }
+  } catch(e) {}
 
-  if(yieldCurve.labels.length > 0) {
-    createChart("gc_yield", {
-      type: "line",
-      data: { labels: yieldCurve.labels, datasets: [{ label: "Sovereign Yield (%)", data: yieldCurve.data, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.1)", borderWidth: 3, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: "#D4AF37", tension: 0.4, fill: true }] },
-      options: {
-        responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
-        plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Yield: ${ctx.parsed.y.toFixed(2)}%` } } },
-        scales: { x: { ...CSCALES.x, title: { display: true, text: 'Maturity (Tenor)', font: CFONT } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" }, title: { display: true, text: 'Yield (%)', font: CFONT } } }
-      }
-    });
-  }
+  try {
+    if(yieldCurve.labels.length > 0) {
+      createChart("gc_yield", {
+        type: "line",
+        data: { labels: yieldCurve.labels, datasets: [{ label: "Sovereign Yield (%)", data: yieldCurve.data, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.1)", borderWidth: 3, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: "#D4AF37", tension: 0.4, fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Yield: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: { ...CSCALES.x, title: { display: true, text: 'Maturity (Tenor)', font: CFONT } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" }, title: { display: true, text: 'Yield (%)', font: CFONT } } } }
+      });
+    }
+  } catch(e) {}
 }
 
 function filterHeatmap(q) {
