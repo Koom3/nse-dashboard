@@ -303,7 +303,7 @@
       font-weight: normal; background: var(--bg-body);
     }
     .chat-bubble {
-      max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 9.5pt; line-height: 1.4;
+      max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 9.5pt; line-height: 1.4; word-wrap: break-word;
     }
     .chat-bubble.user {
       align-self: flex-end; background: var(--ai-bubble-user); color: #fff;
@@ -315,6 +315,8 @@
     }
     .chat-bubble.bot p { margin-bottom: 8px; }
     .chat-bubble.bot p:last-child { margin-bottom: 0; }
+    .chat-bubble.bot table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .chat-bubble.bot th, .chat-bubble.bot td { border: 1px solid var(--border-color); padding: 4px 6px; font-size: 8.5pt; }
     .ai-chat-input-area {
       padding: 10px; background: var(--bg-card); border-top: 1px solid var(--border-color);
       display: flex; gap: 8px;
@@ -363,7 +365,7 @@
     </div>
     <div class="ai-chat-messages" id="ai-chat-messages">
       <div class="chat-bubble bot">
-        Hi! I'm your dedicated Financial Analyst AI. I'm connected to the live data on this dashboard. Ask me anything!
+        Hi! I'm your dedicated Financial Analyst AI, powered by Gemini 2.5 Flash. I'm connected to the live dashboard and real-time web search. Ask me anything!
       </div>
     </div>
     <div class="ai-chat-input-area">
@@ -379,7 +381,9 @@
    CONFIGURATION 
 ═══════════════════════════════════════════════════════════════ */
 const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
-const API_GLOBAL = "https://script.google.com/macros/s/AKfycbwym566Tmz1LOaOvFdimT75P5ODgVJ6yvYCy2fPWBUgWSzeEtWRkSd2uib39A57yAL1/exec"; 
+const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
+
+// ⚠️ Ensure your correct AI URL is here!
 const API_AI = "https://script.google.com/macros/s/AKfycbxzhisvbAfZyHPF0hEAmlF579b1ayHUAB-RnrkGoePv6NvMzKuWurjoCWYdGTYkLVQR5g/exec";
 
 const REFRESH_SECONDS  = 60;
@@ -454,7 +458,6 @@ async function sendChatMessage() {
   
   const typingId = appendMessage("bot", '<span class="typing-indicator">Analyzing live data...</span>');
   
-  // Compress context to keep payload efficient
   const context = {
     nse_stats: stateLocalData?.stats || [],
     cbk_rates: KEY_RATES,
