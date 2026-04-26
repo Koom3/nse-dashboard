@@ -479,25 +479,10 @@ function extractDynamicData(data) {
     const targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
 
     data.macro.forEach(row => {
-      const vals = Object.values(row).map(v => String(v).trim());
-      
-      let foundRate = targetRates.find(r => vals.includes(r));
-      if (foundRate) {
-         let idx = vals.indexOf(foundRate);
-         if (idx !== -1 && idx + 1 < vals.length && vals[idx + 1] !== "") {
-            KEY_RATES.push({ label: foundRate, value: vals[idx + 1] });
-         }
-      }
-
-      let foundCcy = validCcys.find(c => vals.includes(c));
-      if (foundCcy) {
-         let idx = vals.indexOf(foundCcy);
-         if (idx !== -1) {
-            FOREX_RATES.push({
-               ccy: foundCcy, crBuy: vals[idx+1] || "—", crSell: vals[idx+2] || "—", kBuy: vals[idx+3] || "—", kSell: vals[idx+4] || "—"
-            });
-         }
-      }
+      const keys = Object.keys(row);
+      const col2 = String(row[keys[1]] || "").trim(), col3 = String(row[keys[2]] || "").trim(), col4 = String(row[keys[3]] || "").trim(), col5 = String(row[keys[4]] || "").trim(), col6 = String(row[keys[5]] || "").trim(); 
+      if (targetRates.includes(col2) && col3 !== "") KEY_RATES.push({ label: col2, value: col3 });
+      if (validCcys.includes(col2.toUpperCase())) { FOREX_RATES.push({ ccy: col2.toUpperCase(), crBuy: col3 || "—", crSell: col4 || "—", kBuy: col5 || "—", kSell: col6 || "—" }); }
     });
   }
 
@@ -506,11 +491,15 @@ function extractDynamicData(data) {
 
   // Phase 2: Yield Curve (Strict Regex & Column Filtering)
   const yields = [];
-  if (KEY_RATES.length > 0) {
-     const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
-     if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
+  if (data.tbills && data.tbills.length > 0) {
+    const d91 = data.tbills.find(r => String(Object.values(r).join("")).includes("91"));
+    if(d91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(Object.values(d91)[4] || Object.values(d91)[3]) }); 
+    const d182 = data.tbills.find(r => String(Object.values(r).join("")).includes("182"));
+    if(d182) yields.push({ tenor: 0.5, label: "6M", yield: cleanNum(Object.values(d182)[4] || Object.values(d182)[3]) });
+    const d364 = data.tbills.find(r => String(Object.values(r).join("")).includes("364"));
+    if(d364) yields.push({ tenor: 1, label: "1Y", yield: cleanNum(Object.values(d364)[4] || Object.values(d364)[3]) });
   }
-
+  
   if (data.tbonds && data.tbonds.length > 0) {
     data.tbonds.forEach(row => {
       const text = Object.values(row).join(" ");
@@ -543,48 +532,31 @@ function extractDynamicData(data) {
     let tempGdp = []; 
     
     data.cbk.forEach(row => {
-      const vals = Object.values(row).map(v => String(v).trim());
-      const joined = vals.join(" ").toLowerCase();
+      const keys = Object.keys(row);
+      const c0 = String(row[keys[0]] || "").trim(), c1 = String(row[keys[1]] || "").trim(), c2 = String(row[keys[2]] || "").trim(), c3 = String(row[keys[3]] || "").trim(), c4 = String(row[keys[4]] || "").trim(), c5 = String(row[keys[5]] || "").trim();
 
-      if (joined.includes("inflation rates")) { currentTable = "inflation"; return; }
-      if (joined.includes("annual gdp")) { currentTable = "gdp"; return; }
-      if (joined.includes("commercial banks weighted")) { currentTable = "banks"; return; }
-      if (joined.includes("kepss rtgs")) { currentTable = "kepss"; return; }
-      if (joined.includes("central bank") || joined.includes("kesonia") || joined.includes("exchange rates") || joined.includes("diaspora") || joined.includes("payment cards") || joined.includes("key rates")) { currentTable = null; return; }
+      if (c0.includes("Inflation Rates")) { currentTable = "inflation"; return; }
+      if (c0.includes("Annual GDP")) { currentTable = "gdp"; return; }
+      if (c0.includes("Commercial Banks Weighted")) { currentTable = "banks"; return; }
+      if (c0.includes("KEPSS RTGS")) { currentTable = "kepss"; return; }
+      if (c0.includes("Central Bank") || c0.includes("KESONIA") || c0.includes("Exchange Rates") || c0.includes("Diaspora") || c0.includes("Payment Cards") || c0.includes("Key Rates")) { currentTable = null; return; }
+      if (!currentTable || c0 === "Year" || c0 === "Date" || c0 === "") return;
 
-      let cols = vals.filter(x => x !== "");
-      if (cols.length < 2) return;
-      if (cols[0].toLowerCase() === "year" || cols[0].toLowerCase() === "date") return;
-
-      let nums = cols.map(x => cleanNum(x)).filter(n => !isNaN(n));
-      let yearStr = cols.find(x => /\d{4}/.test(x)) || "";
-      let monthStr = cols.find(x => /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(x)) || "";
-      let yearMatch = yearStr.match(/\d{4}/);
-      let year = yearMatch ? yearMatch[0] : "";
-      let month = monthStr.substring(0,3);
-      let label = month ? `${month}/${year.slice(-2)}` : year;
-
-      if (currentTable === "inflation" && nums.length >= 2) {
-         let m12 = nums[nums.length-2];
-         let avg = nums[nums.length-1];
-         if (label && !isNaN(avg)) { CHART_DATA.inflation.labels.unshift(label); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(m12); }
+      if (currentTable === "inflation") {
+         let year = c0.slice(-2); let month = c1.substring(0,3); let avg = cleanNum(c2); let m12 = cleanNum(c3);
+         if (!isNaN(avg)) { CHART_DATA.inflation.labels.unshift(month ? `${month}/${year}` : year); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(isNaN(m12) ? null : m12); }
       } 
-      else if (currentTable === "gdp" && nums.length >= 2) {
-         let yr = parseInt(year); 
-         let gdpNums = nums.filter(n => n !== yr && n > 1000);
-         if (!isNaN(yr) && gdpNums.length >= 1) { 
-             let nom = gdpNums[0];
-             let real = gdpNums.length > 1 ? gdpNums[1] : null;
-             tempGdp.push({ year: yr, nom, real }); 
-         }
+      else if (currentTable === "gdp") {
+         let year = parseInt(c0); let nom = cleanNum(c1); let real = cleanNum(c2);
+         if (!isNaN(year) && !isNaN(nom)) { tempGdp.push({ year, nom, real: isNaN(real) ? null : real }); }
       }
-      else if (currentTable === "banks" && nums.length >= 4) {
-         let dep = nums[nums.length-4], sav = nums[nums.length-3], len = nums[nums.length-2], ovr = nums[nums.length-1];
-         if (label && !isNaN(dep)) { CHART_DATA.banks.labels.unshift(label); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(sav); CHART_DATA.banks.lending.unshift(len); CHART_DATA.banks.overdraft.unshift(ovr); }
+      else if (currentTable === "banks") {
+         let year = c0.slice(-2); let month = c1.substring(0,3); let dep = cleanNum(c2); let sav = cleanNum(c3); let len = cleanNum(c4); let ovr = cleanNum(c5);
+         if (!isNaN(dep)) { CHART_DATA.banks.labels.unshift(month ? `${month}/${year}` : year); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(isNaN(sav) ? null : sav); CHART_DATA.banks.lending.unshift(isNaN(len) ? null : len); CHART_DATA.banks.overdraft.unshift(isNaN(ovr) ? null : ovr); }
       }
-      else if (currentTable === "kepss" && nums.length >= 1) {
-         let val = Math.max(...nums.filter(n => n > 1000)); 
-         if (label && val > 0 && val !== -Infinity) { CHART_DATA.kepss.labels.unshift(label); CHART_DATA.kepss.values.unshift(val); }
+      else if (currentTable === "kepss") {
+         let year = c0.slice(-2); let month = c1.substring(0,3); let val = Math.max(cleanNum(c2)||0, cleanNum(c3)||0, cleanNum(c4)||0, cleanNum(c5)||0); 
+         if (val > 0) { CHART_DATA.kepss.labels.unshift(month ? `${month}/${year}` : year); CHART_DATA.kepss.values.unshift(val); }
       }
     });
 
@@ -678,6 +650,9 @@ function attachTableSorting() {
    MAIN RENDER & CHART INIT
 ═══════════════════════════════════════════════════════════════ */
 function render(data) {
+  // CRITICAL FIX: Extract dynamically BEFORE building the HTML so tables populate correctly!
+  extractDynamicData(data);
+
   const tickers = (data.tickers || []).filter(t => t && t.symbol), mw = (data.marketwatch || []).filter(t => t && t.symbol), indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"), active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price), statsArr = (data.stats || []), corpActions = (data.corporate_actions || []);
   let apiStatus = "CLOSED"; if (data.market_assumptions && data.market_assumptions.length > 0) { const keys = Object.keys(data.market_assumptions[0]); if (keys.includes("open")) apiStatus = "OPEN"; else if (keys.includes("closed")) apiStatus = "CLOSED"; } setMarketStatus(apiStatus);
   const statsMap = {}, statsChange = {}; statsArr.forEach(r => { if (!r || !r.name) return; const k = r.name.trim(); statsMap[k] = r.value; statsChange[k] = r.change; });
@@ -707,7 +682,7 @@ function render(data) {
 
   let corpActionsHtml = "";
   if (corpActions.length > 0) { const cData = buildGenericTableRows(corpActions); corpActionsHtml = tableCard("Upcoming Corporate Actions", cData.headers, cData.rows, "No upcoming corporate actions."); } 
-  else { corpActionsHtml = tableCard("Upcoming Corporate Actions", ["Status"], [], "Fetching Corporate Actions Calendar..."); }
+  else { corpActionsHtml = tableCard("Upcoming Corporate Actions", ["Status"], [], "Data updating. Awaiting next sync from NSE..."); }
 
   const statsRows = statsArr.filter(r => r && r.name && r.value !== undefined && r.value !== "").map(r => `<tr><td>${r.name}</td><td>${fmtNum(r.value, 2)}</td><td>${(r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—"}</td></tr>`);
   function tickerRow(t) { return `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(pctKey(t), true)}</td></tr>`; }
@@ -731,7 +706,7 @@ function render(data) {
       <div class="card-body">
         <div class="graphs-grid">
           <div class="graph-card"><h3>12-Month Inflation (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>
-          <div class="graph-card"><h3>Nominal vs Real GDP (KES Billions)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>
+          <div class="graph-card"><h3>Nominal vs Real GDP (KES Trillions)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>
           <div class="graph-card"><h3>Commercial Banks Weighted Avg Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div>
           <div class="graph-card"><h3>KEPSS RTGS — Settlement Value (KES Mn)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>
           <div class="graph-card" style="grid-column: 1 / -1;"><h3>Kenyan Sovereign Yield Curve (T-Bills & Bonds)</h3><div class="chart-wrapper"><canvas id="gc_yield"></canvas></div></div>
@@ -756,7 +731,6 @@ function render(data) {
   ].join("");
 
   setTimeout(() => {
-    extractDynamicData(data);
     initCharts(); 
     attachTableSorting();
     if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark");
