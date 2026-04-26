@@ -63,7 +63,9 @@
     .table-collapsed .expand-hint::after { content: "▼ Tap card to view full table ▼"; } .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ Tap to collapse ▲"; color: #002060; }
     
     .table-responsive { width: 100%; overflow-x: auto; } table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    table[data-id] { width: 100%; } 
     th { text-align: left; padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); font-size: 10pt; background: var(--table-header-bg); cursor: pointer; user-select: none; }
+    th:hover { background: var(--table-border); } [data-theme="dark"] th { color: #66a3ff; }
     td { padding: 7px 10px; border-bottom: 1px solid var(--table-border); font-size: 10pt; color: var(--text-main); }
     tr:hover td { background: var(--table-hover); }
     .up { color: #00b050 !important; } .dn { color: #ff5252 !important; } .nt { color: var(--text-sub) !important; }
@@ -73,7 +75,6 @@
     .rate-label { font-size: 8.5pt; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
     .rate-value { font-size: 12pt; color: #002060; } [data-theme="dark"] .rate-value { color: #66a3ff; }
 
-    /* ── FIX: GLOBAL EQUITIES MAP SELECTOR CSS ────────────────── */
     .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1rem; }
     .country-filter { display: flex; justify-content: center; padding-bottom: 1rem; border-bottom: 2px dashed var(--border-color); }
     .country-filter select { padding: 8px 16px; font-size: 10pt; font-family: inherit; font-weight: bold; border: 2px solid #002060; border-radius: 6px; color: #002060; background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; }
@@ -478,10 +479,25 @@ function extractDynamicData(data) {
     const targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
 
     data.macro.forEach(row => {
-      const keys = Object.keys(row);
-      const col2 = String(row[keys[1]] || "").trim(), col3 = String(row[keys[2]] || "").trim(), col4 = String(row[keys[3]] || "").trim(), col5 = String(row[keys[4]] || "").trim(), col6 = String(row[keys[5]] || "").trim(); 
-      if (targetRates.includes(col2) && col3 !== "") KEY_RATES.push({ label: col2, value: col3 });
-      if (validCcys.includes(col2.toUpperCase())) { FOREX_RATES.push({ ccy: col2.toUpperCase(), crBuy: col3 || "—", crSell: col4 || "—", kBuy: col5 || "—", kSell: col6 || "—" }); }
+      const vals = Object.values(row).map(v => String(v).trim());
+      
+      let foundRate = targetRates.find(r => vals.includes(r));
+      if (foundRate) {
+         let idx = vals.indexOf(foundRate);
+         if (idx !== -1 && idx + 1 < vals.length && vals[idx + 1] !== "") {
+            KEY_RATES.push({ label: foundRate, value: vals[idx + 1] });
+         }
+      }
+
+      let foundCcy = validCcys.find(c => vals.includes(c));
+      if (foundCcy) {
+         let idx = vals.indexOf(foundCcy);
+         if (idx !== -1) {
+            FOREX_RATES.push({
+               ccy: foundCcy, crBuy: vals[idx+1] || "—", crSell: vals[idx+2] || "—", kBuy: vals[idx+3] || "—", kSell: vals[idx+4] || "—"
+            });
+         }
+      }
     });
   }
 
@@ -490,15 +506,11 @@ function extractDynamicData(data) {
 
   // Phase 2: Yield Curve (Strict Regex & Column Filtering)
   const yields = [];
-  if (data.tbills && data.tbills.length > 0) {
-    const d91 = data.tbills.find(r => String(Object.values(r).join("")).includes("91"));
-    if(d91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(Object.values(d91)[4] || Object.values(d91)[3]) }); 
-    const d182 = data.tbills.find(r => String(Object.values(r).join("")).includes("182"));
-    if(d182) yields.push({ tenor: 0.5, label: "6M", yield: cleanNum(Object.values(d182)[4] || Object.values(d182)[3]) });
-    const d364 = data.tbills.find(r => String(Object.values(r).join("")).includes("364"));
-    if(d364) yields.push({ tenor: 1, label: "1Y", yield: cleanNum(Object.values(d364)[4] || Object.values(d364)[3]) });
+  if (KEY_RATES.length > 0) {
+     const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
+     if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
   }
-  
+
   if (data.tbonds && data.tbonds.length > 0) {
     data.tbonds.forEach(row => {
       const text = Object.values(row).join(" ");
@@ -506,13 +518,15 @@ function extractDynamicData(data) {
       let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
       if (!years) { const yrMatch = text.match(/([0-9\.]+)\s*(?:YRS|YEARS)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
       
-      const numbers = Object.entries(row).map(([k, v]) => {
-         if (String(k).toLowerCase().includes("date")) return 0;
-         const clean = String(v).replace(/,/g,'').replace(/%/g,'').trim();
-         return parseFloat(clean);
-      }).filter(n => n > 5 && n < 25 && !isNaN(n));
-      
-      if (years && numbers.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...numbers) }); }
+      if (years) {
+        const numbers = Object.entries(row).map(([k, v]) => {
+           if (String(k).toLowerCase().includes("date") || String(v).includes("-") || String(v).includes("/")) return 0;
+           const clean = String(v).replace(/,/g,'').replace(/%/g,'').trim();
+           return parseFloat(clean);
+        }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
+        
+        if (numbers.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...numbers) }); }
+      }
     });
   }
   
@@ -529,31 +543,48 @@ function extractDynamicData(data) {
     let tempGdp = []; 
     
     data.cbk.forEach(row => {
-      const keys = Object.keys(row);
-      const c0 = String(row[keys[0]] || "").trim(), c1 = String(row[keys[1]] || "").trim(), c2 = String(row[keys[2]] || "").trim(), c3 = String(row[keys[3]] || "").trim(), c4 = String(row[keys[4]] || "").trim(), c5 = String(row[keys[5]] || "").trim();
+      const vals = Object.values(row).map(v => String(v).trim());
+      const joined = vals.join(" ").toLowerCase();
 
-      if (c0.includes("Inflation Rates")) { currentTable = "inflation"; return; }
-      if (c0.includes("Annual GDP")) { currentTable = "gdp"; return; }
-      if (c0.includes("Commercial Banks Weighted")) { currentTable = "banks"; return; }
-      if (c0.includes("KEPSS RTGS")) { currentTable = "kepss"; return; }
-      if (c0.includes("Central Bank") || c0.includes("KESONIA") || c0.includes("Exchange Rates") || c0.includes("Diaspora") || c0.includes("Payment Cards") || c0.includes("Key Rates")) { currentTable = null; return; }
-      if (!currentTable || c0 === "Year" || c0 === "Date" || c0 === "") return;
+      if (joined.includes("inflation rates")) { currentTable = "inflation"; return; }
+      if (joined.includes("annual gdp")) { currentTable = "gdp"; return; }
+      if (joined.includes("commercial banks weighted")) { currentTable = "banks"; return; }
+      if (joined.includes("kepss rtgs")) { currentTable = "kepss"; return; }
+      if (joined.includes("central bank") || joined.includes("kesonia") || joined.includes("exchange rates") || joined.includes("diaspora") || joined.includes("payment cards") || joined.includes("key rates")) { currentTable = null; return; }
 
-      if (currentTable === "inflation") {
-         let year = c0.slice(-2); let month = c1.substring(0,3); let avg = cleanNum(c2); let m12 = cleanNum(c3);
-         if (!isNaN(avg)) { CHART_DATA.inflation.labels.unshift(month ? `${month}/${year}` : year); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(isNaN(m12) ? null : m12); }
+      let cols = vals.filter(x => x !== "");
+      if (cols.length < 2) return;
+      if (cols[0].toLowerCase() === "year" || cols[0].toLowerCase() === "date") return;
+
+      let nums = cols.map(x => cleanNum(x)).filter(n => !isNaN(n));
+      let yearStr = cols.find(x => /\d{4}/.test(x)) || "";
+      let monthStr = cols.find(x => /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(x)) || "";
+      let yearMatch = yearStr.match(/\d{4}/);
+      let year = yearMatch ? yearMatch[0] : "";
+      let month = monthStr.substring(0,3);
+      let label = month ? `${month}/${year.slice(-2)}` : year;
+
+      if (currentTable === "inflation" && nums.length >= 2) {
+         let m12 = nums[nums.length-2];
+         let avg = nums[nums.length-1];
+         if (label && !isNaN(avg)) { CHART_DATA.inflation.labels.unshift(label); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(m12); }
       } 
-      else if (currentTable === "gdp") {
-         let year = parseInt(c0); let nom = cleanNum(c1); let real = cleanNum(c2);
-         if (!isNaN(year) && !isNaN(nom)) { tempGdp.push({ year, nom, real: isNaN(real) ? null : real }); }
+      else if (currentTable === "gdp" && nums.length >= 2) {
+         let yr = parseInt(year); 
+         let gdpNums = nums.filter(n => n !== yr && n > 1000);
+         if (!isNaN(yr) && gdpNums.length >= 1) { 
+             let nom = gdpNums[0];
+             let real = gdpNums.length > 1 ? gdpNums[1] : null;
+             tempGdp.push({ year: yr, nom, real }); 
+         }
       }
-      else if (currentTable === "banks") {
-         let year = c0.slice(-2); let month = c1.substring(0,3); let dep = cleanNum(c2); let sav = cleanNum(c3); let len = cleanNum(c4); let ovr = cleanNum(c5);
-         if (!isNaN(dep)) { CHART_DATA.banks.labels.unshift(month ? `${month}/${year}` : year); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(isNaN(sav) ? null : sav); CHART_DATA.banks.lending.unshift(isNaN(len) ? null : len); CHART_DATA.banks.overdraft.unshift(isNaN(ovr) ? null : ovr); }
+      else if (currentTable === "banks" && nums.length >= 4) {
+         let dep = nums[nums.length-4], sav = nums[nums.length-3], len = nums[nums.length-2], ovr = nums[nums.length-1];
+         if (label && !isNaN(dep)) { CHART_DATA.banks.labels.unshift(label); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(sav); CHART_DATA.banks.lending.unshift(len); CHART_DATA.banks.overdraft.unshift(ovr); }
       }
-      else if (currentTable === "kepss") {
-         let year = c0.slice(-2); let month = c1.substring(0,3); let val = Math.max(cleanNum(c2)||0, cleanNum(c3)||0, cleanNum(c4)||0, cleanNum(c5)||0); 
-         if (val > 0) { CHART_DATA.kepss.labels.unshift(month ? `${month}/${year}` : year); CHART_DATA.kepss.values.unshift(val); }
+      else if (currentTable === "kepss" && nums.length >= 1) {
+         let val = Math.max(...nums.filter(n => n > 1000)); 
+         if (label && val > 0 && val !== -Infinity) { CHART_DATA.kepss.labels.unshift(label); CHART_DATA.kepss.values.unshift(val); }
       }
     });
 
