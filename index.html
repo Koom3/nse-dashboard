@@ -83,6 +83,7 @@
     .graph-card h3 { font-size: 10pt; color: #002060; text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; } [data-theme="dark"] .graph-card h3 { color: #66a3ff; }
     .chart-wrapper { position: relative; height: 250px; width: 100%; display: block; }
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
+    .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; color: #7b1a1a; font-size: 10pt; line-height: 1.8; text-align: center; }
     
     /* ── PHASE 2 UI ADDITIONS ───────────────────────────────── */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; justify-content: center; align-items: center; }
@@ -197,8 +198,7 @@ const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe
 const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
 const API_AI = "https://script.google.com/macros/s/AKfycbxzhisvbAfZyHPF0hEAmlF579b1ayHUAB-RnrkGoePv6NvMzKuWurjoCWYdGTYkLVQR5g/exec";
 
-const REFRESH_SECONDS  = 60;
-const JSONP_TIMEOUT_MS = 45000; 
+const JSONP_TIMEOUT_MS = 15000; // Fast fail if APIs are dead
 
 /* ═══════════════════════════════════════════════════════════════
    DYNAMIC DATA VARIABLES
@@ -215,21 +215,12 @@ let CHART_DATA = {
 
 let cachedNewsHtml = '<div class="loader">⏳ Fetching live global news...</div>';
 let isNewsFetched = false;
-
-/* ═══════════════════════════════════════════════════════════════
-   STATE & MAPS
-═══════════════════════════════════════════════════════════════ */
-let refreshTimer = null;
-const chartInstances = {};  
-let stateLocalData = null;
-let stateGlobalData = null;
-let isFirstLoad = true;
 let isFetching = false;
-let retryCount = 0;
-const MAX_RETRIES = 3;
+let isFirstLoad = true;
 
 let isGeoChartLoaded = false;
 let currentGlobalSelection = "usa";
+const chartInstances = {};
 
 const countryMap = {
   "usa": { name: "USA", code: "US" }, "canada": { name: "Canada", code: "CA" },
@@ -252,34 +243,18 @@ function closeExportModal() { document.getElementById('export-modal').style.disp
 function downloadPDF() {
   closeExportModal();
   const element = document.getElementById('pdf-container');
-  
-  // Exclude News from PDF
   const newsWrapper = document.getElementById('news-card-wrapper');
   if (newsWrapper) newsWrapper.style.display = 'none';
 
-  // Inject Timestamp Header
   const tsDiv = document.createElement('div');
   tsDiv.id = 'pdf-timestamp-header';
-  tsDiv.style.textAlign = 'center';
-  tsDiv.style.padding = '10px';
-  tsDiv.style.marginBottom = '20px';
-  tsDiv.style.color = '#002060';
-  tsDiv.style.borderBottom = '2px solid #D4AF37';
+  tsDiv.style.textAlign = 'center'; tsDiv.style.padding = '10px'; tsDiv.style.marginBottom = '20px';
+  tsDiv.style.color = '#002060'; tsDiv.style.borderBottom = '2px solid #D4AF37';
   tsDiv.innerHTML = `<h2 style="margin:0;">Market Tear Sheet</h2><p style="margin:5px 0 0; font-size:10pt;">Generated on: ${new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' })}</p>`;
   element.insertBefore(tsDiv, element.firstChild);
 
-  const opt = {
-    margin:       0.2,
-    filename:     `Market_Tear_Sheet_${new Date().toISOString().split('T')[0]}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, logging: false },
-    jsPDF:        { unit: 'in', format: 'a3', orientation: 'portrait' }
-  };
-  
-  html2pdf().set(opt).from(element).save().then(() => {
-    if (newsWrapper) newsWrapper.style.display = 'block';
-    tsDiv.remove();
-  });
+  const opt = { margin: 0.2, filename: `Market_Tear_Sheet_${new Date().toISOString().split('T')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'in', format: 'a3', orientation: 'portrait' } };
+  html2pdf().set(opt).from(element).save().then(() => { if (newsWrapper) newsWrapper.style.display = 'block'; tsDiv.remove(); });
 }
 
 async function submitSubscription() {
@@ -321,23 +296,12 @@ async function sendChatMessage() {
   const input = document.getElementById("ai-input");
   const msg = input.value.trim();
   if (!msg) return;
-  
   appendMessage("user", msg);
   input.value = "";
-  
   const typingId = appendMessage("bot", '<span class="typing-indicator">Analyzing live data...</span>');
-  
-  const context = {
-    nse_stats: stateLocalData?.stats || [], cbk_rates: KEY_RATES, forex: FOREX_RATES,
-    world_indices: stateLocalData?.indices || [], active_global_region: currentGlobalSelection,
-    active_global_data: stateGlobalData ? stateGlobalData[currentGlobalSelection]?.slice(0, 15) : "Not Loaded"
-  };
-
+  const context = { nse_stats: stateLocalData?.stats || [], cbk_rates: KEY_RATES, forex: FOREX_RATES };
   try {
-    const response = await fetch(API_AI, {
-      method: "POST", headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ message: msg, context: context })
-    });
+    const response = await fetch(API_AI, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ message: msg, context: context }) });
     const data = await response.json();
     const el = document.getElementById(typingId);
     if(el) el.innerHTML = typeof marked !== 'undefined' ? marked.parse(data.reply) : data.reply;
@@ -348,13 +312,9 @@ async function sendChatMessage() {
 }
 
 function appendMessage(sender, textHtml) {
-  const container = document.getElementById("ai-chat-messages");
-  const msgDiv = document.createElement("div");
-  msgDiv.className = `chat-bubble ${sender}`;
-  const uniqueId = 'msg-' + Date.now();
-  msgDiv.id = uniqueId; msgDiv.innerHTML = textHtml;
-  container.appendChild(msgDiv); container.scrollTop = container.scrollHeight;
-  return uniqueId;
+  const container = document.getElementById("ai-chat-messages"), msgDiv = document.createElement("div");
+  msgDiv.className = `chat-bubble ${sender}`; const uniqueId = 'msg-' + Date.now(); msgDiv.id = uniqueId; msgDiv.innerHTML = textHtml;
+  container.appendChild(msgDiv); container.scrollTop = container.scrollHeight; return uniqueId;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -379,18 +339,9 @@ async function loadLiveNews() {
        if (!imgUrl) { const match = item.description.match(/<img[^>]+src="([^">]+)"/); if(match) imgUrl = match[1]; }
        if (!imgUrl) imgUrl = 'https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News';
        let cleanDesc = item.description.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...';
-       html += `
-         <a href="${item.link}" target="_blank" style="text-decoration: none; color: inherit;">
-           <div class="news-item">
-             <img src="${imgUrl}" class="news-image" alt="News Image" onerror="this.src='https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News'">
-             <div class="news-title">${item.title}</div>
-             <div class="news-desc">${cleanDesc}</div>
-             <div class="news-date">${new Date(item.pubDate).toLocaleString()}</div>
-           </div>
-         </a>`;
+       html += `<a href="${item.link}" target="_blank" style="text-decoration: none; color: inherit;"><div class="news-item"><img src="${imgUrl}" class="news-image" alt="News Image" onerror="this.src='https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News'"><div class="news-title">${item.title}</div><div class="news-desc">${cleanDesc}</div><div class="news-date">${new Date(item.pubDate).toLocaleString()}</div></div></a>`;
     });
-    html += '</div>';
-    cachedNewsHtml = html; isNewsFetched = true;
+    html += '</div>'; cachedNewsHtml = html; isNewsFetched = true;
     const container = document.getElementById("live-news-container");
     if(container) container.innerHTML = cachedNewsHtml;
   } catch (e) {
@@ -410,18 +361,12 @@ window.addEventListener('resize', () => { if (isGeoChartLoaded && document.getEl
 
 function toggleTheme() {
   const root = document.documentElement; const btn = document.getElementById("theme-btn");
-  if (root.getAttribute("data-theme") === "dark") {
-    root.removeAttribute("data-theme"); btn.innerHTML = "🌙 Dark Mode"; localStorage.setItem("theme", "light"); updateChartTheme("light");
-  } else {
-    root.setAttribute("data-theme", "dark"); btn.innerHTML = "☀️ Light Mode"; localStorage.setItem("theme", "dark"); updateChartTheme("dark");
-  }
+  if (root.getAttribute("data-theme") === "dark") { root.removeAttribute("data-theme"); btn.innerHTML = "🌙 Dark Mode"; localStorage.setItem("theme", "light"); updateChartTheme("light"); } 
+  else { root.setAttribute("data-theme", "dark"); btn.innerHTML = "☀️ Light Mode"; localStorage.setItem("theme", "dark"); updateChartTheme("dark"); }
   if(isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
 }
 
-if (localStorage.getItem("theme") === "dark") {
-  document.documentElement.setAttribute("data-theme", "dark");
-  document.addEventListener("DOMContentLoaded", () => { document.getElementById("theme-btn").innerHTML = "☀️ Light Mode"; });
-}
+if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttribute("data-theme", "dark"); document.addEventListener("DOMContentLoaded", () => { document.getElementById("theme-btn").innerHTML = "☀️ Light Mode"; }); }
 
 function updateChartTheme(mode) {
   const textColor = mode === "dark" ? "#aaaaaa" : "#555555";
@@ -436,17 +381,7 @@ function updateChartTheme(mode) {
 }
 
 function updateClock() {
-  const nbi = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
-  document.getElementById("live-clock").textContent = "EAT: " + nbi.toLocaleTimeString("en-KE", { hour12: false });
-  const day = nbi.getDay(), h = nbi.getHours(), m = nbi.getMinutes(), s = nbi.getSeconds(), currentSecs = h * 3600 + m * 60 + s, openSecs = 9 * 3600 + 30 * 60, closeSecs = 15 * 3600;
-  let cdText = "";
-  if (day === 0 || day === 6) cdText = "Market Opens Monday";
-  else {
-    if (currentSecs < openSecs) { const diff = openSecs - currentSecs; cdText = `Opens in ${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m ${diff % 60}s`; }
-    else if (currentSecs >= openSecs && currentSecs < closeSecs) { const diff = closeSecs - currentSecs; cdText = `Closes in ${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m ${diff % 60}s`; }
-    else cdText = day === 5 ? "Market Opens Monday" : "Market Opens Tomorrow";
-  }
-  const cdEl = document.getElementById("market-countdown"); if (cdEl) cdEl.textContent = cdText;
+  const nbi = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })); document.getElementById("live-clock").textContent = "EAT: " + nbi.toLocaleTimeString("en-KE", { hour12: false });
 }
 setInterval(updateClock, 1000); updateClock();
 
@@ -459,10 +394,7 @@ function showGlobalCountry(countryKey) {
   if (!countryKey) return; currentGlobalSelection = countryKey;
   document.querySelectorAll('.global-tables-section').forEach(el => el.classList.remove('active-country'));
   const el = document.getElementById('country-' + countryKey); if (el) el.classList.add('active-country');
-  if (countryKey === "mainland_china") {
-    const hk = document.getElementById('country-hong_kong'), tw = document.getElementById('country-taiwan');
-    if (hk) hk.classList.add('active-country'); if (tw) tw.classList.add('active-country');
-  }
+  if (countryKey === "mainland_china") { const hk = document.getElementById('country-hong_kong'), tw = document.getElementById('country-taiwan'); if (hk) hk.classList.add('active-country'); if (tw) tw.classList.add('active-country'); }
   const selectEl = document.getElementById("globalSearch"); if (selectEl && selectEl.value !== countryKey) selectEl.value = countryKey;
   if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
 }
@@ -471,30 +403,16 @@ function drawRegionsMap() {
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   const data = new google.visualization.DataTable(); data.addColumn('string', 'Country'); data.addColumn('number', 'Selected');
   const mapData = []; Object.values(countryMap).forEach(info => mapData.push([info.code, 0]));
-  if (currentGlobalSelection && countryMap[currentGlobalSelection]) {
-    const mainCode = countryMap[currentGlobalSelection].code;
-    const row = mapData.find(r => r[0] === mainCode); if (row) row[1] = 1;
-    if (mainCode === 'CN') { const hkRow = mapData.find(r => r[0] === 'HK'); if (hkRow) hkRow[1] = 1; const twRow = mapData.find(r => r[0] === 'TW'); if (twRow) twRow[1] = 1; }
-  }
+  if (currentGlobalSelection && countryMap[currentGlobalSelection]) { const mainCode = countryMap[currentGlobalSelection].code; const row = mapData.find(r => r[0] === mainCode); if (row) row[1] = 1; if (mainCode === 'CN') { const hkRow = mapData.find(r => r[0] === 'HK'); if (hkRow) hkRow[1] = 1; const twRow = mapData.find(r => r[0] === 'TW'); if (twRow) twRow[1] = 1; } }
   data.addRows(mapData);
-  const options = {
-    colorAxis: { colors: [ isDark ? '#333333' : '#e2e8f0', '#D4AF37' ]},
-    backgroundColor: isDark ? '#1e1e1e' : '#ffffff', datalessRegionColor: isDark ? '#2a2a2a' : '#f1f5f9', defaultColor: isDark ? '#333333' : '#e2e8f0', legend: 'none', tooltip: { trigger: 'focus' }
-  };
+  const options = { colorAxis: { colors: [ isDark ? '#333333' : '#e2e8f0', '#D4AF37' ]}, backgroundColor: isDark ? '#1e1e1e' : '#ffffff', datalessRegionColor: isDark ? '#2a2a2a' : '#f1f5f9', defaultColor: isDark ? '#333333' : '#e2e8f0', legend: 'none', tooltip: { trigger: 'focus' } };
   const chart = new google.visualization.GeoChart(document.getElementById('regions_div'));
-  google.visualization.events.addListener(chart, 'select', function() {
-    const selection = chart.getSelection();
-    if (selection.length > 0) {
-      const countryCode = data.getValue(selection[0].row, 0);
-      const selectedKey = Object.keys(countryMap).find(k => countryMap[k].code === countryCode);
-      if (selectedKey) showGlobalCountry(selectedKey);
-    }
-  });
+  google.visualization.events.addListener(chart, 'select', function() { const selection = chart.getSelection(); if (selection.length > 0) { const countryCode = data.getValue(selection[0].row, 0); const selectedKey = Object.keys(countryMap).find(k => countryMap[k].code === countryCode); if (selectedKey) showGlobalCountry(selectedKey); } });
   chart.draw(data, options);
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DATA LOADING & PARSING 
+   DATA LOADING & ERROR SHIELD
 ═══════════════════════════════════════════════════════════════ */
 function triggerRefresh() { if (isFetching) return; stateLocalData = null; stateGlobalData = null; loadData(); }
 
@@ -503,34 +421,44 @@ function loadData() {
   if (isFirstLoad) { if (!document.querySelector(".metrics")) document.getElementById("app").innerHTML = `<div class="loader">⏳ Aggregating global and domestic datasets…</div>`; } 
   else { if (btn) btn.innerHTML = "↻ Refreshing..."; }
   
-  window["localCallback"] = function(data) { if (data && typeof data === "object") stateLocalData = data; checkAndRender(); };
-  window["globalCallback"] = function(data) { if (data && typeof data === "object") stateGlobalData = data; checkAndRender(); };
+  let localFired = false; let globalFired = false;
+
+  window["localCallback"] = function(data) { localFired = true; if (data && typeof data === "object") stateLocalData = data; checkAndRender(); };
+  window["globalCallback"] = function(data) { globalFired = true; if (data && typeof data === "object") stateGlobalData = data; checkAndRender(); };
 
   const timeoutId = setTimeout(() => {
     isFetching = false;
-    if (retryCount < MAX_RETRIES) { retryCount++; loadData(); } 
-    else {
-      if (isFirstLoad) document.getElementById("app").innerHTML = buildError("Request timed out. Please check your network or API URLs.");
-      else { if (btn) btn.innerHTML = "↻ Refresh Failed"; setTimeout(() => { if (btn) btn.innerHTML = "↻ Refresh"; }, 3000); }
+    if (!localFired || !globalFired) {
+       document.getElementById("app").innerHTML = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond.<br><br><b>Local API Fired:</b> ${localFired}<br><b>Global API Fired:</b> ${globalFired}<br><br><b>Fix:</b> You must go into the failing script and select <b>Deploy > Manage Deployments > Edit (Pencil) > New Version</b> and ensure 'Who has access' is set to 'Anyone'.`);
     }
   }, JSONP_TIMEOUT_MS);
 
   function checkAndRender() {
     if (stateLocalData && stateGlobalData) {
-      clearTimeout(timeoutId); isFetching = false; retryCount = 0; isFirstLoad = false;
+      clearTimeout(timeoutId); isFetching = false; isFirstLoad = false;
       if (btn) btn.innerHTML = "↻ Refresh";
       const mergedData = { ...stateLocalData, ...stateGlobalData };
       const ts = mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
       document.getElementById("last-updated").textContent = "Updated: " + ts;
-      render(mergedData);
+      
+      try {
+        render(mergedData);
+      } catch(err) {
+        document.getElementById("app").innerHTML = buildError(`Rendering Error: <br><br>${err.stack}`);
+      }
     }
   }
 
-  const s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); document.head.appendChild(s1);
-  const s2 = document.createElement("script"); s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now(); document.head.appendChild(s2);
+  const s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); 
+  s1.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app").innerHTML = buildError("Network Error: Local API (API_LOCAL) is broken. Please check the URL."); };
+  document.head.appendChild(s1);
+
+  const s2 = document.createElement("script"); s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now(); 
+  s2.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app").innerHTML = buildError("Network Error: Global API (API_GLOBAL) is broken. Please check the URL."); };
+  document.head.appendChild(s2);
 }
 
-function buildError(msg) { return `<div class="error-box"><strong>❌ Data Error</strong><br>${msg}</div>`; }
+function buildError(msg) { return `<div class="error-box" style="margin-top:50px;"><h2>🚨 Connection Failure</h2><p>${msg}</p></div>`; }
 
 function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
@@ -550,7 +478,7 @@ function extractDynamicData(data) {
   CHART_DATA = { inflation: { labels: [], avg: [], m12: [] }, gdp: { labels: [], nominal: [], real: [] }, banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] }, kepss: { labels: [], values: [] }, yieldCurve: { labels: [], data: [] } };
   const cleanNum = (str) => parseFloat(String(str).replace(/,/g, '').replace(/%/g, ''));
 
-  // Phase 2: Yield Curve (Strict Regex Parsing & Sorting)
+  // Phase 2: Yield Curve (Strict Regex & Column Filtering)
   const yields = [];
   if (data.tbills && data.tbills.length > 0) {
     const d91 = data.tbills.find(r => String(Object.values(r).join("")).includes("91"));
@@ -568,29 +496,27 @@ function extractDynamicData(data) {
       let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
       if (!years) { const yrMatch = text.match(/([0-9\.]+)\s*(?:YRS|YEARS)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
       
-      const numbers = Object.values(row).map(v => cleanNum(v)).filter(n => n > 5 && n < 25);
-      if (years && numbers.length > 0) {
-         yields.push({ tenor: years, label: years + "Y", yield: Math.max(...numbers) });
-      }
+      const numbers = Object.entries(row).map(([k, v]) => {
+         if (String(k).toLowerCase().includes("date")) return 0;
+         const clean = String(v).replace(/,/g,'').replace(/%/g,'').trim();
+         return parseFloat(clean);
+      }).filter(n => n > 5 && n < 25 && !isNaN(n));
+      
+      if (years && numbers.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...numbers) }); }
     });
   }
   
   if(yields.length > 0) {
-    // STRICT SORTING BY MATURITY TO PREVENT ZIGZAG SPAGHETTI GRAPH
     yields.sort((a, b) => a.tenor - b.tenor);
     const seen = new Set();
     yields.forEach(y => {
-      if(!seen.has(y.label) && !isNaN(y.yield)) {
-        seen.add(y.label);
-        CHART_DATA.yieldCurve.labels.push(y.label);
-        CHART_DATA.yieldCurve.data.push(y.yield);
-      }
+      if(!seen.has(y.label) && !isNaN(y.yield)) { seen.add(y.label); CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); }
     });
   }
 
   if (data.cbk && data.cbk.length > 0) {
     let currentTable = null;
-    let tempGdp = []; // Temp array to properly sort GDP 2000 -> 2024
+    let tempGdp = []; 
     
     data.cbk.forEach(row => {
       const keys = Object.keys(row);
@@ -609,7 +535,7 @@ function extractDynamicData(data) {
       } 
       else if (currentTable === "gdp") {
          let year = parseInt(c0); let nom = cleanNum(c1); let real = cleanNum(c2);
-         if (!isNaN(nom)) { tempGdp.push({ year, nom, real: isNaN(real) ? null : real }); }
+         if (!isNaN(year) && !isNaN(nom)) { tempGdp.push({ year, nom, real: isNaN(real) ? null : real }); }
       }
       else if (currentTable === "banks") {
          let year = c0.slice(-2); let month = c1.substring(0,3); let dep = cleanNum(c2); let sav = cleanNum(c3); let len = cleanNum(c4); let ovr = cleanNum(c5);
@@ -621,14 +547,9 @@ function extractDynamicData(data) {
       }
     });
 
-    // Phase 2: Explicitly sort GDP from 2000 to 2024
     if(tempGdp.length > 0) {
       tempGdp.sort((a,b) => a.year - b.year);
-      tempGdp.forEach(d => {
-         CHART_DATA.gdp.labels.push(d.year);
-         CHART_DATA.gdp.nominal.push(d.nom);
-         CHART_DATA.gdp.real.push(d.real);
-      });
+      tempGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });
     }
   }
 }
@@ -645,13 +566,8 @@ function formatChange(val, isPct) {
   if (isPct) return isNeg ? `<span class="dn">▼ (${fmt}%)</span>` : `<span class="up">▲ ${fmt}%</span>`;
   return isNeg ? `<span class="dn">▼ (${fmt})</span>` : `<span class="up">▲ ${fmt}</span>`;
 }
-function fmtNum(v, dec) {
-  if (v === null || v === undefined || v === "" || v === "N/A") return "—";
-  const n  = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); if (isNaN(n)) return String(v);
-  const dp = (dec !== undefined && dec !== null) ? dec : 2; 
-  if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(dp) + "T"; if (Math.abs(n) >= 1e9)  return (n / 1e9 ).toFixed(dp) + "B"; if (Math.abs(n) >= 1e6)  return (n / 1e6 ).toFixed(dp) + "M";
-  return n.toLocaleString("en-KE", { minimumFractionDigits: dp, maximumFractionDigits: dp });
-}
+function getPctNumForSort(t, key) { const raw = String(t[key] || "").trim(); if (!raw || raw === "N/A" || raw === "—") return 0; const isNeg = raw.startsWith("-") || raw.startsWith("(") || raw.includes("▼"), n = parseFloat(raw.replace(/[^0-9.]/g, "")); if (isNaN(n)) return 0; const scaled = (!raw.includes("%") && n > 0 && n < 1) ? n * 100 : n; return isNeg ? -scaled : scaled; }
+function fmtNum(v, dec) { if (v === null || v === undefined || v === "" || v === "N/A") return "—"; const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); if (isNaN(n)) return String(v); const dp = (dec !== undefined && dec !== null) ? dec : 2; if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(dp) + "T"; if (Math.abs(n) >= 1e9) return (n / 1e9 ).toFixed(dp) + "B"; if (Math.abs(n) >= 1e6) return (n / 1e6 ).toFixed(dp) + "M"; return n.toLocaleString("en-KE", { minimumFractionDigits: dp, maximumFractionDigits: dp }); }
 function stripNum(v) { if (v === null || v === undefined || v === "") return null; const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); return isNaN(n) ? null : n; }
 function fmtKsh(v) { const n = stripNum(v); if (n === null) return "—"; return "KSh " + n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtUSD(v) { if (v === null || v === undefined || v === "") return "—"; const s = String(v); if (s.includes("$")) return s; const n = parseFloat(s.replace(/[^0-9.\-]/g, "")); return isNaN(n) ? s : "$" + fmtNum(n, 2); }
@@ -817,7 +733,7 @@ function initCharts() {
     createChart("gc_inflation", { type: "line", data: { labels: inflation.labels, datasets: [{ label: "Annual Average", data: inflation.avg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true }, { label: "12-Month", data: inflation.m12, borderColor: "#D4AF37", backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } } } });
   }
 
-  // Phase 2: GDP X-Axis Reversed internally during parse; Y-Axis set to 'Tn'
+  // Phase 2: Y-Axis GDP formatting (Ksh 0.00 Tn)
   if(gdp.labels.length > 0) {
     createChart("gc_gdp", {
       type: "bar",
@@ -838,7 +754,6 @@ function initCharts() {
     createChart("gc_kepss", { type: "line", data: { labels: kepss.labels, datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })} Mn` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: function(value) { if (value >= 1000000) return (value / 1000000).toPrecision(2).replace(/\.0+$/, '') + 'T'; return value; } } } } } });
   }
 
-  // Phase 2: Yield Curve Line Chart
   if(yieldCurve.labels.length > 0) {
     createChart("gc_yield", {
       type: "line",
@@ -851,6 +766,20 @@ function initCharts() {
     });
   }
 }
+
+function filterHeatmap(q) {
+  const qU = (q || "").toUpperCase();
+  document.querySelectorAll(".ticker-cell").forEach(cell => { cell.style.display = (cell.dataset.sym || "").toUpperCase().includes(qU) ? "" : "none"; });
+}
+
+function startRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(triggerRefresh, REFRESH_SECONDS * 1000);
+}
+
+triggerRefresh();
+startRefresh();
+
 </script>
 </body>
 </html>
