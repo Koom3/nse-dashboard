@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🇰🇪 Market Data Analysis</title>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     /* ── CSS VARIABLES FOR LIGHT/DARK MODE ──────────────────── */
     :root {
@@ -91,7 +94,6 @@
 
     /* ── LAYOUT ─────────────────────────────────────────────── */
     .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
-
     .grid2 { display: grid; grid-template-columns: 1fr 1fr;         gap: 1.5rem; margin-bottom: 1.5rem; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr;     gap: 1.5rem; margin-bottom: 1.5rem; }
     @media (max-width: 1000px) { .grid3 { grid-template-columns: 1fr 1fr; } }
@@ -348,16 +350,17 @@
         <span id="market-countdown" style="font-size: 9pt; color: #fff; opacity: 0.9;"></span>
       </div>
     </div>
+    <button class="header-btn" onclick="generatePDF()">📄 Export Tear Sheet</button>
     <button class="header-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
     <button class="header-btn" id="refresh-btn" onclick="triggerRefresh()">↻ Refresh</button>
   </div>
 </header>
 
-<div class="container">
+<div class="container" id="pdf-container">
   <div id="app"><div class="loader">⏳ Aggregating global and domestic datasets…</div></div>
 </div>
 
-<div class="ai-widget">
+<div class="ai-widget" data-html2canvas-ignore="true">
   <div class="ai-chat-box" id="ai-chat-box">
     <div class="ai-chat-header">
       <span>🤖 Analyst Agent</span>
@@ -398,7 +401,8 @@ let CHART_DATA = {
   inflation: { labels: [], avg: [], m12: [] },
   gdp: { labels: [], nominal: [], real: [] },
   banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] },
-  kepss: { labels: [], values: [] }
+  kepss: { labels: [], values: [] },
+  yieldCurve: { labels: [], data: [] } // Phase 2: Yield Curve Data
 };
 
 let cachedNewsHtml = '<div class="loader">⏳ Fetching live global news...</div>';
@@ -439,6 +443,29 @@ const countryMap = {
   "hong_kong": { name: "Hong Kong", code: "HK" },
   "taiwan": { name: "Taiwan", code: "TW" }
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 2: PDF TEAR SHEET EXPORT
+═══════════════════════════════════════════════════════════════ */
+function generatePDF() {
+  const element = document.getElementById('pdf-container');
+  const opt = {
+    margin:       0.2,
+    filename:     `Market_Tear_Sheet_${new Date().toISOString().split('T')[0]}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'in', format: 'a3', orientation: 'portrait' }
+  };
+  
+  // Provide user feedback during generation
+  const btn = document.querySelector(".header-btn[onclick='generatePDF()']");
+  const originalText = btn.innerText;
+  btn.innerText = "⏳ Generating...";
+  
+  html2pdf().set(opt).from(element).save().then(() => {
+    btn.innerText = originalText;
+  });
+}
 
 /* ═══════════════════════════════════════════════════════════════
    AI AGENT INTERFACE
@@ -851,9 +878,60 @@ function extractDynamicData(data) {
     inflation: { labels: [], avg: [], m12: [] },
     gdp: { labels: [], nominal: [], real: [] },
     banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] },
-    kepss: { labels: [], values: [] }
+    kepss: { labels: [], values: [] },
+    yieldCurve: { labels: [], data: [] } // Phase 2 Additions
   };
 
+  const cleanNum = (str) => parseFloat(String(str).replace(/,/g, '').replace(/%/g, ''));
+
+  // Phase 2: Extract Sovereign Yield Curve from T-Bills & T-Bonds
+  const yields = [];
+  if (data.tbills && data.tbills.length > 0) {
+    // 91-Day T-Bill
+    const d91 = data.tbills.find(r => String(Object.values(r).join("")).includes("91"));
+    if(d91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(Object.values(d91)[4] || Object.values(d91)[3]) }); // Approximation based on CBK tables
+    
+    // 182-Day T-Bill
+    const d182 = data.tbills.find(r => String(Object.values(r).join("")).includes("182"));
+    if(d182) yields.push({ tenor: 0.5, label: "6M", yield: cleanNum(Object.values(d182)[4] || Object.values(d182)[3]) });
+    
+    // 364-Day T-Bill
+    const d364 = data.tbills.find(r => String(Object.values(r).join("")).includes("364"));
+    if(d364) yields.push({ tenor: 1, label: "1Y", yield: cleanNum(Object.values(d364)[4] || Object.values(d364)[3]) });
+  }
+  
+  if (data.tbonds && data.tbonds.length > 0) {
+    data.tbonds.forEach(row => {
+      const text = Object.values(row).join(" ");
+      const yrMatch = text.match(/([0-9\.]+)\s*(?:YRS|YEARS)/i);
+      const rateMatch = text.match(/(?:Yield|Rate).*?([0-9\.]+)/i) || Object.values(row).map(v => cleanNum(v)).filter(n => n > 5 && n < 25);
+      
+      if (yrMatch && yrMatch[1]) {
+        const years = parseFloat(yrMatch[1]);
+        const rate = (rateMatch && rateMatch[1]) ? parseFloat(rateMatch[1]) : (rateMatch.length > 0 ? rateMatch[0] : null);
+        if (years > 1 && rate && !isNaN(rate)) {
+           yields.push({ tenor: years, label: years + "Y", yield: rate });
+        }
+      }
+    });
+  }
+  
+  if(yields.length > 0) {
+    // Sort chronologically by maturity
+    yields.sort((a, b) => a.tenor - b.tenor);
+    
+    // Deduplicate labels
+    const seen = new Set();
+    yields.forEach(y => {
+      if(!seen.has(y.label)) {
+        seen.add(y.label);
+        CHART_DATA.yieldCurve.labels.push(y.label);
+        CHART_DATA.yieldCurve.data.push(y.yield);
+      }
+    });
+  }
+
+  // Standard CBK Charts parsing
   if (data.cbk && data.cbk.length > 0) {
     let currentTable = null;
     data.cbk.forEach(row => {
@@ -875,8 +953,6 @@ function extractDynamicData(data) {
       }
 
       if (!currentTable || c0 === "Year" || c0 === "Date" || c0 === "") return;
-
-      const cleanNum = (str) => parseFloat(str.replace(/,/g, '').replace(/%/g, ''));
 
       if (currentTable === "inflation") {
          let year = c0.slice(-2); let month = c1.substring(0,3);
@@ -1138,6 +1214,7 @@ function render(data) {
   const indices  = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A");
   const active   = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price);
   const statsArr = (data.stats || []);
+  const corpActions = (data.corporate_actions || []);
 
   let apiStatus = "CLOSED";
   if (data.market_assumptions && data.market_assumptions.length > 0) {
@@ -1283,6 +1360,15 @@ function render(data) {
   if (KEY_RATES.length === 0) ratesHtml += `<div style="color:var(--text-muted);font-style:italic;">Data unavailable.</div>`;
   KEY_RATES.forEach(r => { ratesHtml += `<div class="rate-cell"><div class="rate-label">${r.label}</div><div class="rate-value">${r.value}</div></div>`; });
   ratesHtml += `</div>`;
+
+  /* ── PHASE 2: CORPORATE ACTIONS CALENDAR ── */
+  let corpActionsHtml = "";
+  if (corpActions.length > 0) {
+     const cData = buildGenericTableRows(corpActions);
+     corpActionsHtml = tableCard("Upcoming Corporate Actions", cData.headers, cData.rows, "No upcoming corporate actions.");
+  } else {
+     corpActionsHtml = tableCard("Upcoming Corporate Actions", ["Status"], [], "Fetching Corporate Actions Calendar...");
+  }
 
   /* ── 3. NSE STATS TABLE ── */
   const statsRows = statsArr
@@ -1438,6 +1524,10 @@ function render(data) {
             <h3>KEPSS RTGS — Settlement Value (KES Mn)</h3>
             <div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div>
           </div>
+          <div class="graph-card" style="grid-column: 1 / -1;">
+            <h3>Kenyan Sovereign Yield Curve (T-Bills & Bonds)</h3>
+            <div class="chart-wrapper"><canvas id="gc_yield"></canvas></div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1446,6 +1536,9 @@ function render(data) {
   document.getElementById("app").innerHTML = [
     metricsHtml,
     standardCard("Key Macro Rates (CBK)", ratesHtml),
+
+    // Phase 2: Added Corporate Actions Table
+    corpActionsHtml,
 
     '<div class="grid3">',
       tableCard("Top Gainers",  ["Ticker","Price","Change"],   gainers.map(tickerRow), "No gainers today."),
@@ -1511,7 +1604,7 @@ function initCharts() {
   const CINTERACT = { mode: "index", intersect: false };
   const CLEGEND   = { labels: { font: CFONT, color: "#2c3e50", boxWidth: 12 } };
 
-  const { inflation, gdp, banks, kepss } = CHART_DATA;
+  const { inflation, gdp, banks, kepss, yieldCurve } = CHART_DATA;
 
   if(inflation.labels.length > 0) {
     createChart("gc_inflation", {
@@ -1603,6 +1696,27 @@ function initCharts() {
               }
             } 
           },
+        },
+      },
+    });
+  }
+
+  // Phase 2: Yield Curve Chart Implementation
+  if(yieldCurve.labels.length > 0) {
+    createChart("gc_yield", {
+      type: "line",
+      data: {
+        labels: yieldCurve.labels,
+        datasets: [
+          { label: "Sovereign Yield (%)", data: yieldCurve.data, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.1)", borderWidth: 3, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: "#D4AF37", tension: 0.4, fill: true },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: CINTERACT,
+        plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Yield: ${ctx.parsed.y.toFixed(2)}%` } } },
+        scales: { 
+          x: { ...CSCALES.x, title: { display: true, text: 'Maturity (Tenor)', font: CFONT } }, 
+          y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" }, title: { display: true, text: 'Yield (%)', font: CFONT } } 
         },
       },
     });
