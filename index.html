@@ -95,30 +95,32 @@
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: #7b1a1a; font-size: 11pt; line-height: 1.8; text-align: center; }
     
-    /* ── PHASE 2 UI ADDITIONS ───────────────────────────────── */
+    /* ── PHASE 2: PDF MODAL & CORPORATE ACTIONS ───────────────── */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; justify-content: center; align-items: center; }
     .modal-box { background: var(--bg-card); padding: 2rem; border-radius: 12px; width: 400px; box-shadow: var(--card-shadow-hover); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem; position: relative; }
     .modal-box h3 { color: #002060; font-size: 14pt; margin-bottom: 0.5rem; text-align: center; } [data-theme="dark"] .modal-box h3 { color: #66a3ff; }
     .modal-close { position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 16px; color: var(--text-muted); }
     .form-group { display: flex; flex-direction: column; gap: 5px; }
     .form-group label { font-size: 9pt; color: var(--text-sub); text-transform: uppercase; }
-    .form-group input, .form-group select { padding: 10px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-main); font-family: inherit; font-weight: bold; outline: none; }
+    .form-group input { padding: 10px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-main); font-family: inherit; font-weight: bold; outline: none; }
     .days-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
     .day-chk { display: flex; align-items: center; gap: 4px; font-size: 9pt; }
     .primary-btn { background: #002060; color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 11pt; margin-top: 10px; transition: background 0.2s; }
     .primary-btn:hover { background: #003b73; } .secondary-btn { background: #D4AF37; color: #002060; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 11pt; text-align: center; }
     
     .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
-    .news-item { display: flex; flex-direction: column; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; height: 100%; }
+    .news-item { display: flex; flex-direction: column; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; height: 100%; transition: transform 0.2s, box-shadow 0.2s; }
+    .news-item:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: #D4AF37; }
     .news-image { width: 100%; height: 140px; object-fit: cover; border-radius: 4px; background: var(--table-header-bg); }
     .news-title { font-size: 10.5pt; color: var(--text-main); font-weight: bold; line-height: 1.3; } [data-theme="dark"] .news-title { color: #66a3ff; }
     .news-desc { font-size: 9pt; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: normal;}
     .news-date { font-size: 8pt; color: #D4AF37; margin-top: auto; font-weight: normal;}
 
-    /* NSE Native Table styling */
     .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9.5pt; }
     .nse-native-table th { background: var(--table-header-bg); padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); text-align: left; }
-    .nse-native-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-border); }
+    [data-theme="dark"] .nse-native-table th { color: #66a3ff; }
+    .nse-native-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-border); color: var(--text-main); }
+    .nse-native-table tr:hover td { background: var(--table-hover); }
     .nse-native-table img { max-height: 35px; border-radius: 4px; }
   </style>
 </head>
@@ -278,8 +280,7 @@ async function loadLiveNews() {
       "https://kenyanwallstreet.com/category/kenya-business-news/feed/",
       "https://kenyanwallstreet.com/category/african-wall-street/feed/",
       "https://kenyanwallstreet.com/category/global-news/feed/",
-      "https://finance.yahoo.com/news/rss", 
-      "https://www.businessinsider.com/rss"
+      "https://finance.yahoo.com/news/rss"
     ];
     let allArticles = [];
     for (const feed of feeds) {
@@ -287,7 +288,7 @@ async function loadLiveNews() {
         const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`);
         const data = await resp.json();
         if (data.status === 'ok') {
-           const srcName = feed.includes("kenyanwallstreet") ? "Kenyan Wall Street" : (feed.includes("yahoo") ? "Yahoo Finance" : "Business Insider");
+           const srcName = feed.includes("kenyanwallstreet") ? "Kenyan Wall Street" : "Yahoo Finance";
            data.items.slice(0, 4).forEach(i => { i.sourceName = srcName; allArticles.push(i); });
         }
       } catch (err) {}
@@ -321,26 +322,38 @@ async function loadLiveNews() {
     if(container) container.innerHTML = cachedNewsHtml;
   }
 }
-loadLiveNews();
 
 /* ═══════════════════════════════════════════════════════════════
-   CORPORATE ACTIONS SCRAPER (CLIENT SIDE)
+   DIRECT CORPORATE ACTIONS SCRAPER (Bypasses Google Sheets)
 ═══════════════════════════════════════════════════════════════ */
 async function loadCorporateActions() {
   const container = document.getElementById("corp-actions-container");
   if(!container) return;
+  
+  const targetUrl = 'https://www.nse.co.ke/corporate-actions/';
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+  ];
+
+  let html = "";
+  for (let proxy of proxies) {
+    try {
+      let resp = await fetch(proxy);
+      if (resp.ok) { html = await resp.text(); break; }
+    } catch(e) {}
+  }
+
+  if (!html) {
+      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Unable to load Corporate Actions at this time.</p>`;
+      return;
+  }
+
   try {
-    const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.nse.co.ke/corporate-actions/')}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
     const parser = new DOMParser();
-    const doc = parser.parseFromString(data.contents, "text/html");
-    
-    const tables = doc.querySelectorAll("table");
-    let targetTable = null;
-    for (let tbl of tables) {
-      if (!tbl.innerHTML.includes("cookielawinfo") && !tbl.innerHTML.includes("grecaptcha")) { targetTable = tbl; break; }
-    }
+    const doc = parser.parseFromString(html, "text/html");
+    const tables = Array.from(doc.querySelectorAll("table"));
+    let targetTable = tables.find(tbl => tbl.innerHTML.includes("Action") && !tbl.innerHTML.includes("cookie"));
     
     if (targetTable) {
       targetTable.querySelectorAll('img').forEach(img => {
@@ -351,8 +364,8 @@ async function loadCorporateActions() {
     } else {
       container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">No live corporate actions found.</p>`;
     }
-  } catch (err) {
-    container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Awaiting next sync from NSE...</p>`;
+  } catch(e) {
+      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Data format error from NSE.</p>`;
   }
 }
 
@@ -416,7 +429,7 @@ function drawRegionsMap() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DATA LOADING & ERROR SHIELD
+   OMNI-PARSER ENGINE (100% Header Decoupled)
 ═══════════════════════════════════════════════════════════════ */
 function triggerRefresh() { if (isFetching) return; stateLocalData = null; stateGlobalData = null; loadData(); }
 
@@ -467,155 +480,125 @@ function buildError(msg) { return `<div class="error-box" style="margin-top:50px
 
 function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
-  
-  if (data.macro && data.macro.length > 0) {
-    const validCcys = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
-    const targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
-
-    data.macro.forEach(row => {
-      const cols = Object.values(row).map(v => String(v).trim()).filter(x => x !== "");
-      if (cols.length < 2) return;
-
-      let foundRateIdx = -1; let foundRateName = "";
-      for (let i = 0; i < targetRates.length; i++) {
-         let idx = cols.findIndex(x => x.toLowerCase() === targetRates[i].toLowerCase());
-         if (idx !== -1) { foundRateIdx = idx; foundRateName = targetRates[i]; break; }
-      }
-      if (foundRateIdx !== -1 && foundRateIdx + 1 < cols.length) {
-         let val = cols[foundRateIdx + 1];
-         let num = parseFloat(val.replace(/,/g,'').replace(/%/g,''));
-         if (!isNaN(num)) {
-             if (num < 1 && !val.includes('%')) val = (num * 100).toFixed(2) + "%";
-             else if (!val.includes('%')) val = num.toFixed(2) + "%";
-         }
-         if (!KEY_RATES.find(r => r.label === foundRateName)) KEY_RATES.push({ label: foundRateName, value: val });
-      }
-
-      let foundCcyIdx = -1; let foundCcyName = "";
-      for (let i = 0; i < validCcys.length; i++) {
-         let idx = cols.findIndex(x => x.toLowerCase() === validCcys[i].toLowerCase());
-         if (idx !== -1) { foundCcyIdx = idx; foundCcyName = validCcys[i]; break; }
-      }
-      if (foundCcyIdx !== -1) {
-         if (!FOREX_RATES.find(f => f.ccy === foundCcyName)) {
-             let nums = cols.slice(foundCcyIdx + 1);
-             if (nums.length >= 4) { FOREX_RATES.push({ ccy: foundCcyName, crBuy: nums[0], crSell: nums[1], kBuy: nums[2], kSell: nums[3] }); } 
-             else if (nums.length >= 2) { FOREX_RATES.push({ ccy: foundCcyName, crBuy: "—", crSell: "—", kBuy: nums[0], kSell: nums[1] }); }
-         }
-      }
-    });
-  }
-
   CHART_DATA = { inflation: { labels: [], avg: [], m12: [] }, gdp: { labels: [], nominal: [], real: [] }, banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] }, kepss: { labels: [], values: [] }, yieldCurve: { labels: [], data: [] } };
   const cleanNum = (str) => parseFloat(String(str).replace(/,/g, '').replace(/%/g, ''));
 
-  // Phase 2: Graphs Explicitly Reading from data.graphs ONLY
-  const graphData = (data.graphs && data.graphs.length > 0) ? data.graphs : (data.cbk || []);
-  if (graphData.length > 0) {
-    let currentTable = null;
-    let tempGdp = []; 
-    let yields = [];
-    
-    graphData.forEach(row => {
-      const vals = Object.values(row).map(v => String(v).trim());
-      const joined = vals.join(" ").toLowerCase();
+  // Flatten ALL sheets into one massive row array to ensure we NEVER miss data due to bad headers
+  let allRows = [];
+  Object.values(data).forEach(sheetData => {
+    if (Array.isArray(sheetData)) allRows = allRows.concat(sheetData);
+  });
 
-      if (joined.includes("inflation rates") || joined.includes("inflation")) { currentTable = "inflation"; return; }
-      if (joined.includes("annual gdp") || joined.includes("gross domestic product")) { currentTable = "gdp"; return; }
-      if (joined.includes("commercial banks") || joined.includes("weighted average rates")) { currentTable = "banks"; return; }
-      if (joined.includes("kepss rtgs") || joined.includes("settlement value")) { currentTable = "kepss"; return; }
-      if (joined.includes("yield curve") || joined.includes("sovereign yield")) { currentTable = "yield"; return; }
-      if (joined.includes("central bank") || joined.includes("kesonia") || joined.includes("exchange rates") || joined.includes("diaspora") || joined.includes("key rates")) { currentTable = null; return; }
+  const validCcys = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
+  const targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
 
-      let cols = vals.filter(x => x !== "");
+  let tempGdp = []; 
+  let yields = [];
+
+  allRows.forEach(row => {
+      const cols = Object.values(row).map(v => String(v).trim()).filter(x => x !== "");
       if (cols.length < 2) return;
-      if (cols[0].toLowerCase() === "year" || cols[0].toLowerCase() === "date" || cols[0].toLowerCase() === "month" || cols[0].toLowerCase() === "tenor") return;
+      const joined = cols.join(" ").toLowerCase();
 
-      let nums = cols.map(x => cleanNum(x)).filter(n => !isNaN(n));
+      // 1. EXTRACT RATES
+      for (let i = 0; i < targetRates.length; i++) {
+         let idx = cols.findIndex(x => x.toLowerCase() === targetRates[i].toLowerCase());
+         if (idx !== -1 && idx + 1 < cols.length) {
+            let val = cols[idx + 1];
+            let num = parseFloat(val.replace(/,/g,'').replace(/%/g,''));
+            if (!isNaN(num)) {
+               if (num < 1 && !val.includes('%')) val = (num * 100).toFixed(2) + "%";
+               else if (!val.includes('%')) val = num.toFixed(2) + "%";
+               if (!KEY_RATES.find(r => r.label === targetRates[i])) KEY_RATES.push({ label: targetRates[i], value: val });
+            }
+         }
+      }
+
+      // 2. EXTRACT FOREX
+      for (let i = 0; i < validCcys.length; i++) {
+         let idx = cols.findIndex(x => x.toLowerCase() === validCcys[i].toLowerCase());
+         if (idx !== -1) {
+            if (!FOREX_RATES.find(f => f.ccy === validCcys[i])) {
+               let nums = cols.slice(idx + 1).filter(n => !isNaN(parseFloat(n)));
+               if (nums.length >= 4) { FOREX_RATES.push({ ccy: validCcys[i], crBuy: nums[0], crSell: nums[1], kBuy: nums[2], kSell: nums[3] }); } 
+               else if (nums.length >= 2) { FOREX_RATES.push({ ccy: validCcys[i], crBuy: "—", crSell: "—", kBuy: nums[0], kSell: nums[1] }); }
+            }
+         }
+      }
+
+      // 3. EXTRACT GRAPHS
       let yearStr = cols.find(x => /20\d{2}/.test(x)) || "";
       let monthStr = cols.find(x => /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(x)) || "";
       let yearMatch = yearStr.match(/20\d{2}/);
       let year = yearMatch ? yearMatch[0] : "";
       let month = monthStr.substring(0,3);
       let label = month ? `${month}/${year.slice(-2)}` : year;
+      let nums = cols.map(cleanNum).filter(n => !isNaN(n));
 
-      if (currentTable === "inflation" && nums.length >= 1) {
-         let m12 = nums[nums.length-2] !== undefined ? nums[nums.length-2] : null; 
-         let avg = nums[nums.length-1];
-         if (label && !isNaN(avg)) { CHART_DATA.inflation.labels.unshift(label); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(m12); }
+      if (joined.includes("inflation") && nums.length >= 1) {
+         let m12 = nums.length > 1 ? nums[nums.length-2] : null; let avg = nums[nums.length-1];
+         if (label && !isNaN(avg) && !CHART_DATA.inflation.labels.includes(label)) { 
+             CHART_DATA.inflation.labels.unshift(label); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(m12); 
+         }
       } 
-      else if (currentTable === "gdp" && nums.length >= 1) {
-         let yr = parseInt(year) || parseInt(cols[0]); 
-         let gdpNums = nums.filter(n => n !== yr && n > 100); 
-         if (!isNaN(yr) && gdpNums.length >= 1) { tempGdp.push({ year: yr, nom: gdpNums[0], real: gdpNums.length > 1 ? gdpNums[1] : null }); }
-      }
-      else if (currentTable === "banks" && nums.length >= 4) {
-         let dep = nums[nums.length-4], sav = nums[nums.length-3], len = nums[nums.length-2], ovr = nums[nums.length-1];
-         if (label && !isNaN(dep)) { CHART_DATA.banks.labels.unshift(label); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(sav); CHART_DATA.banks.lending.unshift(len); CHART_DATA.banks.overdraft.unshift(ovr); }
-      }
-      else if (currentTable === "kepss" && nums.length >= 1) {
-         let val = Math.max(...nums.filter(n => n > 1000)); 
-         if (label && val > 0 && val !== -Infinity) { CHART_DATA.kepss.labels.unshift(label); CHART_DATA.kepss.values.unshift(val); }
-      }
-      else if (currentTable === "yield" && nums.length >= 1) {
-         let tenorStr = cols.find(x => /yr|year|m|month/i.test(x)) || cols[0];
-         let tenorNum = cleanNum(tenorStr);
-         let yieldVal = Math.max(...nums.filter(n => n > 1 && n < 25 && n !== tenorNum));
-         
-         if(tenorStr.toLowerCase().includes("m") || tenorNum > 25) tenorNum = tenorNum / 12; 
-         if (!isNaN(tenorNum) && yieldVal > 0 && yieldVal !== -Infinity) {
-             yields.push({ tenor: tenorNum, label: tenorStr, yield: yieldVal });
+      else if (joined.includes("gdp") && nums.length >= 2) {
+         let yr = parseInt(year); let gdpNums = nums.filter(n => n !== yr && n > 100);
+         if (!isNaN(yr) && gdpNums.length >= 1 && !tempGdp.find(g => g.year === yr)) { 
+             tempGdp.push({ year: yr, nom: gdpNums[0], real: gdpNums.length > 1 ? gdpNums[1] : null }); 
          }
       }
-    });
+      else if ((joined.includes("banks") || joined.includes("lending") || joined.includes("deposit")) && nums.length >= 4) {
+         let dep = nums[nums.length-4], sav = nums[nums.length-3], len = nums[nums.length-2], ovr = nums[nums.length-1];
+         if (label && !isNaN(dep) && !CHART_DATA.banks.labels.includes(label)) { 
+             CHART_DATA.banks.labels.unshift(label); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(sav); CHART_DATA.banks.lending.unshift(len); CHART_DATA.banks.overdraft.unshift(ovr); 
+         }
+      }
+      else if ((joined.includes("kepss") || joined.includes("rtgs")) && nums.length >= 1) {
+         let val = Math.max(...nums.filter(n => n > 1000)); 
+         if (label && val > 0 && val !== -Infinity && !CHART_DATA.kepss.labels.includes(label)) { 
+             CHART_DATA.kepss.labels.unshift(label); CHART_DATA.kepss.values.unshift(val); 
+         }
+      }
 
-    if(tempGdp.length > 0) {
+      // 4. EXTRACT YIELD CURVE
+      const fxdMatch = joined.match(/fxd\d{1}-\d{4}-(\d{2,3})/i);
+      let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
+      if (!years) { const yrMatch = joined.match(/([0-9\.]+)\s*(?:yrs|years)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
+      if (years) {
+        const yieldNums = cols.map(c => {
+           if (c.toLowerCase().includes("date") || c.includes("-") || c.includes("/")) return 0;
+           return cleanNum(c);
+        }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
+        if (yieldNums.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...yieldNums) }); }
+      }
+  });
+
+  if(tempGdp.length > 0) {
       tempGdp.sort((a,b) => a.year - b.year);
       tempGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });
-    }
-    
-    if(yields.length > 0) {
-      const uniqueYields = {};
-      yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
-      const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
-      sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
-    }
   }
 
-  // Backup Yield Curve extraction (if 'Graphs' sheet fails)
-  if (CHART_DATA.yieldCurve.data.length === 0) {
-      const yields = [];
-      if (KEY_RATES.length > 0) {
-         const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
-         if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
-      }
-      if (data.tbills && data.tbills.length > 0) {
-        const d182 = data.tbills.find(r => Object.values(r).some(v => String(v).includes("182")));
-        if(d182) { let nums = Object.values(d182).map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25); if(nums.length > 0) yields.push({ tenor: 0.5, label: "6M", yield: Math.max(...nums) }); }
-        const d364 = data.tbills.find(r => Object.values(r).some(v => String(v).includes("364")));
-        if(d364) { let nums = Object.values(d364).map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25); if(nums.length > 0) yields.push({ tenor: 1, label: "1Y", yield: Math.max(...nums) }); }
-      }
-      if (data.tbonds && data.tbonds.length > 0) {
-        data.tbonds.forEach(row => {
-          const text = Object.values(row).join(" ");
-          const fxdMatch = text.match(/FXD\d{1}-\d{4}-(\d{2,3})/i);
-          let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
-          if (!years) { const yrMatch = text.match(/([0-9\.]+)\s*(?:YRS|YEARS)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
-          if (years) {
-            const numbers = Object.entries(row).map(([k, v]) => {
-               if (String(k).toLowerCase().includes("date") || String(v).includes("-") || String(v).includes("/")) return 0;
-               return parseFloat(String(v).replace(/,/g,'').replace(/%/g,'').trim());
-            }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
-            if (numbers.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...numbers) }); }
-          }
-        });
-      }
-      if(yields.length > 0) {
-        const uniqueYields = {};
-        yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
-        const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
-        sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
-      }
+  // T-Bill explicitly mapped
+  const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
+  if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
+  
+  allRows.forEach(row => {
+    const cols = Object.values(row).map(v => String(v).trim());
+    if (cols.some(v => v.includes("182"))) {
+        let nums = cols.map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25);
+        if(nums.length > 0) yields.push({ tenor: 0.5, label: "6M", yield: Math.max(...nums) });
+    }
+    if (cols.some(v => v.includes("364"))) {
+        let nums = cols.map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25);
+        if(nums.length > 0) yields.push({ tenor: 1, label: "1Y", yield: Math.max(...nums) });
+    }
+  });
+
+  if(yields.length > 0) {
+    const uniqueYields = {};
+    yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
+    const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
+    sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
   }
 }
 
@@ -777,7 +760,7 @@ function render(data) {
 
   setTimeout(() => {
     initCharts(); 
-    loadCorporateActions(); // Phase 2: Direct Fetch
+    loadCorporateActions(); 
     attachTableSorting();
     if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark");
     if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
