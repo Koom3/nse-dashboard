@@ -1,862 +1,222 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🇰🇪 Market Data Analysis</title>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  
-  <style>
-    /* ── CSS VARIABLES ──────────────────── */
-    :root {
-      --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2c3e50;
-      --text-muted: #666666; --text-sub: #999999; --border-color: #e2e8f0;
-      --table-header-bg: #f8fafc; --table-border: #f1f5f9; --table-hover: #fafbfd;
-      --input-border: #d1d5db; --input-bg: #ffffff;
-      --card-shadow: 0 2px 6px rgba(0,0,0,0.07); --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.11);
-      --ticker-cell-bg: #ffffff; --map-bg: #ffffff; --map-dataless: #f1f5f9;
-    }
-    [data-theme="dark"] {
-      --bg-body: #121212; --bg-card: #1e1e1e; --text-main: #e0e0e0;
-      --text-muted: #aaaaaa; --text-sub: #888888; --border-color: #333333;
-      --table-header-bg: #2a2a2a; --table-border: #333333; --table-hover: #2d2d2d;
-      --input-border: #444444; --input-bg: #1e1e1e;
-      --card-shadow: 0 2px 6px rgba(0,0,0,0.4); --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.6);
-      --ticker-cell-bg: #2a2a2a; --map-bg: #1e1e1e; --map-dataless: #2a2a2a;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-weight: bold; }
-    body { font-family: 'Hadassah Friedlaender', Georgia, serif; background: var(--bg-body); color: var(--text-main); font-size: 10pt; transition: background 0.3s, color 0.3s; }
+// ============================================================
+//  PHASE 2: DEEP RECURSIVE TIME-SERIES AGGREGATOR
+//  Scans Sub-Folders (Years -> Months) & Builds Cartesian Grid
+// ============================================================
 
-    header { background: linear-gradient(135deg, #002060 0%, #003b73 100%); color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; border-bottom: 4px solid #D4AF37; }
-    header h1 { font-size: 14pt; letter-spacing: 0.02em; }
-    .header-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    #market-status { font-size: 11pt; padding: 4px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.4); white-space: nowrap; }
-    #market-status.open { color: #00e676; border-color: #00e676; } #market-status.closed { color: #ff5252; border-color: #ff5252; }
-    .header-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 10pt; font-weight: bold; transition: background 0.2s; }
-    .header-btn:hover { background: rgba(255,255,255,0.3); }
-    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    @media (max-width: 1000px) { .grid3 { grid-template-columns: 1fr 1fr; } } @media (max-width: 700px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
-    
-    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-    .metric-card { background: var(--bg-card); border-radius: 8px; padding: 1rem; border-top: 4px solid #002060; box-shadow: var(--card-shadow); transition: transform 0.2s; }
-    .metric-card:hover { transform: translateY(-2px); box-shadow: var(--card-shadow-hover); }
-    .metric-card:nth-child(even) { border-top-color: #D4AF37; }
-    .metric-card .lbl { font-size: 9pt; color: var(--text-muted); text-transform: uppercase; }
-    .metric-card .val { font-size: 14pt; color: #002060; } [data-theme="dark"] .metric-card .val { color: #66a3ff; }
-    .metric-card .sub { font-size: 9pt; color: var(--text-sub); margin-top: 4px; }
-
-    .card, .full-card { background: var(--bg-card); border-radius: 8px; box-shadow: var(--card-shadow); margin-bottom: 1.5rem; overflow: hidden; }
-    .card-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 2px solid var(--border-color); }
-    .card-header h2 { font-size: 11pt; color: #002060; text-transform: uppercase; margin: 0; } [data-theme="dark"] .card-header h2 { color: #66a3ff; }
-    .card-body { padding: 1rem 1.25rem 1.25rem; }
-    .interactive-card { cursor: pointer; } .interactive-card:hover { box-shadow: var(--card-shadow-hover); transform: translateY(-2px); }
-    .table-collapsed tbody tr:nth-child(n+6) { display: none; }
-    .expand-hint { text-align: center; font-size: 9pt; color: #D4AF37; padding-top: 8px; margin-top: 8px; border-top: 1px dashed var(--border-color); user-select: none; }
-    .table-collapsed .expand-hint::after { content: "▼ Tap card to view full table ▼"; } .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ Tap to collapse ▲"; color: #002060; }
-    
-    .table-responsive { width: 100%; overflow-x: auto; } table { width: 100%; border-collapse: collapse; white-space: nowrap; }
-    table[data-id] { width: 100%; } 
-    th { text-align: left; padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); font-size: 10pt; background: var(--table-header-bg); cursor: pointer; user-select: none; }
-    th:hover { background: var(--table-border); } [data-theme="dark"] th { color: #66a3ff; }
-    td { padding: 7px 10px; border-bottom: 1px solid var(--table-border); font-size: 10pt; color: var(--text-main); }
-    tr:hover td { background: var(--table-hover); }
-    .up { color: #00b050 !important; } .dn { color: #ff5252 !important; } .nt { color: var(--text-sub) !important; }
-    
-    .rates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.6rem; }
-    .rate-cell { background: var(--table-header-bg); border-radius: 6px; padding: 0.65rem 0.85rem; border-left: 3px solid #D4AF37; }
-    .rate-label { font-size: 8.5pt; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
-    .rate-value { font-size: 12pt; color: #002060; } [data-theme="dark"] .rate-value { color: #66a3ff; }
-
-    .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1rem; }
-    .country-filter { display: flex; justify-content: center; padding-bottom: 1rem; border-bottom: 2px dashed var(--border-color); }
-    .country-filter select { padding: 8px 16px; font-size: 10pt; font-family: inherit; font-weight: bold; border: 2px solid #002060; border-radius: 6px; color: #002060; background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; }
-    [data-theme="dark"] .country-filter select { border-color: #66a3ff; color: #66a3ff; }
-    .country-filter select:hover { background: var(--table-hover); }
-    .global-tables-section { display: none; }
-    .global-tables-section.active-country { display: block; animation: fadeIn 0.4s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-    .heatmap-search { width: 100%; margin-bottom: 0.85rem; padding: 7px 12px; border: 1px solid var(--input-border); border-radius: 6px; font-size: 10pt; background: var(--input-bg); color: var(--text-main); outline: none; }
-    .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 0.6rem; }
-    .ticker-cell { background: var(--ticker-cell-bg); border-radius: 6px; padding: 0.6rem 0.75rem; border-left: 4px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .ticker-cell.up-cell { border-left-color: #00b050; } .ticker-cell.dn-cell { border-left-color: #ff5252; } .ticker-cell.nt-cell { border-left-color: var(--text-sub); }
-    .tc-sym { font-size: 10pt; color: #002060; } [data-theme="dark"] .tc-sym { color: #66a3ff; } .tc-price { font-size: 9pt; color: var(--text-main); margin: 3px 0 2px; } .tc-chg { font-size: 8pt; }
-    
-    .graphs-section { background: var(--bg-card); border-radius: 8px; box-shadow: var(--card-shadow); margin-bottom: 1.5rem; overflow: hidden; }
-    .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; } @media (max-width: 800px) { .graphs-grid { grid-template-columns: 1fr; } }
-    .graph-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
-    .graph-card h3 { font-size: 10pt; color: #002060; text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; } [data-theme="dark"] .graph-card h3 { color: #66a3ff; }
-    .chart-wrapper { position: relative; height: 250px; width: 100%; display: block; }
-    .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
-    .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: #7b1a1a; font-size: 11pt; line-height: 1.8; text-align: center; }
-    
-    /* ── PDF MODAL ───────────────────────────────── */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; justify-content: center; align-items: center; }
-    .modal-box { background: var(--bg-card); padding: 2rem; border-radius: 12px; width: 400px; box-shadow: var(--card-shadow-hover); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem; position: relative; }
-    .modal-box h3 { color: #002060; font-size: 14pt; margin-bottom: 0.5rem; text-align: center; } [data-theme="dark"] .modal-box h3 { color: #66a3ff; }
-    .modal-close { position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 16px; color: var(--text-muted); }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    .form-group label { font-size: 9pt; color: var(--text-sub); text-transform: uppercase; }
-    .form-group input, .form-group select { padding: 10px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-main); font-family: inherit; font-weight: bold; outline: none; }
-    .days-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-    .day-chk { display: flex; align-items: center; gap: 4px; font-size: 9pt; }
-    .primary-btn { background: #002060; color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 11pt; margin-top: 10px; transition: background 0.2s; }
-    .primary-btn:hover { background: #003b73; } .secondary-btn { background: #D4AF37; color: #002060; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 11pt; text-align: center; }
-    
-    .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
-    .news-item { display: flex; flex-direction: column; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; height: 100%; transition: transform 0.2s, box-shadow 0.2s; }
-    .news-item:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: #D4AF37; }
-    .news-image { width: 100%; height: 140px; object-fit: cover; border-radius: 4px; background: var(--table-header-bg); }
-    .news-title { font-size: 10.5pt; color: var(--text-main); font-weight: bold; line-height: 1.3; } [data-theme="dark"] .news-title { color: #66a3ff; }
-    .news-desc { font-size: 9pt; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: normal;}
-    .news-date { font-size: 8pt; color: #D4AF37; margin-top: auto; font-weight: normal;}
-
-    .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9.5pt; }
-    .nse-native-table th { background: var(--table-header-bg); padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); text-align: left; }
-    [data-theme="dark"] .nse-native-table th { color: #66a3ff; }
-    .nse-native-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-border); color: var(--text-main); }
-    .nse-native-table tr:hover td { background: var(--table-hover); }
-    .nse-native-table img { max-height: 35px; border-radius: 4px; }
-  </style>
-</head>
-<body>
-
-<header data-html2canvas-ignore="true">
-  <h1>🇰🇪 Market Data Analysis</h1>
-  <div class="header-right">
-    <span id="market-status" class="closed">⬤ STATUS PENDING</span>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.5;">
-      <span id="last-updated">Loading…</span>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span id="live-clock">EAT: --:--:--</span>
-        <span id="market-countdown" style="font-size: 9pt; color: #fff; opacity: 0.9;"></span>
-      </div>
-    </div>
-    <button class="header-btn" onclick="openExportModal()">📄 Export Tear Sheet</button>
-    <button class="header-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
-    <button class="header-btn" id="refresh-btn" onclick="triggerRefresh()">↻ Refresh</button>
-  </div>
-</header>
-
-<div class="container" id="pdf-container">
-  <div id="app"><div class="loader">⏳ Aggregating global and domestic datasets…</div></div>
-</div>
-
-<div class="modal-overlay" id="export-modal" data-html2canvas-ignore="true">
-  <div class="modal-box">
-    <span class="modal-close" onclick="closeExportModal()">✖</span>
-    <h3>Export Tear Sheet</h3>
-    <button class="secondary-btn" id="download-btn" onclick="downloadPDF()">⬇️ Download PDF Now</button>
-    <hr style="border-top: 1px dashed var(--border-color); border-bottom:none; margin: 10px 0;">
-    <h3 style="font-size:12pt;">Automated Delivery</h3>
-    <p style="font-size:9pt; color:var(--text-muted); text-align:center; font-weight:normal; margin-top:-10px;">Subscribe to receive a daily HTML summary & dashboard link.</p>
-    
-    <div class="form-group">
-      <label>Please enter email address</label>
-      <input type="email" id="sub-email" placeholder="e.g. analyst@firm.com">
-    </div>
-    <div class="form-group">
-      <label>Delivery Time (EAT)</label>
-      <input type="time" id="sub-time" value="17:00">
-    </div>
-    <div class="form-group">
-      <label>Days of the week</label>
-      <div class="days-grid">
-        <label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label>
-        <label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label>
-        <label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label>
-        <label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label>
-        <label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label>
-      </div>
-    </div>
-    <button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button>
-    <div id="sub-feedback" style="text-align:center; font-size:9pt; margin-top:5px; color:#00b050; display:none;">✅ Subscription saved!</div>
-  </div>
-</div>
-
-<script>
-/* ═══════════════════════════════════════════════════════════════
-   CONFIGURATION 
-═══════════════════════════════════════════════════════════════ */
-const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
-const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
-
-const JSONP_TIMEOUT_MS = 15000; 
-
-/* ═══════════════════════════════════════════════════════════════
-   DYNAMIC DATA VARIABLES
-═══════════════════════════════════════════════════════════════ */
-let KEY_RATES = [];
-let FOREX_RATES = [];
-let CHART_DATA = {
-  inflation: { labels: [], avg: [], m12: [] },
-  gdp: { labels: [], nominal: [], real: [] },
-  banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] },
-  kepss: { labels: [], values: [] },
-  yieldCurve: { labels: [], data: [] } 
-};
-
-let cachedNewsHtml = '<div class="loader">⏳ Fetching live global news...</div>';
-let isNewsFetched = false;
-let isFetching = false;
-let isFirstLoad = true;
-
-let isGeoChartLoaded = false;
-let currentGlobalSelection = "usa";
-const chartInstances = {};
-
-const countryMap = {
-  "usa": { name: "USA", code: "US" }, "canada": { name: "Canada", code: "CA" },
-  "south_africa": { name: "South Africa", code: "ZA" }, "morocco": { name: "Morocco", code: "MA" },
-  "nigeria": { name: "Nigeria", code: "NG" }, "egypt": { name: "Egypt", code: "EG" },
-  "france": { name: "France", code: "FR" }, "belgium": { name: "Belgium", code: "BE" },
-  "switzerland": { name: "Switzerland", code: "CH" }, "spain": { name: "Spain", code: "ES" },
-  "united_kingdom": { name: "United Kingdom", code: "GB" }, "russia": { name: "Russia", code: "RU" },
-  "australia": { name: "Australia", code: "AU" }, "japan": { name: "Japan", code: "JP" },
-  "south_korea": { name: "South Korea", code: "KR" }, "mainland_china": { name: "Mainland China", code: "CN" },
-  "hong_kong": { name: "Hong Kong", code: "HK" }, "taiwan": { name: "Taiwan", code: "TW" }
-};
-
-/* ═══════════════════════════════════════════════════════════════
-   PHASE 2: PDF EXPORT & SUBSCRIPTION
-═══════════════════════════════════════════════════════════════ */
-function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
-function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
-
-function downloadPDF() {
-  closeExportModal();
-  const element = document.getElementById('pdf-container');
-  const newsWrapper = document.getElementById('news-card-wrapper');
-  if (newsWrapper) newsWrapper.style.display = 'none';
-
-  const tsDiv = document.createElement('div');
-  tsDiv.id = 'pdf-timestamp-header';
-  tsDiv.style.textAlign = 'center'; tsDiv.style.padding = '10px'; tsDiv.style.marginBottom = '20px';
-  tsDiv.style.color = '#002060'; tsDiv.style.borderBottom = '2px solid #D4AF37';
-  tsDiv.innerHTML = `<h2 style="margin:0;">Market Tear Sheet</h2><p style="margin:5px 0 0; font-size:10pt;">Generated on: ${new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' })}</p>`;
-  element.insertBefore(tsDiv, element.firstChild);
-
-  const opt = { margin: 0.2, filename: `Market_Tear_Sheet_${new Date().toISOString().split('T')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'in', format: 'a3', orientation: 'portrait' } };
-  html2pdf().set(opt).from(element).save().then(() => { if (newsWrapper) newsWrapper.style.display = 'block'; tsDiv.remove(); });
-}
-
-async function submitSubscription() {
-  const email = document.getElementById('sub-email').value.trim();
-  const time = document.getElementById('sub-time').value;
-  const checkboxes = document.querySelectorAll('.days-grid input:checked');
-  const days = Array.from(checkboxes).map(cb => cb.value);
-
-  if (!email || !email.includes('@')) { alert("Please enter a valid email address."); return; }
-  if (days.length === 0) { alert("Please select at least one day."); return; }
-
-  const btn = document.getElementById('subscribe-btn');
-  btn.innerText = "⏳ Saving...";
-
-  try {
-    const response = await fetch(API_LOCAL, {
-      method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "subscribe", email, time, days })
-    });
-    btn.innerText = "Subscribe via Email";
-    document.getElementById('sub-feedback').style.display = 'block';
-    setTimeout(() => { document.getElementById('sub-feedback').style.display = 'none'; closeExportModal(); }, 2500);
-  } catch (err) {
-    alert("Error saving subscription. Ensure Apps Script is deployed properly.");
-    btn.innerText = "Subscribe via Email";
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   LIVE NEWS API SCRAPER
-═══════════════════════════════════════════════════════════════ */
-async function loadLiveNews() {
-  if (isNewsFetched) return;
-  try {
-    const feeds = [
-      "https://kenyanwallstreet.com/category/kenya-business-news/feed/",
-      "https://kenyanwallstreet.com/category/african-wall-street/feed/",
-      "https://kenyanwallstreet.com/category/global-news/feed/",
-      "https://finance.yahoo.com/news/rss"
-    ];
-    let allArticles = [];
-    for (const feed of feeds) {
-      try {
-        const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`);
-        const data = await resp.json();
-        if (data.status === 'ok') {
-           const srcName = feed.includes("kenyanwallstreet") ? "Kenyan Wall Street" : "Yahoo Finance";
-           data.items.slice(0, 4).forEach(i => { i.sourceName = srcName; allArticles.push(i); });
-        }
-      } catch (err) {}
-    }
-    allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
-    let html = '<div class="news-grid">';
-    allArticles.slice(0, 12).forEach(item => {
-       let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || '';
-       if (!imgUrl) { const match = item.description.match(/<img[^>]+src="([^">]+)"/); if(match) imgUrl = match[1]; }
-       if (!imgUrl) imgUrl = 'https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News';
-       let cleanDesc = item.description.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...';
-       html += `
-         <a href="${item.link}" target="_blank" style="text-decoration: none; color: inherit;">
-           <div class="news-item">
-             <img src="${imgUrl}" class="news-image" alt="News Image" onerror="this.src='https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News'">
-             <div class="news-title">${item.title}</div>
-             <div class="news-desc">${cleanDesc}</div>
-             <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
-               <div class="news-date">${new Date(item.pubDate).toLocaleString()}</div>
-               <div style="font-size:8pt; color:var(--text-sub); font-style:italic; font-weight:bold;">Source: ${item.sourceName}</div>
-             </div>
-           </div>
-         </a>`;
-    });
-    html += '</div>'; cachedNewsHtml = html; isNewsFetched = true;
-    const container = document.getElementById("live-news-container");
-    if(container) container.innerHTML = cachedNewsHtml;
-  } catch (e) {
-    cachedNewsHtml = `<p style="color:var(--text-muted); padding:1rem;">Unable to load live news at this time.</p>`;
-    const container = document.getElementById("live-news-container");
-    if(container) container.innerHTML = cachedNewsHtml;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DIRECT CORPORATE ACTIONS SCRAPER (Bypasses Google Sheets)
-═══════════════════════════════════════════════════════════════ */
-async function loadCorporateActions() {
-  const container = document.getElementById("corp-actions-container");
-  if(!container) return;
-  
-  const targetUrl = 'https://www.nse.co.ke/corporate-actions/';
-  const proxies = [
-    `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+function compileHistoricalPrices() {
+  const folderId = "14eKJhVQX_eK2xMG2-QW0KbGKmpHqsJMQ"; 
+  const targetSheetName = "Hist. Prices";
+  const targetHeaders = [
+    "DATE", "ISIN", "COMPANY_NAME", "STATUS", "VWAP", "PREVIOUS", 
+    "Change", "VOLUME", "Turnover", "INTRADAY_HIGH", "INTRADAY_LOW", 
+    "52WK_HIGH", "52WK_LOW", "BID", "ASK"
   ];
-
-  let html = "";
-  for (let proxy of proxies) {
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(targetSheetName);
+  if (!sheet) sheet = ss.insertSheet(targetSheetName);
+  
+  sheet.clear();
+  sheet.getRange(1, 1, 1, targetHeaders.length).setValues([targetHeaders])
+       .setBackground("#1a1a2e").setFontColor("#ffffff").setFontWeight("bold").setFontSize(10);
+  sheet.setFrozenRows(1);
+  
+  // 🛡️ Retry Engine for the Root Folder
+  let rootFolder;
+  let retryCount = 0;
+  while (retryCount < 5) {
     try {
-      let resp = await fetch(proxy);
-      if (resp.ok) { 
-          const data = await resp.json();
-          html = data.contents || data; // allorigins returns in .contents
-          break; 
+      rootFolder = DriveApp.getFolderById(folderId);
+      break; 
+    } catch (e) {
+      retryCount++;
+      Utilities.sleep(2000 * retryCount); 
+      if (retryCount >= 5) {
+        console.error("Google Drive API is currently down. Please try again in a few minutes.");
+        return;
       }
-    } catch(e) {}
-  }
-
-  if (!html) {
-      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Unable to load Corporate Actions at this time.</p>`;
-      return;
-  }
-
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const tables = Array.from(doc.querySelectorAll("table"));
-    
-    // Strict filter to explicitly ignore the hidden Cookie Law Info table
-    let targetTable = tables.find(tbl => {
-        const text = tbl.innerHTML.toLowerCase();
-        return text.includes("company") && text.includes("action") && !text.includes("cookie");
-    });
-    
-    if (targetTable) {
-      targetTable.querySelectorAll('img').forEach(img => {
-        const src = img.getAttribute('src');
-        if (src && src.startsWith('/')) img.src = 'https://www.nse.co.ke' + src;
-      });
-      container.innerHTML = `<div class="table-responsive nse-native-table">${targetTable.outerHTML}</div>`;
-    } else {
-      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">No live corporate actions found.</p>`;
     }
-  } catch(e) {
-      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Data format error from NSE.</p>`;
   }
-}
 
-/* ═══════════════════════════════════════════════════════════════
-   MAP & UI LOGIC
-═══════════════════════════════════════════════════════════════ */
-google.charts.load('current', { 'packages': ['geochart'] });
-google.charts.setOnLoadCallback(() => { isGeoChartLoaded = true; if(document.getElementById('regions_div')) drawRegionsMap(); });
-window.addEventListener('resize', () => { if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap(); });
-
-function toggleTheme() {
-  const root = document.documentElement; const btn = document.getElementById("theme-btn");
-  if (root.getAttribute("data-theme") === "dark") { root.removeAttribute("data-theme"); btn.innerHTML = "🌙 Dark Mode"; localStorage.setItem("theme", "light"); updateChartTheme("light"); } 
-  else { root.setAttribute("data-theme", "dark"); btn.innerHTML = "☀️ Light Mode"; localStorage.setItem("theme", "dark"); updateChartTheme("dark"); }
-  if(isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
-}
-
-if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttribute("data-theme", "dark"); document.addEventListener("DOMContentLoaded", () => { document.getElementById("theme-btn").innerHTML = "☀️ Light Mode"; }); }
-
-function updateChartTheme(mode) {
-  const textColor = mode === "dark" ? "#aaaaaa" : "#555555";
-  const gridColor = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
-  for (const id in chartInstances) {
-    const chart = chartInstances[id];
-    if (chart.options.scales.x) { chart.options.scales.x.ticks.color = textColor; chart.options.scales.x.grid.color = gridColor; }
-    if (chart.options.scales.y) { chart.options.scales.y.ticks.color = textColor; chart.options.scales.y.grid.color = gridColor; }
-    if (chart.options.plugins.legend) { chart.options.plugins.legend.labels.color = mode === "dark" ? "#e0e0e0" : "#2c3e50"; }
-    chart.update();
-  }
-}
-
-function updateClock() {
-  const nbi = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })); document.getElementById("live-clock").textContent = "EAT: " + nbi.toLocaleTimeString("en-KE", { hour12: false });
-}
-setInterval(updateClock, 1000); updateClock();
-
-function setMarketStatus(status) {
-  const el = document.getElementById("market-status");
-  if (status === "OPEN") { el.textContent = "⬤ OPEN"; el.className = "open"; } else { el.textContent = "⬤ CLOSED"; el.className = "closed"; }
-}
-
-function showGlobalCountry(countryKey) {
-  if (!countryKey) return; currentGlobalSelection = countryKey;
-  document.querySelectorAll('.global-tables-section').forEach(el => el.classList.remove('active-country'));
-  const el = document.getElementById('country-' + countryKey); if (el) el.classList.add('active-country');
-  if (countryKey === "mainland_china") { const hk = document.getElementById('country-hong_kong'), tw = document.getElementById('country-taiwan'); if (hk) hk.classList.add('active-country'); if (tw) tw.classList.add('active-country'); }
-  const selectEl = document.getElementById("globalSearch"); if (selectEl && selectEl.value !== countryKey) selectEl.value = countryKey;
-  if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
-}
-
-function drawRegionsMap() {
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const data = new google.visualization.DataTable(); data.addColumn('string', 'Country'); data.addColumn('number', 'Selected');
-  const mapData = []; Object.values(countryMap).forEach(info => mapData.push([info.code, 0]));
-  if (currentGlobalSelection && countryMap[currentGlobalSelection]) { const mainCode = countryMap[currentGlobalSelection].code; const row = mapData.find(r => r[0] === mainCode); if (row) row[1] = 1; if (mainCode === 'CN') { const hkRow = mapData.find(r => r[0] === 'HK'); if (hkRow) hkRow[1] = 1; const twRow = mapData.find(r => r[0] === 'TW'); if (twRow) twRow[1] = 1; } }
-  data.addRows(mapData);
-  const options = { colorAxis: { colors: [ isDark ? '#333333' : '#e2e8f0', '#D4AF37' ]}, backgroundColor: isDark ? '#1e1e1e' : '#ffffff', datalessRegionColor: isDark ? '#2a2a2a' : '#f1f5f9', defaultColor: isDark ? '#333333' : '#e2e8f0', legend: 'none', tooltip: { trigger: 'focus' } };
-  const chart = new google.visualization.GeoChart(document.getElementById('regions_div'));
-  google.visualization.events.addListener(chart, 'select', function() { const selection = chart.getSelection(); if (selection.length > 0) { const countryCode = data.getValue(selection[0].row, 0); const selectedKey = Object.keys(countryMap).find(k => countryMap[k].code === countryCode); if (selectedKey) showGlobalCountry(selectedKey); } });
-  chart.draw(data, options);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DATA LOADING & OMNI-PARSER ENGINE
-═══════════════════════════════════════════════════════════════ */
-function triggerRefresh() { if (isFetching) return; stateLocalData = null; stateGlobalData = null; loadData(); }
-
-function loadData() {
-  isFetching = true; const btn = document.getElementById("refresh-btn");
-  if (isFirstLoad) { if (!document.querySelector(".metrics")) document.getElementById("app").innerHTML = `<div class="loader">⏳ Aggregating global and domestic datasets…</div>`; } 
-  else { if (btn) btn.innerHTML = "↻ Refreshing..."; }
+  const dataMap = {}; 
+  const uniqueDates = new Set();
+  const companyMemory = {}; 
+  let processedFiles = 0;
   
-  let localFired = false; let globalFired = false;
+  console.log("🚀 Initiating Deep Recursive Scan of Sub-Folders...");
 
-  window["localCallback"] = function(data) { localFired = true; if (data && typeof data === "object") stateLocalData = data; checkAndRender(); };
-  window["globalCallback"] = function(data) { globalFired = true; if (data && typeof data === "object") stateGlobalData = data; checkAndRender(); };
-
-  const timeoutId = setTimeout(() => {
-    isFetching = false;
-    if (!localFired || !globalFired) {
-       document.getElementById("app").innerHTML = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond within 15 seconds.<br><br><b>Local API (AIB/NSE):</b> ${localFired ? "Success ✅" : "Failed ❌"}<br><b>Global API (TradingView):</b> ${globalFired ? "Success ✅" : "Failed ❌"}<br><br><b>Fix:</b> You must go into the failing Google Apps Script, click <b>Deploy > Manage Deployments > Edit (Pencil) > New Version > Deploy</b> and ensure 'Who has access' is set to 'Anyone'.`);
-    }
-  }, JSONP_TIMEOUT_MS);
-
-  function checkAndRender() {
-    if (stateLocalData && stateGlobalData) {
-      clearTimeout(timeoutId); isFetching = false; isFirstLoad = false;
-      if (btn) btn.innerHTML = "↻ Refresh";
-      const mergedData = { ...stateLocalData, ...stateGlobalData };
-      const ts = mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
+  // ── RECURSIVE SCANNER FUNCTION ──
+  function processFolder(folder) {
+    // 1. Process files in the current folder
+    const files = folder.getFiles();
+    while (files.hasNext()) {
+      const file = files.next();
+      const fileName = file.getName();
+      const mimeType = file.getMimeType();
       
-      try {
-        extractDynamicData(mergedData);
-        render(mergedData);
-        document.getElementById("last-updated").textContent = "Updated: " + ts;
-      } catch(err) {
-        document.getElementById("app").innerHTML = buildError(`Rendering Error: <br><br>${err.stack}`);
+      let rawData2D = [];
+      
+      if (mimeType === MimeType.GOOGLE_SHEETS) {
+        try {
+          const tempSS = SpreadsheetApp.openById(file.getId());
+          rawData2D = tempSS.getSheets()[0].getDataRange().getValues();
+        } catch(e) { continue; }
+      } 
+      else if (mimeType === MimeType.CSV || fileName.toLowerCase().endsWith('.csv') || mimeType === 'text/plain') {
+        try {
+          const csvText = file.getBlob().getDataAsString();
+          if (csvText) rawData2D = Utilities.parseCsv(csvText);
+        } catch(e) { continue; }
+      } 
+      // If it is an Excel file, we must skip it (Google Apps Script cannot parse .xlsx directly to arrays)
+      else if (mimeType.includes("excel") || mimeType.includes("spreadsheetml")) {
+         console.warn(`⚠️ Skipped Excel File: ${fileName}. Please convert .xlsx to Google Sheets or CSV.`);
+         continue;
+      } else {
+         continue; 
       }
-    }
-  }
-
-  const s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); 
-  s1.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app").innerHTML = buildError("Network Error: Local API (API_LOCAL) is broken. Please check the URL."); };
-  document.head.appendChild(s1);
-
-  const s2 = document.createElement("script"); s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now(); 
-  s2.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app").innerHTML = buildError("Network Error: Global API (API_GLOBAL) is broken. Please check the URL."); };
-  document.head.appendChild(s2);
-}
-
-function buildError(msg) { return `<div class="error-box" style="margin-top:50px;"><h2>🚨 Dashboard Error</h2><p>${msg}</p></div>`; }
-
-function extractDynamicData(data) {
-  KEY_RATES = []; FOREX_RATES = [];
-  CHART_DATA = { inflation: { labels: [], avg: [], m12: [] }, gdp: { labels: [], nominal: [], real: [] }, banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] }, kepss: { labels: [], values: [] }, yieldCurve: { labels: [], data: [] } };
-  const cleanNum = (str) => parseFloat(String(str).replace(/,/g, '').replace(/%/g, ''));
-
-  const validCcys = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
-  const targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
-
-  let tempGdp = []; 
-  let yields = [];
-
-  // Parse Macro Rates and Forex
-  if (data.macro && data.macro.length > 0) {
-    data.macro.forEach(row => {
-      const cols = Object.values(row).map(v => String(v).trim()).filter(x => x !== "");
-      if (cols.length < 2) return;
-
-      for (let i = 0; i < targetRates.length; i++) {
-         let idx = cols.findIndex(x => x.toLowerCase() === targetRates[i].toLowerCase());
-         if (idx !== -1 && idx + 1 < cols.length) {
-            let val = cols[idx + 1];
-            let num = parseFloat(val.replace(/,/g,'').replace(/%/g,''));
-            if (!isNaN(num)) {
-               if (num < 1 && !val.includes('%')) val = (num * 100).toFixed(2) + "%";
-               else if (!val.includes('%')) val = num.toFixed(2) + "%";
-               if (!KEY_RATES.find(r => r.label === targetRates[i])) KEY_RATES.push({ label: targetRates[i], value: val });
-            }
+      
+      if (rawData2D.length < 2) continue;
+      processedFiles++;
+      
+      // Omni-Header Mapper (Accounts for 2008-2026 structural changes)
+      // Look for the header row. In older files, headers might not be on row 0.
+      let headerRowIdx = 0;
+      for (let r = 0; r < Math.min(10, rawData2D.length); r++) {
+         const rowStr = rawData2D[r].join(" ").toLowerCase();
+         if (rowStr.includes("date") || rowStr.includes("company") || rowStr.includes("security") || rowStr.includes("price") || rowStr.includes("vwap")) {
+            headerRowIdx = r;
+            break;
          }
       }
 
-      for (let i = 0; i < validCcys.length; i++) {
-         let idx = cols.findIndex(x => x.toLowerCase() === validCcys[i].toLowerCase());
-         if (idx !== -1) {
-            if (!FOREX_RATES.find(f => f.ccy === validCcys[i])) {
-               let nums = cols.slice(idx + 1).filter(n => !isNaN(parseFloat(n)));
-               if (nums.length >= 4) { FOREX_RATES.push({ ccy: validCcys[i], crBuy: nums[0], crSell: nums[1], kBuy: nums[2], kSell: nums[3] }); } 
-               else if (nums.length >= 2) { FOREX_RATES.push({ ccy: validCcys[i], crBuy: "—", crSell: "—", kBuy: nums[0], kSell: nums[1] }); }
-            }
-         }
+      const fileHeaders = rawData2D[headerRowIdx].map(h => String(h).toLowerCase().replace(/[^a-z0-9]/g, ''));
+      const colMap = {};
+      
+      targetHeaders.forEach(th => {
+        let bestMatch = -1;
+        for(let j = 0; j < fileHeaders.length; j++) {
+           const h = fileHeaders[j];
+           if (!h) continue;
+           if (th === 'DATE' && (h.includes('date') || h.includes('day'))) bestMatch = j;
+           else if (th === 'ISIN' && h.includes('isin')) bestMatch = j;
+           else if (th === 'COMPANY_NAME' && (h.includes('company') || h.includes('name') || h.includes('security') || h.includes('ticker') || h.includes('stock'))) bestMatch = j;
+           else if (th === 'STATUS' && h.includes('status')) bestMatch = j;
+           else if (th === 'VWAP' && (h.includes('vwap') || h.includes('close') || h.includes('last') || h.includes('ltp') || h.includes('price'))) bestMatch = j;
+           else if (th === 'PREVIOUS' && (h.includes('prev') || h.includes('open'))) bestMatch = j;
+           else if (th === 'Change' && (h.includes('change') || h.includes('diff'))) bestMatch = j;
+           else if (th === 'VOLUME' && (h.includes('vol') || h.includes('shares') || h.includes('qty'))) bestMatch = j;
+           else if (th === 'Turnover' && (h.includes('turnover') || h.includes('value'))) bestMatch = j;
+           else if (th === 'INTRADAY_HIGH' && h.includes('high') && !h.includes('52')) bestMatch = j;
+           else if (th === 'INTRADAY_LOW' && h.includes('low') && !h.includes('52')) bestMatch = j;
+           else if (th === '52WK_HIGH' && h.includes('52') && h.includes('high')) bestMatch = j;
+           else if (th === '52WK_LOW' && h.includes('52') && h.includes('low')) bestMatch = j;
+           else if (th === 'BID' && h.includes('bid')) bestMatch = j;
+           else if (th === 'ASK' && (h.includes('ask') || h.includes('offer'))) bestMatch = j;
+        }
+        colMap[th] = bestMatch;
+      });
+
+      if (colMap["DATE"] === -1 || colMap["COMPANY_NAME"] === -1) continue;
+      
+      // Row Extraction & Cleansing
+      for (let i = headerRowIdx + 1; i < rawData2D.length; i++) {
+        const row = rawData2D[i];
+        if (row.length < 2 || !row[colMap["DATE"]]) continue; 
+        
+        let rawDate = String(row[colMap["DATE"]]).trim();
+        let d = new Date(rawDate);
+        if (isNaN(d.getTime())) continue; 
+        
+        let sortableDate = Utilities.formatDate(d, "Africa/Nairobi", "yyyy-MM-dd");
+        uniqueDates.add(sortableDate);
+        
+        let companyName = colMap["COMPANY_NAME"] !== -1 ? String(row[colMap["COMPANY_NAME"]]).trim() : "UNKNOWN";
+        if (!companyName || companyName === "UNKNOWN" || companyName === "") continue;
+        
+        let isin = colMap["ISIN"] !== -1 ? String(row[colMap["ISIN"]]).trim() : "";
+        let status = colMap["STATUS"] !== -1 ? String(row[colMap["STATUS"]]).trim() : "";
+        
+        if (!companyMemory[companyName]) {
+           companyMemory[companyName] = { isin: isin, status: status };
+        } else {
+           if (isin && !companyMemory[companyName].isin) companyMemory[companyName].isin = isin;
+           if (status && !companyMemory[companyName].status) companyMemory[companyName].status = status;
+        }
+        
+        if (!dataMap[sortableDate]) dataMap[sortableDate] = {};
+        
+        const extractNum = (th) => {
+           const idx = colMap[th];
+           if (idx === -1 || idx >= row.length) return "";
+           let val = String(row[idx]).trim();
+           if (val === "" || val === "-" || val.toLowerCase() === "n/a" || val.toLowerCase() === "null") return "";
+           let num = parseFloat(val.replace(/,/g, '').replace(/%/g, '').replace(/[A-Za-zKSh$]/g, ''));
+           return isNaN(num) ? val : num;
+        };
+        
+        dataMap[sortableDate][companyName] = {
+           vwap: extractNum("VWAP"), prev: extractNum("PREVIOUS"), change: extractNum("Change"),
+           vol: extractNum("VOLUME"), turnover: extractNum("Turnover"), ihigh: extractNum("INTRADAY_HIGH"),
+           ilow: extractNum("INTRADAY_LOW"), wkhigh: extractNum("52WK_HIGH"), wklow: extractNum("52WK_LOW"),
+           bid: extractNum("BID"), ask: extractNum("ASK")
+        };
+      }
+    }
+
+    // 2. Recursively process all sub-folders (Years -> Months)
+    const subFolders = folder.getFolders();
+    while (subFolders.hasNext()) {
+      processFolder(subFolders.next());
+    }
+  }
+  
+  // Start the recursive engine on the root folder
+  processFolder(rootFolder);
+  
+  const dateArray = Array.from(uniqueDates).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  const companyArray = Object.keys(companyMemory).sort((a, b) => a.localeCompare(b));
+  
+  if (dateArray.length === 0 || companyArray.length === 0) {
+    console.error(`❌ Data Extraction Failed: Processed ${processedFiles} files, but found 0 valid rows.`);
+    return;
+  }
+  
+  console.log(`⚙️ Building Cartesian Panel Matrix for ${dateArray.length} Dates and ${companyArray.length} Companies...`);
+  
+  const finalOutput = [];
+  dateArray.forEach(dateISO => {
+    const [yyyy, mm, dd] = dateISO.split("-");
+    const displayDate = `${dd}/${mm}/${yyyy}`; // Format as DD/MM/YYYY
+    
+    companyArray.forEach(company => {
+      const meta = companyMemory[company];
+      const metrics = (dataMap[dateISO] && dataMap[dateISO][company]) ? dataMap[dateISO][company] : null;
+      
+      if (metrics) {
+        finalOutput.push([
+          displayDate, meta.isin, company, meta.status, metrics.vwap, metrics.prev, metrics.change, 
+          metrics.vol, metrics.turnover, metrics.ihigh, metrics.ilow, metrics.wkhigh, metrics.wklow, metrics.bid, metrics.ask
+        ]);
+      } else {
+        // Strict Cartesian Grid padding
+        finalOutput.push([displayDate, meta.isin, company, meta.status, "", "", "", "", "", "", "", "", "", "", ""]);
       }
     });
-  }
-
-  // Parse GRAPHS explicitly from the "Graphs" Worksheet
-  if (data.graphs && data.graphs.length > 0) {
-      data.graphs.forEach(row => {
-          const cols = Object.values(row).map(v => String(v).trim()).filter(x => x !== "");
-          if (cols.length < 2) return;
-          const joined = cols.join(" ").toLowerCase();
-
-          let yearStr = cols.find(x => /20\d{2}/.test(x)) || "";
-          let monthStr = cols.find(x => /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(x)) || "";
-          let yearMatch = yearStr.match(/20\d{2}/);
-          let year = yearMatch ? yearMatch[0] : "";
-          let month = monthStr.substring(0,3);
-          let label = month ? `${month}/${year.slice(-2)}` : year;
-          let nums = cols.map(cleanNum).filter(n => !isNaN(n));
-
-          if (joined.includes("inflation") && nums.length >= 1) {
-             let m12 = nums.length > 1 ? nums[nums.length-2] : null; let avg = nums[nums.length-1];
-             if (label && !isNaN(avg) && !CHART_DATA.inflation.labels.includes(label)) { 
-                 CHART_DATA.inflation.labels.unshift(label); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(m12); 
-             }
-          } 
-          else if (joined.includes("gdp") && nums.length >= 2) {
-             let yr = parseInt(year); let gdpNums = nums.filter(n => n !== yr && n > 100);
-             if (!isNaN(yr) && gdpNums.length >= 1 && !tempGdp.find(g => g.year === yr)) { 
-                 tempGdp.push({ year: yr, nom: gdpNums[0], real: gdpNums.length > 1 ? gdpNums[1] : null }); 
-             }
-          }
-          else if ((joined.includes("banks") || joined.includes("lending") || joined.includes("deposit")) && nums.length >= 4) {
-             let dep = nums[nums.length-4], sav = nums[nums.length-3], len = nums[nums.length-2], ovr = nums[nums.length-1];
-             if (label && !isNaN(dep) && !CHART_DATA.banks.labels.includes(label)) { 
-                 CHART_DATA.banks.labels.unshift(label); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(sav); CHART_DATA.banks.lending.unshift(len); CHART_DATA.banks.overdraft.unshift(ovr); 
-             }
-          }
-          else if ((joined.includes("kepss") || joined.includes("rtgs")) && nums.length >= 1) {
-             let val = Math.max(...nums.filter(n => n > 1000)); 
-             if (label && val > 0 && val !== -Infinity && !CHART_DATA.kepss.labels.includes(label)) { 
-                 CHART_DATA.kepss.labels.unshift(label); CHART_DATA.kepss.values.unshift(val); 
-             }
-          }
-
-          // EXTRACT YIELD CURVE FROM GRAPHS
-          const fxdMatch = joined.match(/fxd\d{1}-\d{4}-(\d{2,3})/i);
-          let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
-          if (!years) { const yrMatch = joined.match(/([0-9\.]+)\s*(?:yrs|years)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
-          if (years) {
-            const yieldNums = cols.map(c => {
-               if (c.toLowerCase().includes("date") || c.includes("-") || c.includes("/")) return 0;
-               return cleanNum(c);
-            }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
-            if (yieldNums.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...yieldNums) }); }
-          }
-      });
-  }
-
-  // Reverse GDP for X-Axis logic
-  if(tempGdp.length > 0) {
-      tempGdp.sort((a,b) => a.year - b.year);
-      tempGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });
-  }
-
-  // Fallback: If 'Graphs' sheet is empty, map directly from 'tbills' and 'tbonds'
-  const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
-  if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
+  });
   
-  if (data.tbills && data.tbills.length > 0) {
-      data.tbills.forEach(row => {
-        const cols = Object.values(row).map(v => String(v).trim());
-        if (cols.some(v => v.includes("182"))) {
-            let nums = cols.map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25);
-            if(nums.length > 0) yields.push({ tenor: 0.5, label: "6M", yield: Math.max(...nums) });
-        }
-        if (cols.some(v => v.includes("364"))) {
-            let nums = cols.map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25);
-            if(nums.length > 0) yields.push({ tenor: 1, label: "1Y", yield: Math.max(...nums) });
-        }
-      });
-  }
-  if (data.tbonds && data.tbonds.length > 0 && yields.length < 3) {
-      data.tbonds.forEach(row => {
-        const cols = Object.values(row).map(v => String(v).trim());
-        const joined = cols.join(" ");
-        const fxdMatch = joined.match(/fxd\d{1}-\d{4}-(\d{2,3})/i);
-        let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
-        if (!years) { const yrMatch = joined.match(/([0-9\.]+)\s*(?:yrs|years)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
-        if (years) {
-            const yieldNums = cols.map(c => {
-               if (c.toLowerCase().includes("date") || c.includes("-") || c.includes("/")) return 0;
-               return cleanNum(c);
-            }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
-            if (yieldNums.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...yieldNums) }); }
-        }
-      });
-  }
-
-  if(yields.length > 0) {
-    const uniqueYields = {};
-    yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
-    const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
-    sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   FORMATTING & UTILS
-═══════════════════════════════════════════════════════════════ */
-function formatChange(val, isPct) {
-  if (val === null || val === undefined || val === "" || val === "N/A" || val === "—") return '<span class="nt">—</span>';
-  const s = String(val).trim(); if (!s || s === "-" || s === "0" || s === "0.00") return '<span class="nt">—</span>';
-  const isNeg = s.startsWith("-") || s.startsWith("(") || s.includes("▼");
-  const n = parseFloat(s.replace(/[^0-9.]/g, "")); if (isNaN(n) || n === 0) return '<span class="nt">—</span>';
-  const fmt = (isPct && !s.includes("%") && n > 0 && n < 1) ? (n * 100).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (isPct) return isNeg ? `<span class="dn">▼ (${fmt}%)</span>` : `<span class="up">▲ ${fmt}%</span>`;
-  return isNeg ? `<span class="dn">▼ (${fmt})</span>` : `<span class="up">▲ ${fmt}</span>`;
-}
-function getPctNumForSort(t, key) { const raw = String(t[key] || "").trim(); if (!raw || raw === "N/A" || raw === "—") return 0; const isNeg = raw.startsWith("-") || raw.startsWith("(") || raw.includes("▼"), n = parseFloat(raw.replace(/[^0-9.]/g, "")); if (isNaN(n)) return 0; const scaled = (!raw.includes("%") && n > 0 && n < 1) ? n * 100 : n; return isNeg ? -scaled : scaled; }
-function fmtNum(v, dec) { if (v === null || v === undefined || v === "" || v === "N/A") return "—"; const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); if (isNaN(n)) return String(v); const dp = (dec !== undefined && dec !== null) ? dec : 2; if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(dp) + "T"; if (Math.abs(n) >= 1e9) return (n / 1e9 ).toFixed(dp) + "B"; if (Math.abs(n) >= 1e6) return (n / 1e6 ).toFixed(dp) + "M"; return n.toLocaleString("en-KE", { minimumFractionDigits: dp, maximumFractionDigits: dp }); }
-function stripNum(v) { if (v === null || v === undefined || v === "") return null; const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); return isNaN(n) ? null : n; }
-function fmtKsh(v) { const n = stripNum(v); if (n === null) return "—"; return "KSh " + n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function fmtUSD(v) { if (v === null || v === undefined || v === "") return "—"; const s = String(v); if (s.includes("$")) return s; const n = parseFloat(s.replace(/[^0-9.\-]/g, "")); return isNaN(n) ? s : "$" + fmtNum(n, 2); }
-
-function tableCard(title, headers, rows, emptyMsg) {
-  if (!rows || rows.length === 0) return `<div class="card"><div class="card-header"><h2>${title}</h2></div><div class="card-body"><p style="color:#888;padding:0.5rem 0;font-style:italic;">${emptyMsg || "No data available."}</p></div></div>`;
-  const many = rows.length > 5, cls = many ? "card table-collapsed interactive-card" : "card", onclick = many ? `onclick="this.classList.toggle('table-collapsed')"` : "";
-  const hdrHtml = headers.map(h => `<th>${h} <span class="sort-icon">↕</span></th>`).join(""), bodyHtml = rows.join("");
-  const hint = many ? '<div class="expand-hint"></div>' : "", tId = "tbl-" + title.replace(/\W+/g, '-').toLowerCase();
-  return `<div class="${cls}" ${onclick}><div class="card-header"><h2>${title}</h2></div><div class="card-body"><div class="table-responsive"><table data-id="${tId}"><thead><tr>${hdrHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>${hint}</div></div>`;
-}
-
-function buildGenericTableRows(sheetData) {
-  if (!sheetData || sheetData.length === 0) return { headers: [], rows: [] };
-  const excludeKeys = ["index_symbol", "%_change"];
-  const keys = Object.keys(sheetData[0]).filter(k => !k.match(/_\d+$/) && !excludeKeys.includes(k) && k !== "");
-  const displayHeaders = keys.map(k => k.replace(/_/g, ' ').toUpperCase());
-  const rows = sheetData.map(rowObj => {
-    const rowHTML = keys.map(k => {
-      let val = rowObj[k] !== null && rowObj[k] !== undefined ? rowObj[k] : "—";
-      if (k.includes("change")) { if (String(val).includes("▲")) val = `<span class="up">${val}</span>`; else if (String(val).includes("▼") || String(val).includes("(")) val = `<span class="dn">${val}</span>`; }
-      return `<td>${val}</td>`;
-    }).join("");
-    return `<tr>${rowHTML}</tr>`;
-  });
-  return { headers: displayHeaders, rows: rows };
-}
-
-function standardCard(title, bodyHtml) { return `<div class="full-card"><div class="card-header"><h2>${title}</h2></div><div class="card-body">${bodyHtml}</div></div>`; }
-
-function runSort(table, colIndex, direction, th) {
-  const tbody = table.querySelector('tbody'), allRows = Array.from(tbody.querySelectorAll('tr'));
-  const dataRows = allRows.filter(r => !r.innerText.toUpperCase().includes('TOTAL')), totalRows = allRows.filter(r => r.innerText.toUpperCase().includes('TOTAL'));
-  table.querySelectorAll('th').forEach(t => { t.classList.remove('asc', 'desc'); const icon = t.querySelector('.sort-icon'); if(icon) { icon.innerText = '↕'; icon.style.color = 'var(--text-sub)'; } });
-  th.classList.add(direction === 1 ? 'asc' : 'desc'); const icon = th.querySelector('.sort-icon'); if(icon) { icon.innerText = direction === 1 ? '▲' : '▼'; icon.style.color = '#D4AF37'; }
-  dataRows.sort((a, b) => {
-    const aText = a.children[colIndex].innerText.trim(), bText = b.children[colIndex].innerText.trim();
-    const parseVal = (str) => {
-      if (str === '—' || str === 'N/A' || str === '-') return -Infinity;
-      if (str.match(/^\d{2}\/\d{2}\/\d{4}/)) { const parts = str.split(',')[0].split('/'); return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime(); }
-      const isNegative = str.includes('▼') || str.includes('(') || str.startsWith('-'); let numStr = str.replace(/[^0-9.]/g, ''); if (numStr === '') return str; 
-      let num = parseFloat(numStr); if (isNegative) num = -num; return num;
-    };
-    const aVal = parseVal(aText), bVal = parseVal(bText);
-    if (typeof aVal === 'number' && typeof bVal === 'number') { return (aVal - bVal) * direction; }
-    return String(aText).localeCompare(String(bText), undefined, {numeric: true}) * direction;
-  });
-  dataRows.forEach(row => tbody.appendChild(row)); totalRows.forEach(row => tbody.appendChild(row));
-}
-
-function attachTableSorting() {
-  const savedState = JSON.parse(localStorage.getItem('tableSortState') || '{}');
-  document.querySelectorAll('table').forEach(table => {
-    const tableId = table.getAttribute('data-id'), ths = table.querySelectorAll('th');
-    ths.forEach((th, colIndex) => {
-      th.title = "Click to sort"; const newTh = th.cloneNode(true); th.parentNode.replaceChild(newTh, th);
-      newTh.addEventListener('click', (e) => {
-        e.stopPropagation(); const direction = newTh.classList.contains('asc') ? -1 : 1; runSort(table, colIndex, direction, newTh);
-        if (tableId) { savedState[tableId] = { colIndex, direction }; localStorage.setItem('tableSortState', JSON.stringify(savedState)); }
-      });
-    });
-    if (tableId && savedState[tableId]) { const state = savedState[tableId], activeTh = table.querySelectorAll('th')[state.colIndex]; if (activeTh) runSort(table, state.colIndex, state.direction, activeTh); }
-  });
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   MAIN RENDER & CHART INIT
-═══════════════════════════════════════════════════════════════ */
-function render(data) {
-  const tickers = (data.tickers || []).filter(t => t && t.symbol), mw = (data.marketwatch || []).filter(t => t && t.symbol), indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"), active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price), statsArr = (data.stats || []);
+  console.log(`💾 Writing ${finalOutput.length.toLocaleString()} rows to Google Sheets in batches...`);
   
-  let apiStatus = "CLOSED"; if (data.market_assumptions && data.market_assumptions.length > 0) { const keys = Object.keys(data.market_assumptions[0]); if (keys.includes("open")) apiStatus = "OPEN"; else if (keys.includes("closed")) apiStatus = "CLOSED"; } setMarketStatus(apiStatus);
-  const statsMap = {}, statsChange = {}; statsArr.forEach(r => { if (!r || !r.name) return; const k = r.name.trim(); statsMap[k] = r.value; statsChange[k] = r.change; });
-  function numMW(row, key) { const v = row[key] || row[key.toLowerCase()] || 0; return parseFloat(String(v).replace(/[^0-9.\-]/g, "")) || 0; }
-  const validMW = mw.filter(r => numMW(r, "volume") + numMW(r, "turnover_(kshs)") + numMW(r, "trades") > 0);
-  let totalTurnover = 0, totalTrades = 0, totalFBuy = 0, totalFSell = 0;
-  const mwTotals = mw.find(r => String(r.symbol).toUpperCase() === "TOTALS");
-  if (mwTotals) { totalTurnover = numMW(mwTotals, "turnover_(kshs)"); totalTrades = numMW(mwTotals, "trades"); totalFBuy = numMW(mwTotals, "foreign_buy"); totalFSell = numMW(mwTotals, "foreign_sell"); } else { validMW.forEach(r => { totalTurnover += numMW(r, "turnover_(kshs)"); totalTrades += numMW(r, "trades"); totalFBuy += numMW(r, "foreign_buy"); totalFSell += numMW(r, "foreign_sell"); }); }
-  const topTurnover = [...validMW].sort((a, b) => numMW(b, "turnover_(kshs)") - numMW(a, "turnover_(kshs)")), topVolume = [...validMW].sort((a, b) => numMW(b, "volume") - numMW(a, "volume")), topTrades = [...validMW].sort((a, b) => numMW(b, "trades") - numMW(a, "trades")), topFBuy = [...validMW].filter(r => numMW(r, "foreign_buy") > 0).sort((a, b) => numMW(b, "foreign_buy") - numMW(a, "foreign_buy")), topFSell = [...validMW].filter(r => numMW(r, "foreign_sell") > 0).sort((a, b) => numMW(b, "foreign_sell") - numMW(a, "foreign_sell"));
-  function pctKey(t) { return t["%_change"] || t["percent_change"] || t["change_%"] || ""; }
-  const gainers = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change")), losers = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change")), unchanged = [...tickers].filter(t => getPctNumForSort(t, "%_change") === 0);
-
-  let globalEquitiesHtml = `<div class="full-card"><div class="card-header"><h2>Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">`;
-  Object.keys(countryMap).forEach(key => { const isSelected = key === currentGlobalSelection ? "selected" : ""; globalEquitiesHtml += `<option value="${key}" ${isSelected}>${countryMap[key].name}</option>`; });
-  globalEquitiesHtml += `</select></div><div id="regions_div" style="width: 100%; height: 350px;"></div><div id="global-tables-container">`;
-  Object.keys(countryMap).forEach(countryKey => {
-    const cData = data[countryKey]; let isActive = countryKey === currentGlobalSelection ? "active-country" : "";
-    if (currentGlobalSelection === "mainland_china" && (countryKey === "hong_kong" || countryKey === "taiwan")) isActive = "active-country";
-    globalEquitiesHtml += `<div id="country-${countryKey}" class="global-tables-section ${isActive}">`;
-    if (cData && cData.length > 0) { const tableData = buildGenericTableRows(cData); globalEquitiesHtml += tableCard(countryMap[countryKey].name, tableData.headers, tableData.rows, "No data available"); } else { globalEquitiesHtml += tableCard(countryMap[countryKey].name, ["Status"], [], "Data not loaded yet."); }
-    globalEquitiesHtml += `</div>`;
-  });
-  globalEquitiesHtml += `</div></div></div>`;
-
-  const metricsHtml = `<div class="metrics"><div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">${fmtNum(statsMap["NSE ALL SHARE INDEX"], 2)}</div><div class="sub">${formatChange(statsChange["NSE ALL SHARE INDEX"], false)} vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">${fmtNum(statsMap["NSE 20 SHARE INDEX"], 2)}</div><div class="sub">Blue-chip index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">${fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2)}B</div><div class="sub">KES total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">${fmtNum(totalTurnover, 0)}</div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">${fmtNum(totalTrades, 0)}</div><div class="sub">Trades today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">${fmtNum(totalFBuy, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">${fmtNum(totalFSell, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">${gainers.length}</span> / <span class="dn">${losers.length}</span></div><div class="sub">${unchanged.length} unchanged · ${tickers.length} total</div></div></div>`;
-  let ratesHtml = `<div class="rates-grid">`; if (KEY_RATES.length === 0) ratesHtml += `<div style="color:var(--text-muted);font-style:italic;">Data unavailable.</div>`; KEY_RATES.forEach(r => { ratesHtml += `<div class="rate-cell"><div class="rate-label">${r.label}</div><div class="rate-value">${r.value}</div></div>`; }); ratesHtml += `</div>`;
-
-  const statsRows = statsArr.filter(r => r && r.name && r.value !== undefined && r.value !== "").map(r => `<tr><td>${r.name}</td><td>${fmtNum(r.value, 2)}</td><td>${(r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—"}</td></tr>`);
-  function tickerRow(t) { return `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(pctKey(t), true)}</td></tr>`; }
-  const rankRow_TO = r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td style="color:#002060;">${fmtKsh(r["turnover_(kshs)"])}</td><td>${fmtNum(numMW(r, "volume"), 0)}</td><td>${r.trades || "—"}</td></tr>`;
-  const rankRow_Vol = r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td style="color:#002060;">${fmtNum(numMW(r, "volume"), 0)}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
-  const rankRow_Trades = r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td style="color:#002060;">${fmtNum(numMW(r, "trades"), 0)}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
-  const rankRow_FB = r => { const net = numMW(r, "foreign_buy") - numMW(r, "foreign_sell"); return `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td class="up">${fmtNum(numMW(r, "foreign_buy"),  0)}</td><td class="dn">${fmtNum(numMW(r, "foreign_sell"), 0)}</td><td style="color:${net >= 0 ? "#00b050" : "#ff5252"};">${fmtNum(net, 0)}</td></tr>`; };
-  const rankRow_FS = r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td class="dn">${fmtNum(numMW(r, "foreign_sell"), 0)}</td><td class="up">${fmtNum(numMW(r, "foreign_buy"),  0)}</td></tr>`;
-  const indicesRows = indices.map(r => `<tr><td>${r.name}</td><td>${r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${(r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—"}</td></tr>`);
-  const activeRows = active.map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r.name || "—"}</td><td>${fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${fmtNum(r.volume, 0)}</td><td>${fmtNum(r["market_cap"], 0)}</td></tr>`);
-  const tickerFullRows = tickers.map(t => `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(t["change"], false)}</td><td>${formatChange(pctKey(t), true)}</td><td><span class="nt">${t["last_updated"] || "—"}</span></td></tr>`);
-  const mwRows = mw.filter(r => numMW(r, "ltp_(kshs)") > 0 || numMW(r, "volume") > 0).map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td>${fmtKsh(r["ltp_(kshs)"])}</td><td>${fmtKsh(r["prev_close"])}</td><td>${fmtNum(numMW(r, "volume"), 0)}</td><td>${r.trades || "—"}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td><td class="up">${fmtNum(numMW(r, "foreign_buy"),  0)}</td><td class="dn">${fmtNum(numMW(r, "foreign_sell"), 0)}</td></tr>`);
-  const forexRows = FOREX_RATES.map(r => `<tr><td>${r.ccy}</td><td>${r.crBuy}</td><td>${r.crSell}</td><td>${r.kBuy}</td><td>${r.kSell}</td></tr>`);
-
-  const heatCells = tickers.map(t => { const n = getPctNumForSort(t, "%_change"), cls = n > 0 ? "up-cell" : n < 0 ? "dn-cell" : "nt-cell"; return `<div class="ticker-cell ${cls}" data-sym="${t.symbol}"><div class="tc-sym">${t.symbol}</div><div class="tc-price">${fmtKsh(t["last_price_(kshs)"])}</div><div class="tc-chg">${formatChange(pctKey(t), true)}</div></div>`; }).join("");
-  const heatHtml = `<p class="section-note">${tickers.length} tickers &nbsp;·&nbsp; <span class="up">${gainers.length} gainers</span> &nbsp;·&nbsp; <span class="dn">${losers.length} losers</span> &nbsp;·&nbsp; ${unchanged.length} unchanged</p><input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol…" oninput="filterHeatmap(this.value)"><div class="ticker-grid" id="heatmap-grid">${heatCells}</div>`;
-
-  const graphsHtml = `
-    <div class="graphs-section">
-      <div class="card-header"><h2>Graphs — Macro &amp; CBK Data</h2></div>
-      <div class="card-body">
-        <div class="graphs-grid">
-          <div class="graph-card"><h3>12-Month Inflation (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>
-          <div class="graph-card"><h3>Nominal vs Real GDP (KES Trillions)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>
-          <div class="graph-card"><h3>Commercial Banks Weighted Avg Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div>
-          <div class="graph-card"><h3>KEPSS RTGS — Settlement Value (KES Mn)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>
-          <div class="graph-card" style="grid-column: 1 / -1;"><h3>Kenyan Sovereign Yield Curve (T-Bills & Bonds)</h3><div class="chart-wrapper"><canvas id="gc_yield"></canvas></div></div>
-        </div>
-      </div>
-    </div>`;
-
-  document.getElementById("app").innerHTML = [
-    metricsHtml, standardCard("Key Macro Rates (CBK)", ratesHtml),
-    standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
-    '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
-    '<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>',
-    '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
-    globalEquitiesHtml,
-    '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
-    '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
-    standardCard("Equity Heat Map — All Tickers", heatHtml),
-    tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded."),
-    tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
-    graphsHtml,
-    `<div id="news-card-wrapper">${standardCard("Live Market News", `<div id="live-news-container">${cachedNewsHtml}</div>`)}</div>`,
-  ].join("");
-
-  setTimeout(() => {
-    initCharts(); 
-    loadCorporateActions(); 
-    attachTableSorting();
-    if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark");
-    if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
-  }, 50);
+  // High-Performance Batch Writer
+  const chunkSize = 5000;
+  for (let i = 0; i < finalOutput.length; i += chunkSize) {
+    const chunk = finalOutput.slice(i, i + chunkSize);
+    sheet.getRange(i + 2, 1, chunk.length, chunk[0].length).setValues(chunk);
+    SpreadsheetApp.flush(); 
+  }
+  
+  sheet.getRange(2, 5, sheet.getLastRow(), 11).setNumberFormat("#,##0.00"); 
+  sheet.autoResizeColumns(1, targetHeaders.length); 
+  
+  console.log(`✅ SUCCESS: Time-Series Panel Built. Data is ready for analysis.`);
 }
-
-function initCharts() {
-  const CFONT = { family: "'Hadassah Friedlaender', Georgia, 'Times New Roman', serif", size: 10, weight: "bold" };
-  const CTOOLTIP = { backgroundColor: "#002060", padding: 10, cornerRadius: 6, titleFont: { ...CFONT, size: 10 }, bodyFont: { ...CFONT, size: 10 }, titleColor: "#D4AF37", bodyColor: "#fff" };
-  const CSCALES = { x: { ticks: { font: CFONT, color: "#555", maxRotation: 45 }, grid: { color: "rgba(0,0,0,0.04)" } }, y: { ticks: { font: CFONT, color: "#555" }, grid: { color: "rgba(0,0,0,0.06)" } } };
-  const CINTERACT = { mode: "index", intersect: false }, CLEGEND = { labels: { font: CFONT, color: "#2c3e50", boxWidth: 12 } };
-  const { inflation, gdp, banks, kepss, yieldCurve } = CHART_DATA;
-
-  try {
-    if(inflation.labels.length > 0) {
-      createChart("gc_inflation", { type: "line", data: { labels: inflation.labels, datasets: [{ label: "Annual Average", data: inflation.avg, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.07)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: true }, { label: "12-Month", data: inflation.m12, borderColor: "#D4AF37", backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.35, fill: false }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } } } });
-    }
-  } catch(e) {}
-
-  try {
-    if(gdp.labels.length > 0) {
-      createChart("gc_gdp", {
-        type: "bar",
-        data: { labels: gdp.labels, datasets: [{ label: "Nominal GDP", data: gdp.nominal, type: "bar", backgroundColor: "rgba(0,32,96,0.75)", borderColor: "#002060", borderWidth: 1, hoverBackgroundColor: "#D4AF37", order: 2 }, { label: "Real GDP", data: gdp.real, type: "line", borderColor: "#00b050", backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.35, fill: false, order: 1 }] },
-        options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: Ksh ${(ctx.parsed.y/1000000).toFixed(2)} Tn` } } }, scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: function(value) { return 'Ksh ' + (value / 1000000).toFixed(2) + ' Tn'; } } } } }
-      });
-    }
-  } catch(e) {}
-
-  try {
-    if(banks.labels.length > 0) {
-      createChart("gc_banks", { type: "line", data: { labels: banks.labels, datasets: [{ label: "Deposit", data: banks.deposit, borderColor: "#002060", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Savings", data: banks.savings, borderColor: "#D4AF37", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Lending", data: banks.lending, borderColor: "#00b050", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }, { label: "Overdraft", data: banks.overdraft, borderColor: "#ff5252", borderWidth: 2, pointRadius: 4, pointHoverRadius: 7, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: CSCALES.x, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" } } } } });
-    }
-  } catch(e) {}
-
-  try {
-    if(kepss.labels.length > 0) {
-      createChart("gc_kepss", { type: "line", data: { labels: kepss.labels, datasets: [{ label: "Settlement Value (KES Mn)", data: kepss.values, borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.12)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Value: KES ${ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 })} Mn` } } }, scales: { x: { ...CSCALES.x, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12 } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: function(value) { if (value >= 1000000) return (value / 1000000).toPrecision(2).replace(/\.0+$/, '') + 'T'; return value; } } } } } });
-    }
-  } catch(e) {}
-
-  try {
-    if(yieldCurve.labels.length > 0) {
-      createChart("gc_yield", {
-        type: "line",
-        data: { labels: yieldCurve.labels, datasets: [{ label: "Sovereign Yield (%)", data: yieldCurve.data, borderColor: "#002060", backgroundColor: "rgba(0,32,96,0.1)", borderWidth: 3, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: "#D4AF37", tension: 0.4, fill: true }] },
-        options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: CLEGEND, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Yield: ${ctx.parsed.y.toFixed(2)}%` } } }, scales: { x: { ...CSCALES.x, title: { display: true, text: 'Maturity (Tenor)', font: CFONT } }, y: { ...CSCALES.y, ticks: { ...CSCALES.y.ticks, callback: v => v + "%" }, title: { display: true, text: 'Yield (%)', font: CFONT } } } }
-      });
-    }
-  } catch(e) {}
-}
-
-function filterHeatmap(q) {
-  const qU = (q || "").toUpperCase();
-  document.querySelectorAll(".ticker-cell").forEach(cell => { cell.style.display = (cell.dataset.sym || "").toUpperCase().includes(qU) ? "" : "none"; });
-}
-
-function startRefresh() {
-  if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(triggerRefresh, REFRESH_SECONDS * 1000);
-}
-
-triggerRefresh();
-startRefresh();
-
-</script>
-</body>
-</html>
