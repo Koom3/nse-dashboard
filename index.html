@@ -7,7 +7,6 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <style>
@@ -19,7 +18,6 @@
       --input-border: #d1d5db; --input-bg: #ffffff;
       --card-shadow: 0 2px 6px rgba(0,0,0,0.07); --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.11);
       --ticker-cell-bg: #ffffff; --map-bg: #ffffff; --map-dataless: #f1f5f9;
-      --ai-bubble-user: #002060; --ai-bubble-bot: #f1f5f9; --ai-text-bot: #2c3e50;
     }
     [data-theme="dark"] {
       --bg-body: #121212; --bg-card: #1e1e1e; --text-main: #e0e0e0;
@@ -28,7 +26,6 @@
       --input-border: #444444; --input-bg: #1e1e1e;
       --card-shadow: 0 2px 6px rgba(0,0,0,0.4); --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.6);
       --ticker-cell-bg: #2a2a2a; --map-bg: #1e1e1e; --map-dataless: #2a2a2a;
-      --ai-bubble-user: #66a3ff; --ai-bubble-bot: #2a2a2a; --ai-text-bot: #e0e0e0;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-weight: bold; }
     body { font-family: 'Hadassah Friedlaender', Georgia, serif; background: var(--bg-body); color: var(--text-main); font-size: 10pt; transition: background 0.3s, color 0.3s; }
@@ -118,17 +115,11 @@
     .news-desc { font-size: 9pt; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: normal;}
     .news-date { font-size: 8pt; color: #D4AF37; margin-top: auto; font-weight: normal;}
 
-    .ai-widget { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; }
-    .ai-toggle-btn { background: #002060; color: #fff; border: 2px solid #D4AF37; width: 60px; height: 60px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 24px; }
-    .ai-chat-box { width: 360px; height: 500px; max-height: 80vh; background: var(--bg-card); border-radius: 12px; box-shadow: var(--card-shadow-hover); border: 1px solid var(--border-color); display: none; flex-direction: column; overflow: hidden; margin-bottom: 15px; }
-    .ai-chat-header { background: linear-gradient(135deg, #002060 0%, #003b73 100%); color: #fff; padding: 12px 16px; font-size: 11pt; display: flex; justify-content: space-between; border-bottom: 3px solid #D4AF37; }
-    .ai-chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; font-weight: normal; background: var(--bg-body); }
-    .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 9.5pt; }
-    .chat-bubble.user { align-self: flex-end; background: var(--ai-bubble-user); color: #fff; border-bottom-right-radius: 4px; }
-    .chat-bubble.bot { align-self: flex-start; background: var(--ai-bubble-bot); color: var(--ai-text-bot); border-bottom-left-radius: 4px; border: 1px solid var(--border-color); }
-    .ai-chat-input-area { padding: 10px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; gap: 8px; }
-    .ai-chat-input-area input { flex: 1; padding: 8px 12px; border: 1px solid var(--input-border); border-radius: 20px; font-family: inherit; font-size: 9.5pt; background: var(--input-bg); color: var(--text-main); outline: none; }
-    .ai-send-btn { background: #D4AF37; color: #002060; border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+    /* NSE Native Table styling */
+    .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9.5pt; }
+    .nse-native-table th { background: var(--table-header-bg); padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); text-align: left; }
+    .nse-native-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-border); }
+    .nse-native-table img { max-height: 35px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -152,23 +143,6 @@
 
 <div class="container" id="pdf-container">
   <div id="app"><div class="loader">⏳ Aggregating global and domestic datasets…</div></div>
-</div>
-
-<div class="ai-widget" data-html2canvas-ignore="true">
-  <div class="ai-chat-box" id="ai-chat-box">
-    <div class="ai-chat-header">
-      <span>🤖 Analyst Agent</span>
-      <span style="cursor:pointer;" onclick="toggleChat()">✖</span>
-    </div>
-    <div class="ai-chat-messages" id="ai-chat-messages">
-      <div class="chat-bubble bot">Hi! I'm your dedicated Financial Analyst AI, powered by Gemini 2.5 Flash. Ask me anything!</div>
-    </div>
-    <div class="ai-chat-input-area">
-      <input type="text" id="ai-input" placeholder="Ask about the market..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
-      <button class="ai-send-btn" onclick="sendChatMessage()">➤</button>
-    </div>
-  </div>
-  <button class="ai-toggle-btn" onclick="toggleChat()">💬</button>
 </div>
 
 <div class="modal-overlay" id="export-modal" data-html2canvas-ignore="true">
@@ -209,7 +183,6 @@
 ═══════════════════════════════════════════════════════════════ */
 const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
 const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
-const API_AI = "https://script.google.com/macros/s/AKfycbxzhisvbAfZyHPF0hEAmlF579b1ayHUAB-RnrkGoePv6NvMzKuWurjoCWYdGTYkLVQR5g/exec";
 
 const JSONP_TIMEOUT_MS = 15000; 
 
@@ -296,61 +269,48 @@ async function submitSubscription() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   AI AGENT INTERFACE
-═══════════════════════════════════════════════════════════════ */
-function toggleChat() {
-  const box = document.getElementById("ai-chat-box");
-  box.style.display = (box.style.display === "flex") ? "none" : "flex";
-}
-
-async function sendChatMessage() {
-  const input = document.getElementById("ai-input");
-  const msg = input.value.trim();
-  if (!msg) return;
-  appendMessage("user", msg);
-  input.value = "";
-  const typingId = appendMessage("bot", '<span class="typing-indicator">Analyzing live data...</span>');
-  const context = { nse_stats: stateLocalData?.stats || [], cbk_rates: KEY_RATES, forex: FOREX_RATES, world_indices: stateLocalData?.indices || [] };
-  try {
-    const response = await fetch(API_AI, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ message: msg, context: context }) });
-    const data = await response.json();
-    const el = document.getElementById(typingId);
-    if(el) el.innerHTML = typeof marked !== 'undefined' ? marked.parse(data.reply) : data.reply;
-  } catch (err) {
-    const el = document.getElementById(typingId);
-    if(el) el.innerHTML = "⚠️ Connection error. Please ensure your API_AI URL is correct.";
-  }
-}
-
-function appendMessage(sender, textHtml) {
-  const container = document.getElementById("ai-chat-messages"), msgDiv = document.createElement("div");
-  msgDiv.className = `chat-bubble ${sender}`; const uniqueId = 'msg-' + Date.now(); msgDiv.id = uniqueId; msgDiv.innerHTML = textHtml;
-  container.appendChild(msgDiv); container.scrollTop = container.scrollHeight; return uniqueId;
-}
-
-/* ═══════════════════════════════════════════════════════════════
    LIVE NEWS API SCRAPER
 ═══════════════════════════════════════════════════════════════ */
 async function loadLiveNews() {
   if (isNewsFetched) return;
   try {
-    const feeds = ["https://finance.yahoo.com/news/rss", "https://feeds.a.dj.com/rss/RSSWorldNews.xml", "https://www.businessinsider.com/rss"];
+    const feeds = [
+      "https://kenyanwallstreet.com/category/kenya-business-news/feed/",
+      "https://kenyanwallstreet.com/category/african-wall-street/feed/",
+      "https://kenyanwallstreet.com/category/global-news/feed/",
+      "https://finance.yahoo.com/news/rss", 
+      "https://www.businessinsider.com/rss"
+    ];
     let allArticles = [];
     for (const feed of feeds) {
       try {
         const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`);
         const data = await resp.json();
-        if (data.status === 'ok') allArticles = allArticles.concat(data.items.slice(0, 6)); 
+        if (data.status === 'ok') {
+           const srcName = feed.includes("kenyanwallstreet") ? "Kenyan Wall Street" : (feed.includes("yahoo") ? "Yahoo Finance" : "Business Insider");
+           data.items.slice(0, 4).forEach(i => { i.sourceName = srcName; allArticles.push(i); });
+        }
       } catch (err) {}
     }
     allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
     let html = '<div class="news-grid">';
-    allArticles.slice(0, 8).forEach(item => {
+    allArticles.slice(0, 12).forEach(item => {
        let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || '';
        if (!imgUrl) { const match = item.description.match(/<img[^>]+src="([^">]+)"/); if(match) imgUrl = match[1]; }
        if (!imgUrl) imgUrl = 'https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News';
        let cleanDesc = item.description.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...';
-       html += `<a href="${item.link}" target="_blank" style="text-decoration: none; color: inherit;"><div class="news-item"><img src="${imgUrl}" class="news-image" alt="News Image" onerror="this.src='https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News'"><div class="news-title">${item.title}</div><div class="news-desc">${cleanDesc}</div><div class="news-date">${new Date(item.pubDate).toLocaleString()}</div></div></a>`;
+       html += `
+         <a href="${item.link}" target="_blank" style="text-decoration: none; color: inherit;">
+           <div class="news-item">
+             <img src="${imgUrl}" class="news-image" alt="News Image" onerror="this.src='https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News'">
+             <div class="news-title">${item.title}</div>
+             <div class="news-desc">${cleanDesc}</div>
+             <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
+               <div class="news-date">${new Date(item.pubDate).toLocaleString()}</div>
+               <div style="font-size:8pt; color:var(--text-sub); font-style:italic; font-weight:bold;">Source: ${item.sourceName}</div>
+             </div>
+           </div>
+         </a>`;
     });
     html += '</div>'; cachedNewsHtml = html; isNewsFetched = true;
     const container = document.getElementById("live-news-container");
@@ -362,6 +322,39 @@ async function loadLiveNews() {
   }
 }
 loadLiveNews();
+
+/* ═══════════════════════════════════════════════════════════════
+   CORPORATE ACTIONS SCRAPER (CLIENT SIDE)
+═══════════════════════════════════════════════════════════════ */
+async function loadCorporateActions() {
+  const container = document.getElementById("corp-actions-container");
+  if(!container) return;
+  try {
+    const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.nse.co.ke/corporate-actions/')}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(data.contents, "text/html");
+    
+    const tables = doc.querySelectorAll("table");
+    let targetTable = null;
+    for (let tbl of tables) {
+      if (!tbl.innerHTML.includes("cookielawinfo") && !tbl.innerHTML.includes("grecaptcha")) { targetTable = tbl; break; }
+    }
+    
+    if (targetTable) {
+      targetTable.querySelectorAll('img').forEach(img => {
+        const src = img.getAttribute('src');
+        if (src && src.startsWith('/')) img.src = 'https://www.nse.co.ke' + src;
+      });
+      container.innerHTML = `<div class="table-responsive nse-native-table">${targetTable.outerHTML}</div>`;
+    } else {
+      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">No live corporate actions found.</p>`;
+    }
+  } catch (err) {
+    container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Awaiting next sync from NSE...</p>`;
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MAP & UI LOGIC
@@ -452,7 +445,6 @@ function loadData() {
       const ts = mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { timeZone: "Africa/Nairobi", hour12: false });
       
       try {
-        // Critical: Extract data BEFORE building HTML
         extractDynamicData(mergedData);
         render(mergedData);
         document.getElementById("last-updated").textContent = "Updated: " + ts;
@@ -484,7 +476,6 @@ function extractDynamicData(data) {
       const cols = Object.values(row).map(v => String(v).trim()).filter(x => x !== "");
       if (cols.length < 2) return;
 
-      // Extract Rates
       let foundRateIdx = -1; let foundRateName = "";
       for (let i = 0; i < targetRates.length; i++) {
          let idx = cols.findIndex(x => x.toLowerCase() === targetRates[i].toLowerCase());
@@ -500,7 +491,6 @@ function extractDynamicData(data) {
          if (!KEY_RATES.find(r => r.label === foundRateName)) KEY_RATES.push({ label: foundRateName, value: val });
       }
 
-      // Extract Forex
       let foundCcyIdx = -1; let foundCcyName = "";
       for (let i = 0; i < validCcys.length; i++) {
          let idx = cols.findIndex(x => x.toLowerCase() === validCcys[i].toLowerCase());
@@ -519,65 +509,27 @@ function extractDynamicData(data) {
   CHART_DATA = { inflation: { labels: [], avg: [], m12: [] }, gdp: { labels: [], nominal: [], real: [] }, banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] }, kepss: { labels: [], values: [] }, yieldCurve: { labels: [], data: [] } };
   const cleanNum = (str) => parseFloat(String(str).replace(/,/g, '').replace(/%/g, ''));
 
-  // Phase 2: Yield Curve (Strict Regex & Column Filtering)
-  const yields = [];
-  if (KEY_RATES.length > 0) {
-     const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
-     if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
-  }
-
-  if (data.tbills && data.tbills.length > 0) {
-    const d182 = data.tbills.find(r => Object.values(r).some(v => String(v).includes("182")));
-    if(d182) { let nums = Object.values(d182).map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25); if(nums.length > 0) yields.push({ tenor: 0.5, label: "6M", yield: Math.max(...nums) }); }
-    const d364 = data.tbills.find(r => Object.values(r).some(v => String(v).includes("364")));
-    if(d364) { let nums = Object.values(d364).map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25); if(nums.length > 0) yields.push({ tenor: 1, label: "1Y", yield: Math.max(...nums) }); }
-  }
-  
-  if (data.tbonds && data.tbonds.length > 0) {
-    data.tbonds.forEach(row => {
-      const text = Object.values(row).join(" ");
-      const fxdMatch = text.match(/FXD\d{1}-\d{4}-(\d{2,3})/i);
-      let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
-      if (!years) { const yrMatch = text.match(/([0-9\.]+)\s*(?:YRS|YEARS)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
-      
-      if (years) {
-        const numbers = Object.entries(row).map(([k, v]) => {
-           if (String(k).toLowerCase().includes("date") || String(v).includes("-") || String(v).includes("/")) return 0;
-           const clean = String(v).replace(/,/g,'').replace(/%/g,'').trim();
-           return parseFloat(clean);
-        }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
-        
-        if (numbers.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...numbers) }); }
-      }
-    });
-  }
-  
-  if(yields.length > 0) {
-    const uniqueYields = {};
-    yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
-    const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
-    sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
-  }
-
-  // Phase 2: Graphs now read securely from data.graphs instead of data.cbk
+  // Phase 2: Graphs Explicitly Reading from data.graphs ONLY
   const graphData = (data.graphs && data.graphs.length > 0) ? data.graphs : (data.cbk || []);
   if (graphData.length > 0) {
     let currentTable = null;
     let tempGdp = []; 
+    let yields = [];
     
     graphData.forEach(row => {
       const vals = Object.values(row).map(v => String(v).trim());
       const joined = vals.join(" ").toLowerCase();
 
-      if (joined.includes("inflation rates")) { currentTable = "inflation"; return; }
-      if (joined.includes("annual gdp")) { currentTable = "gdp"; return; }
-      if (joined.includes("commercial banks weighted")) { currentTable = "banks"; return; }
-      if (joined.includes("kepss rtgs")) { currentTable = "kepss"; return; }
-      if (joined.includes("central bank") || joined.includes("kesonia") || joined.includes("exchange rates") || joined.includes("diaspora") || joined.includes("payment cards") || joined.includes("key rates")) { currentTable = null; return; }
+      if (joined.includes("inflation rates") || joined.includes("inflation")) { currentTable = "inflation"; return; }
+      if (joined.includes("annual gdp") || joined.includes("gross domestic product")) { currentTable = "gdp"; return; }
+      if (joined.includes("commercial banks") || joined.includes("weighted average rates")) { currentTable = "banks"; return; }
+      if (joined.includes("kepss rtgs") || joined.includes("settlement value")) { currentTable = "kepss"; return; }
+      if (joined.includes("yield curve") || joined.includes("sovereign yield")) { currentTable = "yield"; return; }
+      if (joined.includes("central bank") || joined.includes("kesonia") || joined.includes("exchange rates") || joined.includes("diaspora") || joined.includes("key rates")) { currentTable = null; return; }
 
       let cols = vals.filter(x => x !== "");
       if (cols.length < 2) return;
-      if (cols[0].toLowerCase() === "year" || cols[0].toLowerCase() === "date") return;
+      if (cols[0].toLowerCase() === "year" || cols[0].toLowerCase() === "date" || cols[0].toLowerCase() === "month" || cols[0].toLowerCase() === "tenor") return;
 
       let nums = cols.map(x => cleanNum(x)).filter(n => !isNaN(n));
       let yearStr = cols.find(x => /20\d{2}/.test(x)) || "";
@@ -587,12 +539,14 @@ function extractDynamicData(data) {
       let month = monthStr.substring(0,3);
       let label = month ? `${month}/${year.slice(-2)}` : year;
 
-      if (currentTable === "inflation" && nums.length >= 2) {
-         let m12 = nums[nums.length-2], avg = nums[nums.length-1];
+      if (currentTable === "inflation" && nums.length >= 1) {
+         let m12 = nums[nums.length-2] !== undefined ? nums[nums.length-2] : null; 
+         let avg = nums[nums.length-1];
          if (label && !isNaN(avg)) { CHART_DATA.inflation.labels.unshift(label); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(m12); }
       } 
-      else if (currentTable === "gdp" && nums.length >= 2) {
-         let yr = parseInt(year); let gdpNums = nums.filter(n => n !== yr && n > 1000);
+      else if (currentTable === "gdp" && nums.length >= 1) {
+         let yr = parseInt(year) || parseInt(cols[0]); 
+         let gdpNums = nums.filter(n => n !== yr && n > 100); 
          if (!isNaN(yr) && gdpNums.length >= 1) { tempGdp.push({ year: yr, nom: gdpNums[0], real: gdpNums.length > 1 ? gdpNums[1] : null }); }
       }
       else if (currentTable === "banks" && nums.length >= 4) {
@@ -603,13 +557,65 @@ function extractDynamicData(data) {
          let val = Math.max(...nums.filter(n => n > 1000)); 
          if (label && val > 0 && val !== -Infinity) { CHART_DATA.kepss.labels.unshift(label); CHART_DATA.kepss.values.unshift(val); }
       }
+      else if (currentTable === "yield" && nums.length >= 1) {
+         let tenorStr = cols.find(x => /yr|year|m|month/i.test(x)) || cols[0];
+         let tenorNum = cleanNum(tenorStr);
+         let yieldVal = Math.max(...nums.filter(n => n > 1 && n < 25 && n !== tenorNum));
+         
+         if(tenorStr.toLowerCase().includes("m") || tenorNum > 25) tenorNum = tenorNum / 12; 
+         if (!isNaN(tenorNum) && yieldVal > 0 && yieldVal !== -Infinity) {
+             yields.push({ tenor: tenorNum, label: tenorStr, yield: yieldVal });
+         }
+      }
     });
 
     if(tempGdp.length > 0) {
-      // GDP Phase 2 Fix: Sort ascending (2000 -> 2024)
       tempGdp.sort((a,b) => a.year - b.year);
       tempGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });
     }
+    
+    if(yields.length > 0) {
+      const uniqueYields = {};
+      yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
+      const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
+      sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
+    }
+  }
+
+  // Backup Yield Curve extraction (if 'Graphs' sheet fails)
+  if (CHART_DATA.yieldCurve.data.length === 0) {
+      const yields = [];
+      if (KEY_RATES.length > 0) {
+         const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
+         if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
+      }
+      if (data.tbills && data.tbills.length > 0) {
+        const d182 = data.tbills.find(r => Object.values(r).some(v => String(v).includes("182")));
+        if(d182) { let nums = Object.values(d182).map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25); if(nums.length > 0) yields.push({ tenor: 0.5, label: "6M", yield: Math.max(...nums) }); }
+        const d364 = data.tbills.find(r => Object.values(r).some(v => String(v).includes("364")));
+        if(d364) { let nums = Object.values(d364).map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25); if(nums.length > 0) yields.push({ tenor: 1, label: "1Y", yield: Math.max(...nums) }); }
+      }
+      if (data.tbonds && data.tbonds.length > 0) {
+        data.tbonds.forEach(row => {
+          const text = Object.values(row).join(" ");
+          const fxdMatch = text.match(/FXD\d{1}-\d{4}-(\d{2,3})/i);
+          let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
+          if (!years) { const yrMatch = text.match(/([0-9\.]+)\s*(?:YRS|YEARS)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
+          if (years) {
+            const numbers = Object.entries(row).map(([k, v]) => {
+               if (String(k).toLowerCase().includes("date") || String(v).includes("-") || String(v).includes("/")) return 0;
+               return parseFloat(String(v).replace(/,/g,'').replace(/%/g,'').trim());
+            }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
+            if (numbers.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...numbers) }); }
+          }
+        });
+      }
+      if(yields.length > 0) {
+        const uniqueYields = {};
+        yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
+        const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
+        sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
+      }
   }
 }
 
@@ -696,7 +702,7 @@ function attachTableSorting() {
    MAIN RENDER & CHART INIT
 ═══════════════════════════════════════════════════════════════ */
 function render(data) {
-  const tickers = (data.tickers || []).filter(t => t && t.symbol), mw = (data.marketwatch || []).filter(t => t && t.symbol), indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"), active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price), statsArr = (data.stats || []), corpActions = (data.corporate_actions || []);
+  const tickers = (data.tickers || []).filter(t => t && t.symbol), mw = (data.marketwatch || []).filter(t => t && t.symbol), indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"), active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price), statsArr = (data.stats || []);
   let apiStatus = "CLOSED"; if (data.market_assumptions && data.market_assumptions.length > 0) { const keys = Object.keys(data.market_assumptions[0]); if (keys.includes("open")) apiStatus = "OPEN"; else if (keys.includes("closed")) apiStatus = "CLOSED"; } setMarketStatus(apiStatus);
   const statsMap = {}, statsChange = {}; statsArr.forEach(r => { if (!r || !r.name) return; const k = r.name.trim(); statsMap[k] = r.value; statsChange[k] = r.change; });
   function numMW(row, key) { const v = row[key] || row[key.toLowerCase()] || 0; return parseFloat(String(v).replace(/[^0-9.\-]/g, "")) || 0; }
@@ -722,10 +728,6 @@ function render(data) {
 
   const metricsHtml = `<div class="metrics"><div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">${fmtNum(statsMap["NSE ALL SHARE INDEX"], 2)}</div><div class="sub">${formatChange(statsChange["NSE ALL SHARE INDEX"], false)} vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">${fmtNum(statsMap["NSE 20 SHARE INDEX"], 2)}</div><div class="sub">Blue-chip index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">${fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2)}B</div><div class="sub">KES total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">${fmtNum(totalTurnover, 0)}</div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">${fmtNum(totalTrades, 0)}</div><div class="sub">Trades today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">${fmtNum(totalFBuy, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">${fmtNum(totalFSell, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">${gainers.length}</span> / <span class="dn">${losers.length}</span></div><div class="sub">${unchanged.length} unchanged · ${tickers.length} total</div></div></div>`;
   let ratesHtml = `<div class="rates-grid">`; if (KEY_RATES.length === 0) ratesHtml += `<div style="color:var(--text-muted);font-style:italic;">Data unavailable.</div>`; KEY_RATES.forEach(r => { ratesHtml += `<div class="rate-cell"><div class="rate-label">${r.label}</div><div class="rate-value">${r.value}</div></div>`; }); ratesHtml += `</div>`;
-
-  let corpActionsHtml = "";
-  if (corpActions.length > 0) { const cData = buildGenericTableRows(corpActions); corpActionsHtml = tableCard("Upcoming Corporate Actions", cData.headers, cData.rows, "No upcoming corporate actions."); } 
-  else { corpActionsHtml = tableCard("Upcoming Corporate Actions", ["Status"], [["<tr><td style='color:var(--text-muted); font-style:italic;'>Awaiting next sync from NSE...</td></tr>"]], ""); }
 
   const statsRows = statsArr.filter(r => r && r.name && r.value !== undefined && r.value !== "").map(r => `<tr><td>${r.name}</td><td>${fmtNum(r.value, 2)}</td><td>${(r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—"}</td></tr>`);
   function tickerRow(t) { return `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(pctKey(t), true)}</td></tr>`; }
@@ -759,10 +761,10 @@ function render(data) {
 
   document.getElementById("app").innerHTML = [
     metricsHtml, standardCard("Key Macro Rates (CBK)", ratesHtml),
-    corpActionsHtml,
+    standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
     '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
     '<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>',
-    '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, ""), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
+    '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
     globalEquitiesHtml,
     '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
     '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
@@ -775,6 +777,7 @@ function render(data) {
 
   setTimeout(() => {
     initCharts(); 
+    loadCorporateActions(); // Phase 2: Direct Fetch
     attachTableSorting();
     if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark");
     if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
