@@ -37,7 +37,29 @@
     #market-status.open { color: #00e676; border-color: #00e676; } #market-status.closed { color: #ff5252; border-color: #ff5252; }
     .header-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 10pt; font-weight: bold; transition: background 0.2s; }
     .header-btn:hover { background: rgba(255,255,255,0.3); }
-    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    
+    /* ── SCROLLING TICKER TAPE ──────────────────── */
+    .ticker-wrap { width: 100%; background: #001030; color: #fff; overflow: hidden; height: 35px; display: flex; align-items: center; border-bottom: 2px solid #D4AF37; }
+    .ticker { display: flex; white-space: nowrap; animation: ticker-scroll 45s linear infinite; }
+    .ticker:hover { animation-play-state: paused; }
+    @keyframes ticker-scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    .ticker-item { margin: 0 15px; font-size: 10pt; display: flex; align-items: center; gap: 6px; }
+    .ti-sym { color: #D4AF37; font-weight: bold; }
+    .ti-prc { color: #ffffff; }
+    .ti-up { color: #00e676; } .ti-dn { color: #ff5252; } .ti-nt { color: #888; }
+    
+    /* ── TAB NAVIGATION ──────────────────── */
+    .tab-container { display: flex; justify-content: center; margin: 1.5rem 0 1rem; gap: 1rem; }
+    .tab-btn { padding: 10px 24px; font-size: 11pt; background: var(--bg-card); color: var(--text-main); border: 2px solid var(--border-color); border-radius: 30px; cursor: pointer; transition: all 0.2s; box-shadow: var(--card-shadow); }
+    .tab-btn:hover { border-color: #002060; }
+    .tab-btn.active { background: #002060; color: #fff; border-color: #002060; box-shadow: 0 4px 10px rgba(0,32,96,0.3); }
+    [data-theme="dark"] .tab-btn.active { background: #D4AF37; color: #000; border-color: #D4AF37; box-shadow: 0 4px 10px rgba(212,175,55,0.2); }
+    
+    .view-section { display: none; animation: fadeIn 0.4s ease; }
+    .view-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem 1.5rem; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     @media (max-width: 1000px) { .grid3 { grid-template-columns: 1fr 1fr; } } @media (max-width: 700px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
@@ -55,7 +77,12 @@
     .card-header h2 { font-size: 11pt; color: #002060; text-transform: uppercase; margin: 0; } [data-theme="dark"] .card-header h2 { color: #66a3ff; }
     .card-body { padding: 1rem 1.25rem 1.25rem; }
     .interactive-card { cursor: pointer; } .interactive-card:hover { box-shadow: var(--card-shadow-hover); transform: translateY(-2px); }
+    
+    /* Auto-Expand for PDF */
     .table-collapsed tbody tr:nth-child(n+6) { display: none; }
+    .pdf-mode .table-collapsed tbody tr { display: table-row !important; } 
+    .pdf-mode .expand-hint { display: none !important; }
+    
     .expand-hint { text-align: center; font-size: 9pt; color: #D4AF37; padding-top: 8px; margin-top: 8px; border-top: 1px dashed var(--border-color); user-select: none; }
     .table-collapsed .expand-hint::after { content: "▼ Tap card to view full table ▼"; } .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ Tap to collapse ▲"; color: #002060; }
     
@@ -79,7 +106,6 @@
     .country-filter select:hover { background: var(--table-hover); }
     .global-tables-section { display: none; }
     .global-tables-section.active-country { display: block; animation: fadeIn 0.4s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
     .heatmap-search { width: 100%; margin-bottom: 0.85rem; padding: 7px 12px; border: 1px solid var(--input-border); border-radius: 6px; font-size: 10pt; background: var(--input-bg); color: var(--text-main); outline: none; }
     .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 0.6rem; }
@@ -143,10 +169,39 @@
   </div>
 </header>
 
-<div class="container" id="pdf-container">
-  <div id="app"><div class="loader">⏳ Aggregating global and domestic datasets…</div></div>
+<div class="ticker-wrap" id="ticker-wrap">
+    <div class="ticker" id="ticker-content">
+        <div style="padding:0 20px; font-style:italic; color:#888;">Aggregating live ticker data...</div>
+    </div>
 </div>
 
+<div class="tab-container" data-html2canvas-ignore="true">
+  <button class="tab-btn active" onclick="switchTab('kenya')">🇰🇪 Kenyan Market</button>
+  <button class="tab-btn" onclick="switchTab('global')">🌍 Global Overview</button>
+</div>
+
+<div class="container" id="pdf-container">
+  
+  <div id="view-kenya" class="view-section active">
+      <div id="app-kenya"><div class="loader">⏳ Aggregating domestic datasets…</div></div>
+  </div>
+
+  <div id="view-global" class="view-section">
+      <div id="app-global"><div class="loader">⏳ Aggregating global datasets…</div></div>
+  </div>
+
+  <div id="news-card-wrapper" style="margin-top: 2rem;">
+      <div class="full-card">
+          <div class="card-header"><h2>Live Market News</h2></div>
+          <div class="card-body">
+              <div id="live-news-container"><div class="loader">⏳ Fetching top financial news...</div></div>
+          </div>
+      </div>
+  </div>
+
+</div>
+
+<!-- PDF Export / Subscribe Modal -->
 <div class="modal-overlay" id="export-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeExportModal()">✖</span>
@@ -188,9 +243,6 @@ const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573T
 
 const JSONP_TIMEOUT_MS = 15000; 
 
-/* ═══════════════════════════════════════════════════════════════
-   DYNAMIC DATA VARIABLES
-═══════════════════════════════════════════════════════════════ */
 let KEY_RATES = [];
 let FOREX_RATES = [];
 let CHART_DATA = {
@@ -201,14 +253,16 @@ let CHART_DATA = {
   yieldCurve: { labels: [], data: [] } 
 };
 
-let cachedNewsHtml = '<div class="loader">⏳ Fetching live global news...</div>';
+let currentTab = 'kenya';
 let isNewsFetched = false;
 let isFetching = false;
 let isFirstLoad = true;
-
 let isGeoChartLoaded = false;
 let currentGlobalSelection = "usa";
 const chartInstances = {};
+
+let kenyaTickerHTML = "";
+let globalTickerHTML = "";
 
 const countryMap = {
   "usa": { name: "USA", code: "US" }, "canada": { name: "Canada", code: "CA" },
@@ -223,7 +277,30 @@ const countryMap = {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   PHASE 2: PDF EXPORT & SUBSCRIPTION
+   TAB & TICKER LOGIC
+═══════════════════════════════════════════════════════════════ */
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    document.getElementById('view-' + tabId).classList.add('active');
+    currentTab = tabId;
+    
+    const tickerEl = document.getElementById('ticker-content');
+    if (tabId === 'kenya' && kenyaTickerHTML) {
+        tickerEl.innerHTML = kenyaTickerHTML + kenyaTickerHTML; 
+    } else if (tabId === 'global' && globalTickerHTML) {
+        tickerEl.innerHTML = globalTickerHTML + globalTickerHTML; 
+    }
+    
+    if (tabId === 'global' && isGeoChartLoaded && document.getElementById('regions_div')) {
+        setTimeout(drawRegionsMap, 100);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PDF EXPORT & SUBSCRIPTION
 ═══════════════════════════════════════════════════════════════ */
 function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
 function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
@@ -231,18 +308,28 @@ function closeExportModal() { document.getElementById('export-modal').style.disp
 function downloadPDF() {
   closeExportModal();
   const element = document.getElementById('pdf-container');
-  const newsWrapper = document.getElementById('news-card-wrapper');
-  if (newsWrapper) newsWrapper.style.display = 'none';
+  element.classList.add('pdf-mode'); // Force expands all collapsed tables
 
   const tsDiv = document.createElement('div');
   tsDiv.id = 'pdf-timestamp-header';
   tsDiv.style.textAlign = 'center'; tsDiv.style.padding = '10px'; tsDiv.style.marginBottom = '20px';
   tsDiv.style.color = '#002060'; tsDiv.style.borderBottom = '2px solid #D4AF37';
-  tsDiv.innerHTML = `<h2 style="margin:0;">Market Tear Sheet</h2><p style="margin:5px 0 0; font-size:10pt;">Generated on: ${new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' })}</p>`;
+  tsDiv.innerHTML = `<h2 style="margin:0;">Market Tear Sheet — ${currentTab === 'kenya' ? 'Kenyan Market' : 'Global Overview'}</h2><p style="margin:5px 0 0; font-size:10pt;">Generated on: ${new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' })}</p>`;
   element.insertBefore(tsDiv, element.firstChild);
 
-  const opt = { margin: 0.2, filename: `Market_Tear_Sheet_${new Date().toISOString().split('T')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'in', format: 'a3', orientation: 'portrait' } };
-  html2pdf().set(opt).from(element).save().then(() => { if (newsWrapper) newsWrapper.style.display = 'block'; tsDiv.remove(); });
+  // High quality PDF generation
+  const opt = { 
+      margin: 0.2, 
+      filename: `Market_Tear_Sheet_${currentTab}_${new Date().toISOString().split('T')[0]}.pdf`, 
+      image: { type: 'jpeg', quality: 1.0 }, 
+      html2canvas: { scale: 2, useCORS: true, logging: false }, 
+      jsPDF: { unit: 'in', format: 'a3', orientation: 'portrait' } 
+  };
+  
+  html2pdf().set(opt).from(element).save().then(() => { 
+      element.classList.remove('pdf-mode'); 
+      tsDiv.remove(); 
+  });
 }
 
 async function submitSubscription() {
@@ -277,23 +364,26 @@ async function loadLiveNews() {
   if (isNewsFetched) return;
   try {
     const feeds = [
-      "https://kenyanwallstreet.com/category/kenya-business-news/feed/",
-      "https://kenyanwallstreet.com/category/african-wall-street/feed/",
-      "https://kenyanwallstreet.com/category/global-news/feed/",
-      "https://finance.yahoo.com/news/rss"
+      { url: "https://kenyanwallstreet.com/category/kenya-business-news/feed/", name: "Kenyan Wall Street" },
+      { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" },
+      { url: "https://african.business/feed", name: "African Business" },
+      { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" }
     ];
+    
     let allArticles = [];
     for (const feed of feeds) {
       try {
-        const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed)}`);
+        const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
         const data = await resp.json();
         if (data.status === 'ok') {
-           const srcName = feed.includes("kenyanwallstreet") ? "Kenyan Wall Street" : "Yahoo Finance";
-           data.items.slice(0, 4).forEach(i => { i.sourceName = srcName; allArticles.push(i); });
+           data.items.slice(0, 4).forEach(i => { i.sourceName = feed.name; allArticles.push(i); });
         }
       } catch (err) {}
     }
+    
+    // Sort by newest
     allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+    
     let html = '<div class="news-grid">';
     allArticles.slice(0, 12).forEach(item => {
        let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || '';
@@ -313,47 +403,31 @@ async function loadLiveNews() {
            </div>
          </a>`;
     });
-    html += '</div>'; cachedNewsHtml = html; isNewsFetched = true;
-    const container = document.getElementById("live-news-container");
-    if(container) container.innerHTML = cachedNewsHtml;
+    html += '</div>'; 
+    document.getElementById("live-news-container").innerHTML = html;
+    isNewsFetched = true;
   } catch (e) {
-    cachedNewsHtml = `<p style="color:var(--text-muted); padding:1rem;">Unable to load live news at this time.</p>`;
-    const container = document.getElementById("live-news-container");
-    if(container) container.innerHTML = cachedNewsHtml;
+    document.getElementById("live-news-container").innerHTML = `<p style="color:var(--text-muted); padding:1rem;">Unable to load live news at this time.</p>`;
   }
 }
+loadLiveNews();
 
 /* ═══════════════════════════════════════════════════════════════
-   DIRECT CORPORATE ACTIONS SCRAPER (Bypasses Google Sheets)
+   DIRECT CORPORATE ACTIONS SCRAPER (Bypasses Cookie Blocker)
 ═══════════════════════════════════════════════════════════════ */
 async function loadCorporateActions() {
   const container = document.getElementById("corp-actions-container");
   if(!container) return;
   
   const targetUrl = 'https://www.nse.co.ke/corporate-actions/';
-  const proxies = [
-    `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
-  ];
-
-  let html = "";
-  for (let proxy of proxies) {
-    try {
-      let resp = await fetch(proxy);
-      if (resp.ok) { 
-          const data = await resp.json();
-          html = data.contents || data; // allorigins returns in .contents
-          break; 
-      }
-    } catch(e) {}
-  }
-
-  if (!html) {
-      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Unable to load Corporate Actions at this time.</p>`;
-      return;
-  }
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
   try {
+    const resp = await fetch(proxyUrl);
+    if (!resp.ok) throw new Error("Proxy fetch failed");
+    const data = await resp.json();
+    const html = data.contents;
+    
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
     const tables = Array.from(doc.querySelectorAll("table"));
@@ -361,7 +435,7 @@ async function loadCorporateActions() {
     // Strict filter to explicitly ignore the hidden Cookie Law Info table
     let targetTable = tables.find(tbl => {
         const text = tbl.innerHTML.toLowerCase();
-        return text.includes("company") && text.includes("action") && !text.includes("cookie");
+        return (text.includes("announcement") || text.includes("closure") || text.includes("dividend")) && !text.includes("cookie");
     });
     
     if (targetTable) {
@@ -374,7 +448,7 @@ async function loadCorporateActions() {
       container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">No live corporate actions found.</p>`;
     }
   } catch(e) {
-      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Data format error from NSE.</p>`;
+      container.innerHTML = `<p style="color:var(--text-muted); padding:1rem; font-style:italic;">Awaiting next sync from NSE...</p>`;
   }
 }
 
@@ -437,14 +511,14 @@ function drawRegionsMap() {
   chart.draw(data, options);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DATA LOADING & OMNI-PARSER ENGINE
-═══════════════════════════════════════════════════════════════ */
 function triggerRefresh() { if (isFetching) return; stateLocalData = null; stateGlobalData = null; loadData(); }
 
 function loadData() {
   isFetching = true; const btn = document.getElementById("refresh-btn");
-  if (isFirstLoad) { if (!document.querySelector(".metrics")) document.getElementById("app").innerHTML = `<div class="loader">⏳ Aggregating global and domestic datasets…</div>`; } 
+  if (isFirstLoad) { 
+      document.getElementById("app-kenya").innerHTML = `<div class="loader">⏳ Aggregating domestic datasets…</div>`;
+      document.getElementById("app-global").innerHTML = `<div class="loader">⏳ Aggregating global datasets…</div>`;
+  } 
   else { if (btn) btn.innerHTML = "↻ Refreshing..."; }
   
   let localFired = false; let globalFired = false;
@@ -455,7 +529,9 @@ function loadData() {
   const timeoutId = setTimeout(() => {
     isFetching = false;
     if (!localFired || !globalFired) {
-       document.getElementById("app").innerHTML = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond within 15 seconds.<br><br><b>Local API (AIB/NSE):</b> ${localFired ? "Success ✅" : "Failed ❌"}<br><b>Global API (TradingView):</b> ${globalFired ? "Success ✅" : "Failed ❌"}<br><br><b>Fix:</b> You must go into the failing Google Apps Script, click <b>Deploy > Manage Deployments > Edit (Pencil) > New Version > Deploy</b> and ensure 'Who has access' is set to 'Anyone'.`);
+       const errStr = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond.<br><br><b>Local API:</b> ${localFired ? "Success ✅" : "Failed ❌"}<br><b>Global API:</b> ${globalFired ? "Success ✅" : "Failed ❌"}`);
+       document.getElementById("app-kenya").innerHTML = errStr;
+       document.getElementById("app-global").innerHTML = errStr;
     }
   }, JSONP_TIMEOUT_MS);
 
@@ -471,17 +547,18 @@ function loadData() {
         render(mergedData);
         document.getElementById("last-updated").textContent = "Updated: " + ts;
       } catch(err) {
-        document.getElementById("app").innerHTML = buildError(`Rendering Error: <br><br>${err.stack}`);
+        console.error(err);
+        document.getElementById("app-kenya").innerHTML = buildError(`Rendering Error: <br><br>${err.message}`);
       }
     }
   }
 
   const s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); 
-  s1.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app").innerHTML = buildError("Network Error: Local API (API_LOCAL) is broken. Please check the URL."); };
+  s1.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app-kenya").innerHTML = buildError("Network Error: Local API broken."); };
   document.head.appendChild(s1);
 
   const s2 = document.createElement("script"); s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now(); 
-  s2.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app").innerHTML = buildError("Network Error: Global API (API_GLOBAL) is broken. Please check the URL."); };
+  s2.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app-global").innerHTML = buildError("Network Error: Global API broken."); };
   document.head.appendChild(s2);
 }
 
@@ -530,21 +607,29 @@ function extractDynamicData(data) {
     });
   }
 
-  // Parse GRAPHS explicitly from the "Graphs" Worksheet
-  if (data.graphs && data.graphs.length > 0) {
-      data.graphs.forEach(row => {
+  // 📈 GRAPHS - Strictly reads from 'data.graphs' first
+  const graphData = (data.graphs && data.graphs.length > 0) ? data.graphs : (data.cbk || []);
+  
+  if (graphData.length > 0) {
+      let currentTable = null;
+      graphData.forEach(row => {
           const cols = Object.values(row).map(v => String(v).trim()).filter(x => x !== "");
           if (cols.length < 2) return;
           const joined = cols.join(" ").toLowerCase();
 
+          // Ignore specific rows
+          if (joined.includes("central bank") || joined.includes("kesonia") || joined.includes("exchange rates") || joined.includes("diaspora") || joined.includes("key rates")) { currentTable = null; return; }
+          if (cols[0].toLowerCase() === "year" || cols[0].toLowerCase() === "date" || cols[0].toLowerCase() === "month" || cols[0].toLowerCase() === "tenor") return;
+
+          let nums = cols.map(cleanNum).filter(n => !isNaN(n));
           let yearStr = cols.find(x => /20\d{2}/.test(x)) || "";
           let monthStr = cols.find(x => /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(x)) || "";
           let yearMatch = yearStr.match(/20\d{2}/);
           let year = yearMatch ? yearMatch[0] : "";
           let month = monthStr.substring(0,3);
           let label = month ? `${month}/${year.slice(-2)}` : year;
-          let nums = cols.map(cleanNum).filter(n => !isNaN(n));
 
+          // Mapping logic
           if (joined.includes("inflation") && nums.length >= 1) {
              let m12 = nums.length > 1 ? nums[nums.length-2] : null; let avg = nums[nums.length-1];
              if (label && !isNaN(avg) && !CHART_DATA.inflation.labels.includes(label)) { 
@@ -552,7 +637,8 @@ function extractDynamicData(data) {
              }
           } 
           else if (joined.includes("gdp") && nums.length >= 2) {
-             let yr = parseInt(year); let gdpNums = nums.filter(n => n !== yr && n > 100);
+             let yr = parseInt(year) || parseInt(cols[0]); 
+             let gdpNums = nums.filter(n => n !== yr && n > 100); 
              if (!isNaN(yr) && gdpNums.length >= 1 && !tempGdp.find(g => g.year === yr)) { 
                  tempGdp.push({ year: yr, nom: gdpNums[0], real: gdpNums.length > 1 ? gdpNums[1] : null }); 
              }
@@ -570,10 +656,10 @@ function extractDynamicData(data) {
              }
           }
 
-          // EXTRACT YIELD CURVE FROM GRAPHS
+          // YIELD CURVE 
           const fxdMatch = joined.match(/fxd\d{1}-\d{4}-(\d{2,3})/i);
           let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
-          if (!years) { const yrMatch = joined.match(/([0-9\.]+)\s*(?:yrs|years)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
+          if (!years) { const yrMatch = joined.match(/([0-9\.]+)\s*(?:yrs|years|yr|y)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
           if (years) {
             const yieldNums = cols.map(c => {
                if (c.toLowerCase().includes("date") || c.includes("-") || c.includes("/")) return 0;
@@ -584,13 +670,11 @@ function extractDynamicData(data) {
       });
   }
 
-  // Reverse GDP for X-Axis logic
   if(tempGdp.length > 0) {
       tempGdp.sort((a,b) => a.year - b.year);
       tempGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });
   }
 
-  // Fallback: If 'Graphs' sheet is empty, map directly from 'tbills' and 'tbonds'
   const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
   if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
   
@@ -607,23 +691,7 @@ function extractDynamicData(data) {
         }
       });
   }
-  if (data.tbonds && data.tbonds.length > 0 && yields.length < 3) {
-      data.tbonds.forEach(row => {
-        const cols = Object.values(row).map(v => String(v).trim());
-        const joined = cols.join(" ");
-        const fxdMatch = joined.match(/fxd\d{1}-\d{4}-(\d{2,3})/i);
-        let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
-        if (!years) { const yrMatch = joined.match(/([0-9\.]+)\s*(?:yrs|years)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
-        if (years) {
-            const yieldNums = cols.map(c => {
-               if (c.toLowerCase().includes("date") || c.includes("-") || c.includes("/")) return 0;
-               return cleanNum(c);
-            }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
-            if (yieldNums.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...yieldNums) }); }
-        }
-      });
-  }
-
+  
   if(yields.length > 0) {
     const uniqueYields = {};
     yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
@@ -728,6 +796,30 @@ function render(data) {
   function pctKey(t) { return t["%_change"] || t["percent_change"] || t["change_%"] || ""; }
   const gainers = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change")), losers = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change")), unchanged = [...tickers].filter(t => getPctNumForSort(t, "%_change") === 0);
 
+  // BUILD TICKER TAPES
+  kenyaTickerHTML = "";
+  tickers.forEach(t => {
+      const n = getPctNumForSort(t, "%_change");
+      const cls = n > 0 ? "ti-up" : n < 0 ? "ti-dn" : "ti-nt";
+      const icon = n > 0 ? "▲" : n < 0 ? "▼" : "—";
+      kenyaTickerHTML += `<div class="ticker-item"><span class="ti-sym">${t.symbol}</span> <span class="ti-prc">${fmtKsh(t["last_price_(kshs)"])}</span> <span class="${cls}">${icon} ${Math.abs(n).toFixed(2)}%</span></div>`;
+  });
+
+  globalTickerHTML = "";
+  let allGlobal = [...indices, ...active];
+  // Randomize global tickers
+  allGlobal.sort(() => 0.5 - Math.random());
+  allGlobal.forEach(t => {
+      const n = getPctNumForSort(t, "%_change" in t ? "%_change" : "percent_change");
+      const cls = n > 0 ? "ti-up" : n < 0 ? "ti-dn" : "ti-nt";
+      const icon = n > 0 ? "▲" : n < 0 ? "▼" : "—";
+      globalTickerHTML += `<div class="ticker-item"><span class="ti-sym">${t.symbol || t.name}</span> <span class="ti-prc">${fmtUSD(t.price)}</span> <span class="${cls}">${icon} ${Math.abs(n).toFixed(2)}%</span></div>`;
+  });
+
+  // Default to Kenya Ticker
+  document.getElementById('ticker-content').innerHTML = kenyaTickerHTML + kenyaTickerHTML;
+
+  // GLOBAL SECTION
   let globalEquitiesHtml = `<div class="full-card"><div class="card-header"><h2>Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">`;
   Object.keys(countryMap).forEach(key => { const isSelected = key === currentGlobalSelection ? "selected" : ""; globalEquitiesHtml += `<option value="${key}" ${isSelected}>${countryMap[key].name}</option>`; });
   globalEquitiesHtml += `</select></div><div id="regions_div" style="width: 100%; height: 350px;"></div><div id="global-tables-container">`;
@@ -740,6 +832,15 @@ function render(data) {
   });
   globalEquitiesHtml += `</div></div></div>`;
 
+  const indicesRows = indices.map(r => `<tr><td>${r.name}</td><td>${r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${(r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—"}</td></tr>`);
+  const activeRows = active.map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r.name || "—"}</td><td>${fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${fmtNum(r.volume, 0)}</td><td>${fmtNum(r["market_cap"], 0)}</td></tr>`);
+
+  document.getElementById("app-global").innerHTML = [
+    '<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>',
+    globalEquitiesHtml
+  ].join("");
+
+  // KENYA SECTION
   const metricsHtml = `<div class="metrics"><div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">${fmtNum(statsMap["NSE ALL SHARE INDEX"], 2)}</div><div class="sub">${formatChange(statsChange["NSE ALL SHARE INDEX"], false)} vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">${fmtNum(statsMap["NSE 20 SHARE INDEX"], 2)}</div><div class="sub">Blue-chip index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">${fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2)}B</div><div class="sub">KES total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">${fmtNum(totalTurnover, 0)}</div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">${fmtNum(totalTrades, 0)}</div><div class="sub">Trades today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">${fmtNum(totalFBuy, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">${fmtNum(totalFSell, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">${gainers.length}</span> / <span class="dn">${losers.length}</span></div><div class="sub">${unchanged.length} unchanged · ${tickers.length} total</div></div></div>`;
   let ratesHtml = `<div class="rates-grid">`; if (KEY_RATES.length === 0) ratesHtml += `<div style="color:var(--text-muted);font-style:italic;">Data unavailable.</div>`; KEY_RATES.forEach(r => { ratesHtml += `<div class="rate-cell"><div class="rate-label">${r.label}</div><div class="rate-value">${r.value}</div></div>`; }); ratesHtml += `</div>`;
 
@@ -750,8 +851,6 @@ function render(data) {
   const rankRow_Trades = r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td style="color:#002060;">${fmtNum(numMW(r, "trades"), 0)}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td></tr>`;
   const rankRow_FB = r => { const net = numMW(r, "foreign_buy") - numMW(r, "foreign_sell"); return `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td class="up">${fmtNum(numMW(r, "foreign_buy"),  0)}</td><td class="dn">${fmtNum(numMW(r, "foreign_sell"), 0)}</td><td style="color:${net >= 0 ? "#00b050" : "#ff5252"};">${fmtNum(net, 0)}</td></tr>`; };
   const rankRow_FS = r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td class="dn">${fmtNum(numMW(r, "foreign_sell"), 0)}</td><td class="up">${fmtNum(numMW(r, "foreign_buy"),  0)}</td></tr>`;
-  const indicesRows = indices.map(r => `<tr><td>${r.name}</td><td>${r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${(r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—"}</td></tr>`);
-  const activeRows = active.map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r.name || "—"}</td><td>${fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${fmtNum(r.volume, 0)}</td><td>${fmtNum(r["market_cap"], 0)}</td></tr>`);
   const tickerFullRows = tickers.map(t => `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(t["change"], false)}</td><td>${formatChange(pctKey(t), true)}</td><td><span class="nt">${t["last_updated"] || "—"}</span></td></tr>`);
   const mwRows = mw.filter(r => numMW(r, "ltp_(kshs)") > 0 || numMW(r, "volume") > 0).map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td>${fmtKsh(r["ltp_(kshs)"])}</td><td>${fmtKsh(r["prev_close"])}</td><td>${fmtNum(numMW(r, "volume"), 0)}</td><td>${r.trades || "—"}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td><td class="up">${fmtNum(numMW(r, "foreign_buy"),  0)}</td><td class="dn">${fmtNum(numMW(r, "foreign_sell"), 0)}</td></tr>`);
   const forexRows = FOREX_RATES.map(r => `<tr><td>${r.ccy}</td><td>${r.crBuy}</td><td>${r.crSell}</td><td>${r.kBuy}</td><td>${r.kSell}</td></tr>`);
@@ -773,20 +872,17 @@ function render(data) {
       </div>
     </div>`;
 
-  document.getElementById("app").innerHTML = [
+  document.getElementById("app-kenya").innerHTML = [
     metricsHtml, standardCard("Key Macro Rates (CBK)", ratesHtml),
     standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
     '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
-    '<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>',
     '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
-    globalEquitiesHtml,
     '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
     '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
     standardCard("Equity Heat Map — All Tickers", heatHtml),
     tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded."),
     tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
-    graphsHtml,
-    `<div id="news-card-wrapper">${standardCard("Live Market News", `<div id="live-news-container">${cachedNewsHtml}</div>`)}</div>`,
+    graphsHtml
   ].join("");
 
   setTimeout(() => {
@@ -794,7 +890,6 @@ function render(data) {
     loadCorporateActions(); 
     attachTableSorting();
     if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark");
-    if (isGeoChartLoaded && document.getElementById('regions_div')) drawRegionsMap();
   }, 50);
 }
 
