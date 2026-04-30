@@ -94,10 +94,9 @@
     tr:hover td { background: var(--table-hover); }
     .up { color: #00b050 !important; } .dn { color: #ff5252 !important; } .nt { color: var(--text-sub) !important; }
     
-    .rates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.6rem; }
-    .rate-cell { background: var(--table-header-bg); border-radius: 6px; padding: 0.65rem 0.85rem; border-left: 3px solid #D4AF37; }
-    .rate-label { font-size: 8.5pt; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
-    .rate-value { font-size: 12pt; color: #002060; } [data-theme="dark"] .rate-value { color: #66a3ff; }
+    .rates-table td:first-child { color: var(--text-muted); font-size: 9pt; text-transform: uppercase; }
+    .rates-table td:last-child { color: #002060; font-size: 11pt; text-align: right; }
+    [data-theme="dark"] .rates-table td:last-child { color: #66a3ff; }
 
     .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1rem; }
     .country-filter { display: flex; justify-content: center; padding-bottom: 1rem; border-bottom: 2px dashed var(--border-color); }
@@ -289,16 +288,14 @@ function switchTab(tabId) {
     currentTab = tabId;
     
     const tickerEl = document.getElementById('ticker-content');
-    // Duplicating the HTML ensures the CSS transform: translateX(-50%) loops perfectly seamlessly
     if (tabId === 'kenya' && kenyaTickerHTML) {
         tickerEl.innerHTML = kenyaTickerHTML + kenyaTickerHTML; 
     } else if (tabId === 'global' && globalTickerHTML) {
         tickerEl.innerHTML = globalTickerHTML + globalTickerHTML; 
     }
     
-    // Explicitly redraw the map to prevent sizing issues when it was "hidden"
-    if (tabId === 'global' && isGeoChartLoaded) {
-        setTimeout(drawRegionsMap, 100);
+    if (tabId === 'global' && isGeoChartLoaded && document.getElementById('regions_div')) {
+        setTimeout(drawRegionsMap, 150); // Redraws map exactly when tab is fully visible
     }
 }
 
@@ -369,7 +366,8 @@ async function loadLiveNews() {
       { url: "https://kenyanwallstreet.com/category/kenya-business-news/feed/", name: "Kenyan Wall Street" },
       { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" },
       { url: "https://african.business/feed", name: "African Business" },
-      { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" }
+      { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" },
+      { url: "https://www.bloomberg.com/feed/podcast/africa-focus.xml", name: "Bloomberg Africa" }
     ];
     
     let allArticles = [];
@@ -387,7 +385,7 @@ async function loadLiveNews() {
     
     let html = '<div class="news-grid">';
     allArticles.slice(0, 12).forEach(item => {
-       // Deep XML Regex Image Scraper
+       // Aggressive image scraper for complex RSS feeds
        let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || '';
        if (!imgUrl && item.content) { const match = item.content.match(/<img[^>]+src="([^">]+)"/); if(match) imgUrl = match[1]; }
        if (!imgUrl && item.description) { const match = item.description.match(/<img[^>]+src="([^">]+)"/); if(match) imgUrl = match[1]; }
@@ -514,15 +512,23 @@ function drawRegionsMap() {
   chart.draw(data, options);
 }
 
-function triggerRefresh() { if (isFetching) return; stateLocalData = null; stateGlobalData = null; loadData(); }
+function triggerRefresh() { 
+  if (isFetching) return; 
+  stateLocalData = null; 
+  stateGlobalData = null; 
+  loadData(); 
+}
 
 function loadData() {
-  isFetching = true; const btn = document.getElementById("refresh-btn");
+  isFetching = true; 
+  const btn = document.getElementById("refresh-btn");
+  
   if (isFirstLoad) { 
       document.getElementById("app-kenya").innerHTML = `<div class="loader">⏳ Aggregating domestic datasets…</div>`;
       document.getElementById("app-global").innerHTML = `<div class="loader">⏳ Aggregating global datasets…</div>`;
-  } 
-  else { if (btn) btn.innerHTML = "↻ Refreshing..."; }
+  } else { 
+      if (btn) btn.innerHTML = "↻ Refreshing..."; 
+  }
   
   let localFired = false; let globalFired = false;
 
@@ -532,9 +538,14 @@ function loadData() {
   const timeoutId = setTimeout(() => {
     isFetching = false;
     if (!localFired || !globalFired) {
-       const errStr = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond.<br><br><b>Local API:</b> ${localFired ? "Success ✅" : "Failed ❌"}<br><b>Global API:</b> ${globalFired ? "Success ✅" : "Failed ❌"}`);
-       document.getElementById("app-kenya").innerHTML = errStr;
-       document.getElementById("app-global").innerHTML = errStr;
+       if (isFirstLoad) {
+           const errStr = buildError(`Critical Error: One of your Google Apps Script APIs failed to respond.<br><br><b>Local API:</b> ${localFired ? "Success ✅" : "Failed ❌"}<br><b>Global API:</b> ${globalFired ? "Success ✅" : "Failed ❌"}`);
+           document.getElementById("app-kenya").innerHTML = errStr;
+           document.getElementById("app-global").innerHTML = errStr;
+       } else {
+           if (btn) btn.innerHTML = "↻ Refresh Failed";
+           setTimeout(() => { if(btn) btn.innerHTML = "↻ Refresh"; }, 3000);
+       }
     }
   }, JSONP_TIMEOUT_MS);
 
@@ -551,17 +562,14 @@ function loadData() {
         document.getElementById("last-updated").textContent = "Updated: " + ts;
       } catch(err) {
         console.error(err);
-        document.getElementById("app-kenya").innerHTML = buildError(`Rendering Error: <br><br>${err.message}`);
       }
     }
   }
 
   const s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); 
-  s1.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app-kenya").innerHTML = buildError("Network Error: Local API broken."); };
   document.head.appendChild(s1);
 
   const s2 = document.createElement("script"); s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now(); 
-  s2.onerror = () => { isFetching=false; clearTimeout(timeoutId); document.getElementById("app-global").innerHTML = buildError("Network Error: Global API broken."); };
   document.head.appendChild(s2);
 }
 
@@ -575,7 +583,7 @@ const cleanNum = (str) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   DATA EXTRACTION & GRAPH MAPPER
+   DATA EXTRACTION & STRICT GRAPH MAPPER
 ═══════════════════════════════════════════════════════════════ */
 function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
@@ -619,79 +627,77 @@ function extractDynamicData(data) {
     });
   }
 
-  // 📈 INTELLIGENT KEY-MAPPER FOR GRAPHS WORKSHEET
-  // It aggressively scans data.macro, data.cbk, data.gdp, data.inflation, or data.graphs
-  let allGraphSources = [];
-  if (data.graphs) allGraphSources = allGraphSources.concat(data.graphs);
-  if (data.macro) allGraphSources = allGraphSources.concat(data.macro);
-  if (data.cbk) allGraphSources = allGraphSources.concat(data.cbk);
-  if (data.gdp) allGraphSources = allGraphSources.concat(data.gdp);
-  if (data.inflation) allGraphSources = allGraphSources.concat(data.inflation);
+  // 📈 STRICT KEY-MAPPER FOR GRAPHS WORKSHEET
+  // Instead of fuzzy searching row values, it looks at the exact JSON object keys from Apps Script
+  const graphData = (data.graphs && data.graphs.length > 0) ? data.graphs : [];
+  
+  if (graphData.length > 0) {
+      // Find the exact keys generated by Apps Script for the specific columns
+      const headers = Object.keys(graphData[0]);
+      
+      const colInfDate = headers.find(h => h.toLowerCase().includes("month"));
+      const colInf12 = headers.find(h => h.toLowerCase().includes("12") || h.toLowerCase().includes("inflation"));
+      
+      const colGdpYear = headers.find(h => h.toLowerCase().includes("year"));
+      const colGdpNom = headers.find(h => h.toLowerCase().includes("nominal"));
+      const colGdpReal = headers.find(h => h.toLowerCase().includes("real"));
+      
+      const colBankDate = headers.find(h => h.toLowerCase().includes("month") && h !== colInfDate);
+      const colBankDep = headers.find(h => h.toLowerCase().includes("deposit"));
+      const colBankSav = headers.find(h => h.toLowerCase().includes("savings"));
+      const colBankLen = headers.find(h => h.toLowerCase().includes("lending"));
+      const colBankOvr = headers.find(h => h.toLowerCase().includes("overdraft"));
+      
+      const colKepDate = headers.find(h => h.toLowerCase().includes("month") && h !== colInfDate && h !== colBankDate);
+      const colKepVal = headers.find(h => h.toLowerCase().includes("value"));
 
-  if (allGraphSources.length > 0) {
-      allGraphSources.forEach(row => {
-          const keys = Object.keys(row).map(k => k.toLowerCase());
-          
-          const kInfDate = keys.find(k => k.includes('month') || k.includes('date'));
-          const kInf12 = keys.find(k => k.includes('12-month') || k.includes('inflation'));
-          if (kInfDate && kInf12 && row[Object.keys(row)[keys.indexOf(kInf12)]] !== undefined) {
-             let lbl = String(row[Object.keys(row)[keys.indexOf(kInfDate)]]).trim();
-             let val = cleanNum(row[Object.keys(row)[keys.indexOf(kInf12)]]);
-             if (lbl && !isNaN(val)) {
-                if (!CHART_DATA.inflation.labels.includes(lbl)) {
-                   CHART_DATA.inflation.labels.unshift(lbl);
-                   CHART_DATA.inflation.m12.unshift(val);
-                }
-             }
+      graphData.forEach(row => {
+          // 12-Month Inflation
+          if (colInfDate && colInf12) {
+              let lbl = String(row[colInfDate]).trim();
+              let val = cleanNum(row[colInf12]);
+              if (lbl && lbl !== "undefined" && !isNaN(val)) {
+                  CHART_DATA.inflation.labels.unshift(lbl);
+                  CHART_DATA.inflation.m12.unshift(val);
+              }
           }
 
-          const kGdpYear = keys.find(k => k.includes('year') || k.includes('gdp'));
-          const kGdpNom = keys.find(k => k.includes('nominal'));
-          const kGdpReal = keys.find(k => k.includes('real'));
-          if (kGdpYear && kGdpNom && row[Object.keys(row)[keys.indexOf(kGdpNom)]] !== undefined) {
-             let yrStr = String(row[Object.keys(row)[keys.indexOf(kGdpYear)]]).trim();
-             let yrMatch = yrStr.match(/20\d{2}/);
-             let yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
-             let nom = cleanNum(row[Object.keys(row)[keys.indexOf(kGdpNom)]]);
-             let real = kGdpReal ? cleanNum(row[Object.keys(row)[keys.indexOf(kGdpReal)]]) : NaN;
-             if (!isNaN(yr) && !isNaN(nom)) {
-                if (!tempGdp.find(g => g.year === yr)) {
-                   tempGdp.push({ year: yr, nom: nom, real: real });
-                }
-             }
+          // GDP
+          if (colGdpYear && colGdpNom) {
+              let yrStr = String(row[colGdpYear]).trim();
+              let yrMatch = yrStr.match(/20\d{2}/);
+              let yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
+              let nom = cleanNum(row[colGdpNom]);
+              let real = colGdpReal ? cleanNum(row[colGdpReal]) : NaN;
+              if (!isNaN(yr) && !isNaN(nom)) {
+                  tempGdp.push({ year: yr, nom: nom, real: real });
+              }
           }
 
-          const kBankDep = keys.find(k => k.includes('deposit'));
-          const kBankSav = keys.find(k => k.includes('saving'));
-          const kBankLen = keys.find(k => k.includes('lending'));
-          const kBankOvr = keys.find(k => k.includes('overdraft'));
-          if (kInfDate && kBankDep && row[Object.keys(row)[keys.indexOf(kBankDep)]] !== undefined) {
-             let lbl = String(row[Object.keys(row)[keys.indexOf(kInfDate)]]).trim();
-             let dep = cleanNum(row[Object.keys(row)[keys.indexOf(kBankDep)]]);
-             let sav = kBankSav ? cleanNum(row[Object.keys(row)[keys.indexOf(kBankSav)]]) : NaN;
-             let len = kBankLen ? cleanNum(row[Object.keys(row)[keys.indexOf(kBankLen)]]) : NaN;
-             let ovr = kBankOvr ? cleanNum(row[Object.keys(row)[keys.indexOf(kBankOvr)]]) : NaN;
-             if (lbl && !isNaN(dep)) {
-                if (!CHART_DATA.banks.labels.includes(lbl)) {
-                   CHART_DATA.banks.labels.unshift(lbl);
-                   CHART_DATA.banks.deposit.unshift(dep);
-                   CHART_DATA.banks.savings.unshift(sav);
-                   CHART_DATA.banks.lending.unshift(len);
-                   CHART_DATA.banks.overdraft.unshift(ovr);
-                }
-             }
+          // Banks
+          if (colBankDate && colBankDep) {
+              let lbl = String(row[colBankDate]).trim();
+              let dep = cleanNum(row[colBankDep]);
+              let sav = colBankSav ? cleanNum(row[colBankSav]) : NaN;
+              let len = colBankLen ? cleanNum(row[colBankLen]) : NaN;
+              let ovr = colBankOvr ? cleanNum(row[colBankOvr]) : NaN;
+              if (lbl && lbl !== "undefined" && !isNaN(dep)) {
+                  CHART_DATA.banks.labels.unshift(lbl);
+                  CHART_DATA.banks.deposit.unshift(dep);
+                  CHART_DATA.banks.savings.unshift(sav);
+                  CHART_DATA.banks.lending.unshift(len);
+                  CHART_DATA.banks.overdraft.unshift(ovr);
+              }
           }
 
-          const kKepVal = keys.find(k => k.includes('value') || k.includes('settlement'));
-          if (kInfDate && kKepVal && row[Object.keys(row)[keys.indexOf(kKepVal)]] !== undefined) {
-             let lbl = String(row[Object.keys(row)[keys.indexOf(kInfDate)]]).trim();
-             let val = cleanNum(row[Object.keys(row)[keys.indexOf(kKepVal)]]);
-             if (lbl && !isNaN(val) && val > 1000) { 
-                if (!CHART_DATA.kepss.labels.includes(lbl)) {
-                   CHART_DATA.kepss.labels.unshift(lbl);
-                   CHART_DATA.kepss.values.unshift(val);
-                }
-             }
+          // KEPSS
+          if (colKepDate && colKepVal) {
+              let lbl = String(row[colKepDate]).trim();
+              let val = cleanNum(row[colKepVal]);
+              if (lbl && lbl !== "undefined" && !isNaN(val) && val > 1000) {
+                  CHART_DATA.kepss.labels.unshift(lbl);
+                  CHART_DATA.kepss.values.unshift(val);
+              }
           }
       });
   }
@@ -699,31 +705,6 @@ function extractDynamicData(data) {
   if(tempGdp.length > 0) {
       tempGdp.sort((a,b) => a.year - b.year);
       tempGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });
-  }
-
-  // Yield Curve Builder
-  const tbill91 = KEY_RATES.find(r => r.label.includes("91-Day"));
-  if (tbill91) yields.push({ tenor: 0.25, label: "3M", yield: cleanNum(tbill91.value) });
-  
-  if (data.tbills && data.tbills.length > 0) {
-      data.tbills.forEach(row => {
-        const cols = Object.values(row).map(v => String(v).trim());
-        if (cols.some(v => v.includes("182"))) {
-            let nums = cols.map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25);
-            if(nums.length > 0) yields.push({ tenor: 0.5, label: "6M", yield: Math.max(...nums) });
-        }
-        if (cols.some(v => v.includes("364"))) {
-            let nums = cols.map(cleanNum).filter(n => !isNaN(n) && n > 5 && n < 25);
-            if(nums.length > 0) yields.push({ tenor: 1, label: "1Y", yield: Math.max(...nums) });
-        }
-      });
-  }
-  
-  if(yields.length > 0) {
-    const uniqueYields = {};
-    yields.forEach(y => { if(!uniqueYields[y.label] && !isNaN(y.yield)) uniqueYields[y.label] = y; });
-    const sortedYields = Object.values(uniqueYields).sort((a, b) => a.tenor - b.tenor);
-    sortedYields.forEach(y => { CHART_DATA.yieldCurve.labels.push(y.label); CHART_DATA.yieldCurve.data.push(y.yield); });
   }
 }
 
@@ -823,7 +804,7 @@ function render(data) {
   function pctKey(t) { return t["%_change"] || t["percent_change"] || t["change_%"] || ""; }
   const gainers = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change")), losers = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change")), unchanged = [...tickers].filter(t => getPctNumForSort(t, "%_change") === 0);
 
-  // BUILD SEAMLESS TICKER TAPES
+  // BUILD SEAMLESS TICKER TAPES (Identical Speed)
   kenyaTickerHTML = "";
   tickers.forEach(t => {
       const n = getPctNumForSort(t, "%_change");
@@ -842,10 +823,8 @@ function render(data) {
       globalTickerHTML += `<div class="ticker-item"><span class="ti-sym">${t.symbol || t.name}</span> <span class="ti-prc">${fmtUSD(t.price)}</span> <span class="${cls}">${icon} ${Math.abs(n).toFixed(2)}%</span></div>`;
   });
 
-  // Default to Kenya Ticker
-  if (currentTab === 'kenya') {
-      document.getElementById('ticker-content').innerHTML = kenyaTickerHTML + kenyaTickerHTML;
-  }
+  if (currentTab === 'kenya') document.getElementById('ticker-content').innerHTML = kenyaTickerHTML + kenyaTickerHTML;
+  else document.getElementById('ticker-content').innerHTML = globalTickerHTML + globalTickerHTML;
 
   // GLOBAL SECTION
   let globalEquitiesHtml = `<div class="full-card"><div class="card-header"><h2>Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">`;
@@ -863,14 +842,14 @@ function render(data) {
   const indicesRows = indices.map(r => `<tr><td>${r.name}</td><td>${r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${(r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—"}</td></tr>`);
   const activeRows = active.map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r.name || "—"}</td><td>${fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${fmtNum(r.volume, 0)}</td><td>${fmtNum(r["market_cap"], 0)}</td></tr>`);
 
-  document.getElementById("app-global").innerHTML = [
-    '<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>',
-    globalEquitiesHtml
-  ].join("");
-
   // KENYA SECTION
   const metricsHtml = `<div class="metrics"><div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">${fmtNum(statsMap["NSE ALL SHARE INDEX"], 2)}</div><div class="sub">${formatChange(statsChange["NSE ALL SHARE INDEX"], false)} vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">${fmtNum(statsMap["NSE 20 SHARE INDEX"], 2)}</div><div class="sub">Blue-chip index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">${fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2)}B</div><div class="sub">KES total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">${fmtNum(totalTurnover, 0)}</div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">${fmtNum(totalTrades, 0)}</div><div class="sub">Trades today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">${fmtNum(totalFBuy, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">${fmtNum(totalFSell, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">${gainers.length}</span> / <span class="dn">${losers.length}</span></div><div class="sub">${unchanged.length} unchanged · ${tickers.length} total</div></div></div>`;
-  let ratesHtml = `<div class="rates-grid">`; if (KEY_RATES.length === 0) ratesHtml += `<div style="color:var(--text-muted);font-style:italic;">Data unavailable.</div>`; KEY_RATES.forEach(r => { ratesHtml += `<div class="rate-cell"><div class="rate-label">${r.label}</div><div class="rate-value">${r.value}</div></div>`; }); ratesHtml += `</div>`;
+  
+  // Clean HTML Table for Macro Rates
+  let ratesHtml = `<div class="table-responsive"><table class="nse-native-table" style="width:100%;"><thead><tr><th style="text-transform:uppercase;">Rate</th><th style="text-align:right; text-transform:uppercase;">Value</th></tr></thead><tbody>`; 
+  if (KEY_RATES.length === 0) ratesHtml += `<tr><td colspan="2" style="color:var(--text-muted);font-style:italic;">Data unavailable.</td></tr>`; 
+  KEY_RATES.forEach(r => { ratesHtml += `<tr><td style="font-weight:bold; color:var(--text-muted); font-size:9.5pt;">${r.label}</td><td style="text-align:right; font-size:11pt; font-weight:bold; color:#002060;">${r.value}</td></tr>`; }); 
+  ratesHtml += `</tbody></table></div>`;
 
   const statsRows = statsArr.filter(r => r && r.name && r.value !== undefined && r.value !== "").map(r => `<tr><td>${r.name}</td><td>${fmtNum(r.value, 2)}</td><td>${(r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—"}</td></tr>`);
   function tickerRow(t) { return `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(pctKey(t), true)}</td></tr>`; }
@@ -899,18 +878,50 @@ function render(data) {
       </div>
     </div>`;
 
-  document.getElementById("app-kenya").innerHTML = [
-    metricsHtml, standardCard("Key Macro Rates (CBK)", ratesHtml),
-    standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
-    '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
-    '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
-    '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
-    '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
-    standardCard("Equity Heat Map — All Tickers", heatHtml),
-    tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded."),
-    tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
-    graphsHtml
-  ].join("");
+  // Background smooth refresh mapping
+  if (document.getElementById("app-kenya").querySelector(".loader")) {
+      document.getElementById("app-global").innerHTML = [
+        '<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>',
+        globalEquitiesHtml
+      ].join("");
+
+      document.getElementById("app-kenya").innerHTML = [
+        metricsHtml, standardCard("Key Macro Rates (CBK)", ratesHtml),
+        standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
+        '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
+        '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
+        '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
+        '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
+        standardCard("Equity Heat Map — All Tickers", heatHtml),
+        tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded."),
+        tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
+        graphsHtml
+      ].join("");
+  } else {
+      // Smooth update of inner content only
+      const tempKenya = document.createElement("div");
+      tempKenya.innerHTML = [
+        metricsHtml, standardCard("Key Macro Rates (CBK)", ratesHtml),
+        standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"></div>`),
+        '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
+        '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
+        '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
+        '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
+        standardCard("Equity Heat Map — All Tickers", heatHtml),
+        tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded."),
+        tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
+        graphsHtml
+      ].join("");
+      
+      const targetContainers = document.getElementById("app-kenya").querySelectorAll(".card-body");
+      const sourceContainers = tempKenya.querySelectorAll(".card-body");
+      for(let i=0; i<targetContainers.length; i++){
+          if(targetContainers[i].id !== "corp-actions-container" && !targetContainers[i].querySelector("canvas")) {
+              targetContainers[i].innerHTML = sourceContainers[i].innerHTML;
+          }
+      }
+      document.getElementById("app-kenya").querySelector(".metrics").innerHTML = tempKenya.querySelector(".metrics").innerHTML;
+  }
 
   setTimeout(() => {
     initCharts(); 
@@ -983,7 +994,7 @@ function filterHeatmap(q) {
 
 function startRefresh() {
   if (window.refreshTimer) clearInterval(window.refreshTimer);
-  window.refreshTimer = setInterval(triggerRefresh, 300 * 1000);
+  window.refreshTimer = setInterval(triggerRefresh, 60 * 1000); // Set to exactly 60 seconds as requested
 }
 
 triggerRefresh();
