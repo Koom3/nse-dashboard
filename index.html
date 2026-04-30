@@ -38,12 +38,12 @@
     .header-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 10pt; font-weight: bold; transition: background 0.2s; }
     .header-btn:hover { background: rgba(255,255,255,0.3); }
     
-    /* ── SCROLLING TICKER TAPE ──────────────────── */
-    .ticker-wrap { width: 100%; background: #001030; color: #fff; overflow: hidden; height: 35px; display: flex; align-items: center; border-bottom: 2px solid #D4AF37; }
-    .ticker { display: flex; white-space: nowrap; animation: ticker-scroll 45s linear infinite; }
+    /* ── SEAMLESS SCROLLING TICKER TAPE ──────────────────── */
+    .ticker-wrap { width: 100%; background: #001030; color: #fff; overflow: hidden; height: 35px; display: flex; align-items: center; border-bottom: 2px solid #D4AF37; white-space: nowrap; }
+    .ticker { display: flex; width: max-content; animation: ticker-scroll 80s linear infinite; }
     .ticker:hover { animation-play-state: paused; }
-    @keyframes ticker-scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-    .ticker-item { margin: 0 15px; font-size: 10pt; display: flex; align-items: center; gap: 6px; }
+    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .ticker-item { margin: 0 15px; font-size: 10pt; display: inline-flex; align-items: center; gap: 6px; }
     .ti-sym { color: #D4AF37; font-weight: bold; }
     .ti-prc { color: #ffffff; }
     .ti-up { color: #00e676; } .ti-dn { color: #ff5252; } .ti-nt { color: #888; }
@@ -169,6 +169,7 @@
   </div>
 </header>
 
+<!-- SEAMLESS TICKER TAPE -->
 <div class="ticker-wrap" id="ticker-wrap">
     <div class="ticker" id="ticker-content">
         <div style="padding:0 20px; font-style:italic; color:#888;">Aggregating live ticker data...</div>
@@ -288,6 +289,7 @@ function switchTab(tabId) {
     currentTab = tabId;
     
     const tickerEl = document.getElementById('ticker-content');
+    // Duplicating the HTML causes the CSS transform: translateX(-50%) to loop perfectly
     if (tabId === 'kenya' && kenyaTickerHTML) {
         tickerEl.innerHTML = kenyaTickerHTML + kenyaTickerHTML; 
     } else if (tabId === 'global' && globalTickerHTML) {
@@ -564,11 +566,17 @@ function loadData() {
 
 function buildError(msg) { return `<div class="error-box" style="margin-top:50px;"><h2>🚨 Dashboard Error</h2><p>${msg}</p></div>`; }
 
+const cleanNum = (str) => {
+    if (str === null || str === undefined || str === "") return NaN;
+    let s = String(str).replace(/,/g, '').replace(/%/g, '').trim();
+    if (s === "-" || s.toLowerCase() === "n/a" || s.toLowerCase() === "null") return NaN;
+    return parseFloat(s);
+};
+
 function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
   CHART_DATA = { inflation: { labels: [], avg: [], m12: [] }, gdp: { labels: [], nominal: [], real: [] }, banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] }, kepss: { labels: [], values: [] }, yieldCurve: { labels: [], data: [] } };
-  const cleanNum = (str) => parseFloat(String(str).replace(/,/g, '').replace(/%/g, ''));
-
+  
   const validCcys = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
   const targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate", "KBRR", "Kesonia", "Kesonia Compound Rate"];
 
@@ -607,65 +615,94 @@ function extractDynamicData(data) {
     });
   }
 
-  // 📈 GRAPHS - Strictly reads from 'data.graphs' first
-  const graphData = (data.graphs && data.graphs.length > 0) ? data.graphs : (data.cbk || []);
+  // 📈 INTELLIGENT KEY-MAPPER FOR GRAPHS WORKSHEET
+  const graphData = (data.graphs && data.graphs.length > 0) ? data.graphs : [];
   
   if (graphData.length > 0) {
-      let currentTable = null;
+      const keys = Object.keys(graphData[0]);
+      
+      const kInfDate = keys.find(k => k.includes('date') || k.includes('month'));
+      const kInf12 = keys.find(k => k.includes('12') || k.includes('inflation'));
+      const kInfAvg = keys.find(k => k.includes('avg') || k.includes('average') || k.includes('annual'));
+      
+      const kGdpYear = keys.find(k => k.includes('year') || k.includes('gdp'));
+      const kGdpNom = keys.find(k => k.includes('nominal'));
+      const kGdpReal = keys.find(k => k.includes('real'));
+      
+      const kDep = keys.find(k => k.includes('deposit'));
+      const kSav = keys.find(k => k.includes('saving'));
+      const kLen = keys.find(k => k.includes('lending'));
+      const kOvr = keys.find(k => k.includes('overdraft'));
+      const kBankDate = keys.find(k => k !== kInfDate && k.includes('date')) || keys.find(k => k.includes('date_1')) || kInfDate;
+      
+      const kKepssVal = keys.find(k => k.includes('kepss') || k.includes('settlement'));
+      const kKepssDate = keys.find(k => k !== kInfDate && k !== kBankDate && k.includes('date')) || keys.find(k => k.includes('date_2')) || kBankDate;
+      
+      const kTenor = keys.find(k => k.includes('tenor') || k.includes('maturity'));
+      const kYield = keys.find(k => k.includes('yield'));
+
       graphData.forEach(row => {
-          const cols = Object.values(row).map(v => String(v).trim()).filter(x => x !== "");
-          if (cols.length < 2) return;
-          const joined = cols.join(" ").toLowerCase();
-
-          // Ignore specific rows
-          if (joined.includes("central bank") || joined.includes("kesonia") || joined.includes("exchange rates") || joined.includes("diaspora") || joined.includes("key rates")) { currentTable = null; return; }
-          if (cols[0].toLowerCase() === "year" || cols[0].toLowerCase() === "date" || cols[0].toLowerCase() === "month" || cols[0].toLowerCase() === "tenor") return;
-
-          let nums = cols.map(cleanNum).filter(n => !isNaN(n));
-          let yearStr = cols.find(x => /20\d{2}/.test(x)) || "";
-          let monthStr = cols.find(x => /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(x)) || "";
-          let yearMatch = yearStr.match(/20\d{2}/);
-          let year = yearMatch ? yearMatch[0] : "";
-          let month = monthStr.substring(0,3);
-          let label = month ? `${month}/${year.slice(-2)}` : year;
-
-          // Mapping logic
-          if (joined.includes("inflation") && nums.length >= 1) {
-             let m12 = nums.length > 1 ? nums[nums.length-2] : null; let avg = nums[nums.length-1];
-             if (label && !isNaN(avg) && !CHART_DATA.inflation.labels.includes(label)) { 
-                 CHART_DATA.inflation.labels.unshift(label); CHART_DATA.inflation.avg.unshift(avg); CHART_DATA.inflation.m12.unshift(m12); 
-             }
-          } 
-          else if (joined.includes("gdp") && nums.length >= 2) {
-             let yr = parseInt(year) || parseInt(cols[0]); 
-             let gdpNums = nums.filter(n => n !== yr && n > 100); 
-             if (!isNaN(yr) && gdpNums.length >= 1 && !tempGdp.find(g => g.year === yr)) { 
-                 tempGdp.push({ year: yr, nom: gdpNums[0], real: gdpNums.length > 1 ? gdpNums[1] : null }); 
-             }
-          }
-          else if ((joined.includes("banks") || joined.includes("lending") || joined.includes("deposit")) && nums.length >= 4) {
-             let dep = nums[nums.length-4], sav = nums[nums.length-3], len = nums[nums.length-2], ovr = nums[nums.length-1];
-             if (label && !isNaN(dep) && !CHART_DATA.banks.labels.includes(label)) { 
-                 CHART_DATA.banks.labels.unshift(label); CHART_DATA.banks.deposit.unshift(dep); CHART_DATA.banks.savings.unshift(sav); CHART_DATA.banks.lending.unshift(len); CHART_DATA.banks.overdraft.unshift(ovr); 
-             }
-          }
-          else if ((joined.includes("kepss") || joined.includes("rtgs")) && nums.length >= 1) {
-             let val = Math.max(...nums.filter(n => n > 1000)); 
-             if (label && val > 0 && val !== -Infinity && !CHART_DATA.kepss.labels.includes(label)) { 
-                 CHART_DATA.kepss.labels.unshift(label); CHART_DATA.kepss.values.unshift(val); 
-             }
+          if (kInfDate && (row[kInf12] !== undefined || row[kInfAvg] !== undefined)) {
+              let lbl = String(row[kInfDate]).trim();
+              let m12 = cleanNum(row[kInf12]);
+              let avg = cleanNum(row[kInfAvg]);
+              if (lbl && lbl !== "undefined" && (!isNaN(m12) || !isNaN(avg))) {
+                  if (!CHART_DATA.inflation.labels.includes(lbl)) {
+                      CHART_DATA.inflation.labels.push(lbl);
+                      CHART_DATA.inflation.m12.push(m12);
+                      CHART_DATA.inflation.avg.push(avg);
+                  }
+              }
           }
 
-          // YIELD CURVE 
-          const fxdMatch = joined.match(/fxd\d{1}-\d{4}-(\d{2,3})/i);
-          let years = fxdMatch ? parseInt(fxdMatch[1], 10) : null;
-          if (!years) { const yrMatch = joined.match(/([0-9\.]+)\s*(?:yrs|years|yr|y)/i); if (yrMatch) years = parseFloat(yrMatch[1]); }
-          if (years) {
-            const yieldNums = cols.map(c => {
-               if (c.toLowerCase().includes("date") || c.includes("-") || c.includes("/")) return 0;
-               return cleanNum(c);
-            }).filter(n => n > 7 && n < 25 && !isNaN(n)); 
-            if (yieldNums.length > 0) { yields.push({ tenor: years, label: years + "Y", yield: Math.max(...yieldNums) }); }
+          if (kGdpYear && (row[kGdpNom] !== undefined || row[kGdpReal] !== undefined)) {
+              let yrStr = String(row[kGdpYear]).trim();
+              let yrMatch = yrStr.match(/20\d{2}/);
+              let yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
+              let nom = cleanNum(row[kGdpNom]);
+              let real = cleanNum(row[kGdpReal]);
+              if (!isNaN(yr) && (!isNaN(nom) || !isNaN(real))) {
+                  if (!tempGdp.find(g => g.year === yr)) {
+                      tempGdp.push({ year: yr, nom: nom, real: real });
+                  }
+              }
+          }
+
+          if (kBankDate && (row[kDep] !== undefined || row[kLen] !== undefined)) {
+              let lbl = String(row[kBankDate]).trim();
+              let dep = cleanNum(row[kDep]);
+              let sav = cleanNum(row[kSav]);
+              let len = cleanNum(row[kLen]);
+              let ovr = cleanNum(row[kOvr]);
+              if (lbl && lbl !== "undefined" && (!isNaN(dep) || !isNaN(len))) {
+                  if (!CHART_DATA.banks.labels.includes(lbl)) {
+                      CHART_DATA.banks.labels.push(lbl);
+                      CHART_DATA.banks.deposit.push(dep);
+                      CHART_DATA.banks.savings.push(sav);
+                      CHART_DATA.banks.lending.push(len);
+                      CHART_DATA.banks.overdraft.push(ovr);
+                  }
+              }
+          }
+
+          if (kKepssDate && row[kKepssVal] !== undefined) {
+              let lbl = String(row[kKepssDate]).trim();
+              let val = cleanNum(row[kKepssVal]);
+              if (lbl && lbl !== "undefined" && !isNaN(val)) {
+                  if (!CHART_DATA.kepss.labels.includes(lbl)) {
+                      CHART_DATA.kepss.labels.push(lbl);
+                      CHART_DATA.kepss.values.push(val);
+                  }
+              }
+          }
+
+          if (kTenor && row[kYield] !== undefined) {
+              let tenorStr = String(row[kTenor]).trim();
+              let tenorNum = parseFloat(tenorStr.replace(/[^0-9.]/g, ''));
+              let yld = cleanNum(row[kYield]);
+              if (!isNaN(tenorNum) && !isNaN(yld)) {
+                  yields.push({ tenor: tenorNum, label: tenorNum + "Y", yield: yld });
+              }
           }
       });
   }
@@ -796,7 +833,7 @@ function render(data) {
   function pctKey(t) { return t["%_change"] || t["percent_change"] || t["change_%"] || ""; }
   const gainers = [...tickers].filter(t => getPctNumForSort(t, "%_change") > 0).sort((a, b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change")), losers = [...tickers].filter(t => getPctNumForSort(t, "%_change") < 0).sort((a, b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change")), unchanged = [...tickers].filter(t => getPctNumForSort(t, "%_change") === 0);
 
-  // BUILD TICKER TAPES
+  // BUILD SEAMLESS TICKER TAPES
   kenyaTickerHTML = "";
   tickers.forEach(t => {
       const n = getPctNumForSort(t, "%_change");
@@ -807,7 +844,6 @@ function render(data) {
 
   globalTickerHTML = "";
   let allGlobal = [...indices, ...active];
-  // Randomize global tickers
   allGlobal.sort(() => 0.5 - Math.random());
   allGlobal.forEach(t => {
       const n = getPctNumForSort(t, "%_change" in t ? "%_change" : "percent_change");
@@ -817,7 +853,9 @@ function render(data) {
   });
 
   // Default to Kenya Ticker
-  document.getElementById('ticker-content').innerHTML = kenyaTickerHTML + kenyaTickerHTML;
+  if (currentTab === 'kenya') {
+      document.getElementById('ticker-content').innerHTML = kenyaTickerHTML + kenyaTickerHTML;
+  }
 
   // GLOBAL SECTION
   let globalEquitiesHtml = `<div class="full-card"><div class="card-header"><h2>Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">`;
@@ -939,14 +977,22 @@ function initCharts() {
   } catch(e) {}
 }
 
+function createChart(id, config) {
+  const ctx = document.getElementById(id);
+  if (ctx) {
+    if (chartInstances[id]) chartInstances[id].destroy();
+    chartInstances[id] = new Chart(ctx, config);
+  }
+}
+
 function filterHeatmap(q) {
   const qU = (q || "").toUpperCase();
   document.querySelectorAll(".ticker-cell").forEach(cell => { cell.style.display = (cell.dataset.sym || "").toUpperCase().includes(qU) ? "" : "none"; });
 }
 
 function startRefresh() {
-  if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(triggerRefresh, REFRESH_SECONDS * 1000);
+  if (window.refreshTimer) clearInterval(window.refreshTimer);
+  window.refreshTimer = setInterval(triggerRefresh, 300 * 1000);
 }
 
 triggerRefresh();
