@@ -10,6 +10,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <style>
+    /* ── CSS VARIABLES & CORE LAYOUT ──────────────────── */
     :root { --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2c3e50; --text-muted: #666666; --text-sub: #999999; --border-color: #e2e8f0; --table-header-bg: #f8fafc; --table-border: #f1f5f9; --table-hover: #fafbfd; --input-border: #d1d5db; --input-bg: #ffffff; --card-shadow: 0 2px 6px rgba(0,0,0,0.07); --ticker-cell-bg: #ffffff; }
     [data-theme="dark"] { --bg-body: #121212; --bg-card: #1e1e1e; --text-main: #e0e0e0; --text-muted: #aaaaaa; --text-sub: #888888; --border-color: #333333; --table-header-bg: #2a2a2a; --table-border: #333333; --table-hover: #2d2d2d; --input-border: #444444; --input-bg: #1e1e1e; --card-shadow: 0 2px 6px rgba(0,0,0,0.4); --ticker-cell-bg: #2a2a2a; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-weight: bold; }
@@ -23,6 +24,7 @@
     .header-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 10pt; transition: background 0.2s; }
     .header-btn:hover { background: rgba(255,255,255,0.3); }
     
+    /* ── SEAMLESS SCROLLING TICKER TAPE (120s synced) ──────────────────── */
     .ticker-wrap { width: 100%; background: #001030; color: #fff; overflow: hidden; height: 35px; display: flex; align-items: center; border-bottom: 2px solid #D4AF37; white-space: nowrap; }
     .ticker { display: flex; width: max-content; animation: ticker-scroll 120s linear infinite; }
     .ticker:hover { animation-play-state: paused; }
@@ -31,16 +33,16 @@
     .ti-sym { color: #D4AF37; } .ti-prc { color: #ffffff; }
     .ti-up { color: #00e676; } .ti-dn { color: #ff5252; } .ti-nt { color: #888; }
     
+    /* ── TABS & SECTIONS ──────────────────── */
     .tab-container { display: flex; justify-content: center; margin: 1.5rem 0 1rem; gap: 1rem; }
     .tab-btn { padding: 10px 24px; font-size: 11pt; background: var(--bg-card); color: var(--text-main); border: 2px solid var(--border-color); border-radius: 30px; cursor: pointer; transition: all 0.2s; box-shadow: var(--card-shadow); }
     .tab-btn:hover { border-color: #002060; }
     .tab-btn.active { background: #002060; color: #fff; border-color: #002060; box-shadow: 0 4px 10px rgba(0,32,96,0.3); }
     [data-theme="dark"] .tab-btn.active { background: #D4AF37; color: #000; border-color: #D4AF37; }
-    
-    .view-section { display: none; animation: fadeIn 0.4s ease; }
-    .view-section.active { display: block; }
+    .view-section { display: none; animation: fadeIn 0.4s ease; } .view-section.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+    /* ── DASHBOARD GRID & CARDS ──────────────────── */
     .container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem 1.5rem; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
@@ -63,10 +65,10 @@
     .table-collapsed tbody tr:nth-child(n+6) { display: none; }
     .pdf-mode .table-collapsed tbody tr { display: table-row !important; } 
     .pdf-mode .expand-hint { display: none !important; }
-    
     .expand-hint { text-align: center; font-size: 9pt; color: #D4AF37; padding-top: 8px; margin-top: 8px; border-top: 1px dashed var(--border-color); user-select: none; }
     .table-collapsed .expand-hint::after { content: "▼ Tap card to view full table ▼"; } .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ Tap to collapse ▲"; color: #002060; }
     
+    /* ── TABLES ──────────────────── */
     .table-responsive { width: 100%; overflow-x: auto; } table { width: 100%; border-collapse: collapse; white-space: nowrap; } table[data-id] { width: 100%; } 
     th { text-align: left; padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); font-size: 10pt; background: var(--table-header-bg); cursor: pointer; user-select: none; }
     th:hover { background: var(--table-border); } [data-theme="dark"] th { color: #66a3ff; }
@@ -82,20 +84,22 @@
     .rates-table .rate-value-cell { font-size: 11pt; color: #002060; font-weight: bold; width: 50%; text-align: right; } 
     [data-theme="dark"] .rates-table .rate-value-cell { color: #66a3ff; }
 
+    /* ── GLOBAL EXPLORER & MAP ──────────────────── */
     .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1rem; }
     .country-filter { display: flex; justify-content: center; padding-bottom: 1rem; border-bottom: 2px dashed var(--border-color); }
     .country-filter select { padding: 8px 16px; font-size: 10pt; font-family: inherit; font-weight: bold; border: 2px solid #002060; border-radius: 6px; color: #002060; background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; }
     [data-theme="dark"] .country-filter select { border-color: #66a3ff; color: #66a3ff; }
     .country-filter select:hover { background: var(--table-hover); }
-    .global-tables-section { display: none; }
-    .global-tables-section.active-country { display: block; animation: fadeIn 0.4s ease; }
+    .global-tables-section { display: none; } .global-tables-section.active-country { display: block; animation: fadeIn 0.4s ease; }
 
+    /* ── HEATMAP ──────────────────── */
     .heatmap-search { width: 100%; margin-bottom: 0.85rem; padding: 7px 12px; border: 1px solid var(--input-border); border-radius: 6px; font-size: 10pt; background: var(--input-bg); color: var(--text-main); outline: none; }
     .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 0.6rem; }
     .ticker-cell { background: var(--ticker-cell-bg); border-radius: 6px; padding: 0.6rem 0.75rem; border-left: 4px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .ticker-cell.up-cell { border-left-color: #00b050; } .ticker-cell.dn-cell { border-left-color: #ff5252; } .ticker-cell.nt-cell { border-left-color: var(--text-sub); }
     .tc-sym { font-size: 10pt; color: #002060; } [data-theme="dark"] .tc-sym { color: #66a3ff; } .tc-price { font-size: 9pt; color: var(--text-main); margin: 3px 0 2px; } .tc-chg { font-size: 8pt; }
     
+    /* ── GRAPHS & NEWS ──────────────────── */
     .graphs-section { background: var(--bg-card); border-radius: 8px; box-shadow: var(--card-shadow); margin-bottom: 1.5rem; overflow: hidden; }
     .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; } @media (max-width: 800px) { .graphs-grid { grid-template-columns: 1fr; } }
     .graph-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
@@ -105,18 +109,7 @@
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: #7b1a1a; font-size: 11pt; line-height: 1.8; text-align: left; }
     .error-box h2 { color: #cf222e; margin-top: 0; }
-    
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; justify-content: center; align-items: center; }
-    .modal-box { background: var(--bg-card); padding: 2rem; border-radius: 12px; width: 400px; box-shadow: var(--card-shadow-hover); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem; position: relative; }
-    .modal-box h3 { color: #002060; font-size: 14pt; margin-bottom: 0.5rem; text-align: center; } [data-theme="dark"] .modal-box h3 { color: #66a3ff; }
-    .modal-close { position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 16px; color: var(--text-muted); }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    .form-group label { font-size: 9pt; color: var(--text-sub); text-transform: uppercase; }
-    .form-group input, .form-group select { padding: 10px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-main); font-family: inherit; font-weight: bold; outline: none; }
-    .days-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-    .day-chk { display: flex; align-items: center; gap: 4px; font-size: 9pt; }
-    .primary-btn { background: #002060; color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 11pt; margin-top: 10px; transition: background 0.2s; }
-    .primary-btn:hover { background: #003b73; } .secondary-btn { background: #D4AF37; color: #002060; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 11pt; text-align: center; }
+    .error-box code { background: rgba(0,0,0,0.05); padding: 4px; border-radius: 4px; font-family: monospace; display:block; margin-top: 10px; }
     
     .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
     .news-item { display: flex; flex-direction: column; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; height: 100%; transition: transform 0.2s, box-shadow 0.2s; }
@@ -127,11 +120,9 @@
     .news-date { font-size: 8pt; color: #D4AF37; margin-top: auto; font-weight: normal;}
 
     .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9.5pt; }
-    .nse-native-table th { background: var(--table-header-bg); padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); text-align: left; }
-    [data-theme="dark"] .nse-native-table th { color: #66a3ff; }
+    .nse-native-table th { background: var(--table-header-bg); padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); text-align: left; } [data-theme="dark"] .nse-native-table th { color: #66a3ff; }
     .nse-native-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-border); color: var(--text-main); }
-    .nse-native-table tr:hover td { background: var(--table-hover); }
-    .nse-native-table img { max-height: 35px; border-radius: 4px; }
+    .nse-native-table tr:hover td { background: var(--table-hover); } .nse-native-table img { max-height: 35px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -144,7 +135,7 @@
       <span id="last-updated">Loading…</span>
       <div style="display: flex; align-items: center; gap: 8px;"><span id="live-clock">EAT: --:--:--</span></div>
     </div>
-    <button class="header-btn" onclick="openExportModal()">📄 Export Tear Sheet</button>
+    <button class="header-btn" onclick="window.print()">📄 Export PDF</button>
     <button class="header-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
     <button class="header-btn" id="refresh-btn" onclick="triggerRefresh()">↻ Refresh</button>
   </div>
@@ -168,36 +159,54 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="export-modal" data-html2canvas-ignore="true">
-  <div class="modal-box">
-    <span class="modal-close" onclick="closeExportModal()">✖</span>
-    <h3 style="color:#002060;">Export Tear Sheet</h3>
-    <button class="secondary-btn" id="download-btn" onclick="downloadPDF()">⬇️ Download PDF Now</button>
-  </div>
-</div>
 <script>
+// 🛡️ FAILSAFE GUARD: If any JS breaks, it prints a visible red error on the screen.
+window.onerror = function(message, source, lineno) {
+  const errStr = `<div class="error-box" style="margin-top:50px;"><h2>🚨 Fatal JavaScript Error</h2><p>The code encountered a syntax or reference error and halted.</p><code>${message} (Line ${lineno})</code></div>`;
+  const app = document.getElementById("app-kenya");
+  if(app) app.innerHTML = errStr;
+};
+
+// ── API & CORE CONSTANTS ──────────────────────────────────────────────────
 const API_LOCAL = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
 const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec"; 
+const JSONP_TIMEOUT_MS = 15000; // <--- The critical missing variable
 
 let KEY_RATES = [], FOREX_RATES = [], CHART_DATA = { inflation: { labels: [], m12: [] }, gdp: { labels: [], nominal: [], real: [] }, banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] }, kepss: { labels: [], values: [] } };
 let currentTab = 'kenya', isNewsFetched = false, isFetching = false, isGeoChartLoaded = false, currentGlobalSelection = "usa";
 const chartInstances = {}; let kenyaTickerHTML = "", globalTickerHTML = "";
 const countryMap = { "usa": { name: "USA", code: "US" }, "canada": { name: "Canada", code: "CA" }, "south_africa": { name: "South Africa", code: "ZA" }, "nigeria": { name: "Nigeria", code: "NG" }, "egypt": { name: "Egypt", code: "EG" }, "france": { name: "France", code: "FR" }, "united_kingdom": { name: "United Kingdom", code: "GB" }, "australia": { name: "Australia", code: "AU" }, "japan": { name: "Japan", code: "JP" }, "mainland_china": { name: "Mainland China", code: "CN" } };
 
+// ── UI LOGIC ──────────────────────────────────────────────────────────────
 setInterval(() => { const clock = document.getElementById("live-clock"); if(clock) clock.textContent = "EAT: " + new Date(new Date().toLocaleString("en-US", {timeZone:"Africa/Nairobi"})).toLocaleTimeString("en-KE", {hour12:false}); }, 1000);
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-    event.target.classList.add('active'); document.getElementById('view-' + tabId).classList.add('active'); currentTab = tabId;
+    event.target.classList.add('active'); 
+    document.getElementById('view-' + tabId).classList.add('active'); 
+    currentTab = tabId;
     document.getElementById('ticker-content').innerHTML = tabId === 'kenya' ? kenyaTickerHTML + kenyaTickerHTML : globalTickerHTML + globalTickerHTML; 
     if (tabId === 'global' && isGeoChartLoaded) setTimeout(drawRegionsMap, 150);
 }
 
-function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
-function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
-function downloadPDF() { closeExportModal(); const el = document.getElementById('pdf-container'); el.classList.add('pdf-mode'); html2pdf().set({margin:0.2, filename:`Tear_Sheet_${new Date().toISOString().split('T')[0]}.pdf`, image:{type:'jpeg',quality:1.0}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a3',orientation:'portrait'}}).from(el).save().then(() => el.classList.remove('pdf-mode')); }
+function toggleTheme() {
+  const root = document.documentElement; const btn = document.getElementById("theme-btn");
+  if (root.getAttribute("data-theme") === "dark") { root.removeAttribute("data-theme"); btn.innerHTML = "🌙 Dark Mode"; localStorage.setItem("theme", "light"); updateChartTheme("light"); } 
+  else { root.setAttribute("data-theme", "dark"); btn.innerHTML = "☀️ Light Mode"; localStorage.setItem("theme", "dark"); updateChartTheme("dark"); }
+  if(isGeoChartLoaded && currentTab === 'global') drawRegionsMap();
+}
+if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttribute("data-theme", "dark"); document.addEventListener("DOMContentLoaded", () => { document.getElementById("theme-btn").innerHTML = "☀️ Light Mode"; }); }
 
+function updateChartTheme(mode) {
+  const textColor = mode === "dark" ? "#aaaaaa" : "#555555"; const gridColor = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
+  for (const id in chartInstances) { const chart = chartInstances[id]; if (chart.options.scales.x) { chart.options.scales.x.ticks.color = textColor; chart.options.scales.x.grid.color = gridColor; } if (chart.options.scales.y) { chart.options.scales.y.ticks.color = textColor; chart.options.scales.y.grid.color = gridColor; } if (chart.options.plugins.legend) { chart.options.plugins.legend.labels.color = mode === "dark" ? "#e0e0e0" : "#2c3e50"; } chart.update(); }
+}
+
+function setMarketStatus(status) { const el = document.getElementById("market-status"); if (status === "OPEN") { el.textContent = "⬤ OPEN"; el.className = "open"; } else { el.textContent = "⬤ CLOSED"; el.className = "closed"; } }
+function showGlobalCountry(key) { currentGlobalSelection = key; document.querySelectorAll('.global-tables-section').forEach(el => el.classList.remove('active-country')); const el = document.getElementById('country-' + key); if (el) el.classList.add('active-country'); const sel = document.getElementById("globalSearch"); if (sel && sel.value !== key) sel.value = key; if (isGeoChartLoaded) drawRegionsMap(); }
+
+// ── NEWS & SCRAPERS ───────────────────────────────────────────────────────
 async function loadLiveNews() {
   if (isNewsFetched) return;
   try {
@@ -237,38 +246,7 @@ async function loadCorporateActions() {
   } catch(e) { container.innerHTML = `<p style="color:var(--text-muted);padding:1rem;font-style:italic;">Awaiting next sync from NSE...</p>`; }
 }
 
-google.charts.load('current', { 'packages': ['geochart'] });
-google.charts.setOnLoadCallback(() => { isGeoChartLoaded = true; if (currentTab === 'global') drawRegionsMap(); });
-window.addEventListener('resize', () => { if (isGeoChartLoaded && currentTab === 'global') drawRegionsMap(); });
-
-function toggleTheme() {
-  const root = document.documentElement; const btn = document.getElementById("theme-btn");
-  if (root.getAttribute("data-theme") === "dark") { root.removeAttribute("data-theme"); btn.innerHTML = "🌙 Dark Mode"; localStorage.setItem("theme", "light"); updateChartTheme("light"); } 
-  else { root.setAttribute("data-theme", "dark"); btn.innerHTML = "☀️ Light Mode"; localStorage.setItem("theme", "dark"); updateChartTheme("dark"); }
-  if(isGeoChartLoaded && currentTab === 'global') drawRegionsMap();
-}
-if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttribute("data-theme", "dark"); document.addEventListener("DOMContentLoaded", () => { document.getElementById("theme-btn").innerHTML = "☀️ Light Mode"; }); }
-
-function updateChartTheme(mode) {
-  const textColor = mode === "dark" ? "#aaaaaa" : "#555555"; const gridColor = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
-  for (const id in chartInstances) { const chart = chartInstances[id]; if (chart.options.scales.x) { chart.options.scales.x.ticks.color = textColor; chart.options.scales.x.grid.color = gridColor; } if (chart.options.scales.y) { chart.options.scales.y.ticks.color = textColor; chart.options.scales.y.grid.color = gridColor; } if (chart.options.plugins.legend) { chart.options.plugins.legend.labels.color = mode === "dark" ? "#e0e0e0" : "#2c3e50"; } chart.update(); }
-}
-
-function setMarketStatus(status) { const el = document.getElementById("market-status"); if (status === "OPEN") { el.textContent = "⬤ OPEN"; el.className = "open"; } else { el.textContent = "⬤ CLOSED"; el.className = "closed"; } }
-function showGlobalCountry(key) { currentGlobalSelection = key; document.querySelectorAll('.global-tables-section').forEach(el => el.classList.remove('active-country')); const el = document.getElementById('country-' + key); if (el) el.classList.add('active-country'); const sel = document.getElementById("globalSearch"); if (sel && sel.value !== key) sel.value = key; if (isGeoChartLoaded) drawRegionsMap(); }
-
-function drawRegionsMap() {
-  const mapDiv = document.getElementById('regions_div'); if (!mapDiv || mapDiv.offsetParent === null) return; 
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const data = new google.visualization.DataTable(); data.addColumn('string', 'Country'); data.addColumn('number', 'Selected');
-  const mapData = []; Object.values(countryMap).forEach(info => mapData.push([info.code, 0]));
-  if (countryMap[currentGlobalSelection]) { const row = mapData.find(r => r[0] === countryMap[currentGlobalSelection].code); if (row) row[1] = 1; }
-  data.addRows(mapData);
-  const chart = new google.visualization.GeoChart(mapDiv);
-  google.visualization.events.addListener(chart, 'select', function() { const sel = chart.getSelection(); if (sel.length > 0) { const code = data.getValue(sel[0].row, 0); const k = Object.keys(countryMap).find(k => countryMap[k].code === code); if (k) showGlobalCountry(k); } });
-  chart.draw(data, { colorAxis: { colors: [ isDark ? '#333333' : '#e2e8f0', '#D4AF37' ]}, backgroundColor: isDark ? '#1e1e1e' : '#ffffff', datalessRegionColor: isDark ? '#2a2a2a' : '#f1f5f9', defaultColor: isDark ? '#333333' : '#e2e8f0', legend: 'none', width: '100%', height: 350 });
-}
-
+// ── DATA FETCHING (JSONP) ─────────────────────────────────────────────────
 function getTableId(title) { return "tbl-" + title.replace(/\W+/g, '-').toLowerCase(); }
 function triggerRefresh() { if (isFetching) return; loadData(); }
 
@@ -295,7 +273,7 @@ function loadData() {
     if (localData && globalData) {
       clearTimeout(timeoutId); isFetching = false; if (btn) btn.innerHTML = "↻ Refresh";
       const mergedData = { ...localData, ...globalData };
-      if (isInitialLoad && (!localData.tickers || localData.tickers.length === 0)) { const errStr = `<div class="error-box"><h2>🚨 Empty Data Error</h2><p>The backend API connected successfully, but returned an empty dataset.</p></div>`; document.getElementById("app-kenya").innerHTML = errStr; document.getElementById("app-global").innerHTML = errStr; return; }
+      if (isInitialLoad && (!localData.tickers || localData.tickers.length === 0)) { const errStr = `<div class="error-box"><h2>🚨 Empty Data Error</h2><p>The backend API connected successfully, but returned an empty dataset. Ensure your Sheets are populated.</p></div>`; document.getElementById("app-kenya").innerHTML = errStr; document.getElementById("app-global").innerHTML = errStr; return; }
       extractDynamicData(mergedData); render(mergedData, isInitialLoad); document.getElementById("last-updated").textContent = "Updated: " + (mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { hour12: false }));
     }
   }
@@ -306,6 +284,7 @@ function loadData() {
 
 const cleanNum = (str) => { if (!str) return NaN; let s = String(str).replace(/,/g, '').replace(/%/g, '').trim().replace(/^KES\s*/i, '').replace(/\s*Mn$/i, '').trim(); if (s === "-" || s.toLowerCase() === "n/a" || s.toLowerCase() === "null") return NaN; return parseFloat(s); };
 
+// ── DATA PARSING ──────────────────────────────────────────────────────────
 function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = []; CHART_DATA = { inflation: { labels: [], m12: [] }, gdp: { labels: [], nominal: [], real: [] }, banks: { labels: [], deposit: [], savings: [], lending: [], overdraft: [] }, kepss: { labels: [], values: [] } };
   const targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate"];
@@ -352,9 +331,9 @@ function extractDynamicData(data) {
   if(tempGdp.length > 0) { tempGdp.sort((a,b) => a.year - b.year); tempGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); }); }
 }
 
+// ── UTILS & FORMATTING ────────────────────────────────────────────────────
 function formatChange(val, isPct) {
-  if (!val || val === "N/A" || val === "—") return '<span class="nt">—</span>';
-  const s = String(val).trim(); if (s === "-" || s === "0" || s === "0.00") return '<span class="nt">—</span>';
+  if (!val || val === "N/A" || val === "—") return '<span class="nt">—</span>'; const s = String(val).trim(); if (s === "-" || s === "0" || s === "0.00") return '<span class="nt">—</span>';
   const isNeg = s.startsWith("-") || s.startsWith("(") || s.includes("▼"), n = parseFloat(s.replace(/[^0-9.]/g, "")); if (isNaN(n) || n === 0) return '<span class="nt">—</span>';
   const fmt = (isPct && !s.includes("%") && n > 0 && n < 1) ? (n * 100).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (isPct) return isNeg ? `<span class="dn">▼ (${fmt}%)</span>` : `<span class="up">▲ ${fmt}%</span>`; return isNeg ? `<span class="dn">▼ (${fmt})</span>` : `<span class="up">▲ ${fmt}</span>`;
@@ -409,6 +388,7 @@ function attachTableSorting() {
 
 function updateTableData(id, rows) { const tbody = document.querySelector(`table[data-id="${id}"] tbody`); if (tbody && rows) tbody.innerHTML = rows.join(""); }
 
+// ── DOM RENDERING ─────────────────────────────────────────────────────────
 function render(data, isInitialLoad) {
   const tickers = (data.tickers || []).filter(t => t && t.symbol), mw = (data.marketwatch || []).filter(t => t && t.symbol), indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"), active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price), statsArr = (data.stats || []);
   let apiStatus = "CLOSED"; if (data.market_assumptions && data.market_assumptions.length > 0) { const keys = Object.keys(data.market_assumptions[0]); if (keys.includes("open")) apiStatus = "OPEN"; else if (keys.includes("closed")) apiStatus = "CLOSED"; } setMarketStatus(apiStatus);
@@ -427,7 +407,7 @@ function render(data, isInitialLoad) {
 
   const metricsHtml = `<div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">${fmtNum(statsMap["NSE ALL SHARE INDEX"], 2)}</div><div class="sub">${formatChange(statsChange["NSE ALL SHARE INDEX"], false)} vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">${fmtNum(statsMap["NSE 20 SHARE INDEX"], 2)}</div><div class="sub">Blue-chip index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">${fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2)}B</div><div class="sub">KES total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">${fmtNum(totalTurnover, 0)}</div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">${fmtNum(totalTrades, 0)}</div><div class="sub">Trades today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">${fmtNum(totalFBuy, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">${fmtNum(totalFSell, 0)}</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">${gainers.length}</span> / <span class="dn">${losers.length}</span></div><div class="sub">${unchanged.length} unchanged · ${tickers.length} total</div></div>`;
 
-  let ratesHtml = ''; if (KEY_RATES.length === 0) ratesHtml = `<tr><td colspan="2" style="color:var(--text-muted);font-style:italic;">Data unavailable.</td></tr>`; KEY_RATES.forEach(r => { ratesHtml += `<tr><td class="r-lbl">${r.label}</td><td class="r-val">${r.value}</td></tr>`; });
+  let ratesHtml = ''; if (KEY_RATES.length === 0) ratesHtml = `<tr><td colspan="2" style="color:var(--text-muted);font-style:italic;">Data unavailable.</td></tr>`; KEY_RATES.forEach(r => { ratesHtml += `<tr><td class="rate-label-cell">${r.label}</td><td class="rate-value-cell">${r.value}</td></tr>`; });
   const statsRows = statsArr.filter(r => r && r.name && r.value !== undefined && r.value !== "").map(r => `<tr><td>${r.name}</td><td>${fmtNum(r.value, 2)}</td><td>${(r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—"}</td></tr>`);
   function tickerRow(t) { return `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(pctKey(t), true)}</td></tr>`; }
   const rankRow_TO = r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td style="color:#002060;">${fmtKsh(r["turnover_(kshs)"])}</td><td>${fmtNum(numMW(r, "volume"), 0)}</td><td>${r.trades || "—"}</td></tr>`;
@@ -438,36 +418,36 @@ function render(data, isInitialLoad) {
   const tickerFullRows = tickers.map(t => `<tr><td>${t.symbol}</td><td>${fmtKsh(t["last_price_(kshs)"])}</td><td>${formatChange(t["change"], false)}</td><td>${formatChange(pctKey(t), true)}</td><td><span class="nt">${t["last_updated"] || "—"}</span></td></tr>`);
   const mwRows = mw.filter(r => numMW(r, "ltp_(kshs)") > 0 || numMW(r, "volume") > 0).map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r["security_name"] || ""}</td><td>${fmtKsh(r["ltp_(kshs)"])}</td><td>${fmtKsh(r["prev_close"])}</td><td>${fmtNum(numMW(r, "volume"), 0)}</td><td>${r.trades || "—"}</td><td>${fmtKsh(r["turnover_(kshs)"])}</td><td class="up">${fmtNum(numMW(r, "foreign_buy"),  0)}</td><td class="dn">${fmtNum(numMW(r, "foreign_sell"), 0)}</td></tr>`);
   const forexRows = FOREX_RATES.map(r => `<tr><td>${r.ccy}</td><td>${r.crBuy}</td><td>${r.crSell}</td><td>${r.kBuy}</td><td>${r.kSell}</td></tr>`);
-  const heatCells = tickers.map(t => { const n = getPctNumForSort(t, "%_change"), cls = n > 0 ? "up-c" : n < 0 ? "dn-c" : "nt-c"; return `<div class="tk-cell ${cls}" data-sym="${t.symbol}"><div class="tc-sym">${t.symbol}</div><div class="tc-prc">${fmtKsh(t["last_price_(kshs)"])}</div><div class="tc-chg">${formatChange(pctKey(t), true)}</div></div>`; }).join("");
+  const heatCells = tickers.map(t => { const n = getPctNumForSort(t, "%_change"), cls = n > 0 ? "up-cell" : n < 0 ? "dn-cell" : "nt-cell"; return `<div class="ticker-cell ${cls}" data-sym="${t.symbol}"><div class="tc-sym">${t.symbol}</div><div class="tc-price">${fmtKsh(t["last_price_(kshs)"])}</div><div class="tc-chg">${formatChange(pctKey(t), true)}</div></div>`; }).join("");
   const indicesRows = indices.map(r => `<tr><td>${r.name}</td><td>${r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${(r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—"}</td></tr>`);
   const activeRows = active.map(r => `<tr><td>${r.symbol}</td><td class="cell-name">${r.name || "—"}</td><td>${fmtUSD(r.price)}</td><td>${formatChange(r["%_change"] || r.percent_change, true)}</td><td>${fmtNum(r.volume, 0)}</td><td>${fmtNum(r["market_cap"], 0)}</td></tr>`);
 
   if (isInitialLoad) {
-      let globalEquitiesHtml = `<div class="f-card"><div class="c-head"><h2>Global Equity Explorer</h2></div><div class="c-body"><div class="global-explorer-wrapper"><div class="c-filt"><select id="globalSearch" onchange="showGlobalCountry(this.value)">`;
+      let globalEquitiesHtml = `<div class="full-card"><div class="card-header"><h2>Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">`;
       Object.keys(countryMap).forEach(key => { const isSelected = key === currentGlobalSelection ? "selected" : ""; globalEquitiesHtml += `<option value="${key}" ${isSelected}>${countryMap[key].name}</option>`; });
       globalEquitiesHtml += `</select></div><div id="regions_div" style="width:100%;height:350px;min-height:350px;"></div><div id="global-tables-container">`;
       Object.keys(countryMap).forEach(countryKey => {
-        const cData = data[countryKey]; let isActive = countryKey === currentGlobalSelection ? "act-c" : "";
-        if (currentGlobalSelection === "mainland_china" && (countryKey === "hong_kong" || countryKey === "taiwan")) isActive = "act-c";
-        globalEquitiesHtml += `<div id="country-${countryKey}" class="g-sec ${isActive}">`;
+        const cData = data[countryKey]; let isActive = countryKey === currentGlobalSelection ? "active-country" : "";
+        if (currentGlobalSelection === "mainland_china" && (countryKey === "hong_kong" || countryKey === "taiwan")) isActive = "active-country";
+        globalEquitiesHtml += `<div id="country-${countryKey}" class="global-tables-section ${isActive}">`;
         if (cData && cData.length > 0) { const tableData = buildGenericTableRows(cData); globalEquitiesHtml += tableCard(countryMap[countryKey].name, tableData.headers, tableData.rows, "No data available"); } else { globalEquitiesHtml += tableCard(countryMap[countryKey].name, ["Status"], [], "Data not loaded yet."); }
         globalEquitiesHtml += `</div>`;
       });
       globalEquitiesHtml += `</div></div></div>`;
 
-      document.getElementById("app-global").innerHTML = ['<div class="g2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>', globalEquitiesHtml].join("");
+      document.getElementById("app-global").innerHTML = ['<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>', globalEquitiesHtml].join("");
 
-      const graphsHtml = `<div class="gr-sec"><div class="c-head"><h2>Graphs — Macro &amp; CBK Data</h2></div><div class="c-body"><div class="gr-grid"><div class="gr-card"><h3>12-Month Inflation Rate (%)</h3><div class="c-wrap"><canvas id="gc_inflation"></canvas></div></div><div class="gr-card"><h3>Nominal vs Real GDP (Ksh Billion)</h3><div class="c-wrap"><canvas id="gc_gdp"></canvas></div></div><div class="gr-card"><h3>Commercial Bank Weighted Average Interest Rates (%)</h3><div class="c-wrap"><canvas id="gc_banks"></canvas></div></div><div class="gr-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Millions)</h3><div class="c-wrap"><canvas id="gc_kepss"></canvas></div></div></div></div></div>`;
+      const graphsHtml = `<div class="graphs-section"><div class="card-header"><h2>Graphs — Macro &amp; CBK Data</h2></div><div class="card-body"><div class="graphs-grid"><div class="graph-card"><h3>12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div><div class="graph-card"><h3>Nominal vs Real GDP (Ksh Billion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div><div class="graph-card"><h3>Commercial Bank Weighted Average Interest Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div><div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Millions)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div></div></div></div>`;
 
       document.getElementById("app-kenya").innerHTML = [
         `<div class="metrics">` + metricsHtml + `</div>`, 
-        standardCard("Key Macro Rates (CBK)", `<div class="tbl-resp"><table class="r-tbl"><tbody id="macro-rates-tbody">${ratesHtml}</tbody></table></div>`),
-        standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="ldr">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
-        '<div class="g3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
-        '<div class="g2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
-        '<div class="g3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
-        '<div class="g2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
-        standardCard("Equity Heat Map — All Tickers", `<p style="font-size:9pt;margin-bottom:10px;">${tickers.length} tickers &nbsp;·&nbsp; <span class="up">${gainers.length} gainers</span> &nbsp;·&nbsp; <span class="dn">${losers.length} losers</span> &nbsp;·&nbsp; ${unchanged.length} unchanged</p><input class="hm-src" id="heatmap-search" placeholder="Filter by ticker symbol…" oninput="filterHeatmap(this.value)"><div class="tk-grid" id="heatmap-grid">${heatCells}</div>`),
+        standardCard("Key Macro Rates (CBK)", `<div class="table-responsive"><table class="rates-table"><tbody id="macro-rates-tbody">${ratesHtml}</tbody></table></div>`),
+        standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
+        '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
+        '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
+        '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
+        '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rankRow_FB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rankRow_FS), "No foreign sell data."), '</div>',
+        standardCard("Equity Heat Map — All Tickers", `<p style="font-size:9pt;margin-bottom:10px;">${tickers.length} tickers &nbsp;·&nbsp; <span class="up">${gainers.length} gainers</span> &nbsp;·&nbsp; <span class="dn">${losers.length} losers</span> &nbsp;·&nbsp; ${unchanged.length} unchanged</p><input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol…" oninput="filterHeatmap(this.value)"><div class="ticker-grid" id="heatmap-grid">${heatCells}</div>`),
         tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tickerFullRows, "Ticker data not loaded."),
         tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
         graphsHtml
@@ -479,8 +459,25 @@ function render(data, isInitialLoad) {
       updateTableData(getTableId("Top Gainers"), gainers.map(tickerRow)); updateTableData(getTableId("Top Losers"), losers.map(tickerRow)); updateTableData(getTableId("Unchanged Stocks"), unchanged.map(tickerRow)); updateTableData(getTableId("Indicative Forex Rates"), forexRows); updateTableData(getTableId("NSE Market Statistics"), statsRows); updateTableData(getTableId("Top by Turnover"), topTurnover.map(rankRow_TO)); updateTableData(getTableId("Top by Volume"), topVolume.map(rankRow_Vol)); updateTableData(getTableId("Top by Trades"), topTrades.map(rankRow_Trades)); updateTableData(getTableId("Top Foreign Inflows (Buys)"), topFBuy.map(rankRow_FB)); updateTableData(getTableId("Top Foreign Outflows (Sells)"), topFSell.map(rankRow_FS)); updateTableData(getTableId("Ticker Prices — Full List"), tickerFullRows); updateTableData(getTableId("Market Watch — Full Order Book Detail"), mwRows);
       updateTableData(getTableId("Global Markets (World Indices)"), indicesRows); updateTableData(getTableId("Yahoo Most Active (US Equities)"), activeRows);
       Object.keys(countryMap).forEach(countryKey => { const cData = data[countryKey]; if (cData && cData.length > 0) { const tableData = buildGenericTableRows(cData); updateTableData(getTableId(countryMap[countryKey].name), tableData.rows); } });
-      updateChartsData(); attachTableSorting();
+      initCharts(); attachTableSorting();
   }
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────
+google.charts.load('current', { 'packages': ['geochart'] });
+google.charts.setOnLoadCallback(() => { isGeoChartLoaded = true; if (currentTab === 'global') drawRegionsMap(); });
+window.addEventListener('resize', () => { if (isGeoChartLoaded && currentTab === 'global') drawRegionsMap(); });
+
+function drawRegionsMap() {
+  const mapDiv = document.getElementById('regions_div'); if (!mapDiv || mapDiv.offsetParent === null) return; 
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const data = new google.visualization.DataTable(); data.addColumn('string', 'Country'); data.addColumn('number', 'Selected');
+  const mapData = []; Object.values(countryMap).forEach(info => mapData.push([info.code, 0]));
+  if (countryMap[currentGlobalSelection]) { const row = mapData.find(r => r[0] === countryMap[currentGlobalSelection].code); if (row) row[1] = 1; }
+  data.addRows(mapData);
+  const chart = new google.visualization.GeoChart(mapDiv);
+  google.visualization.events.addListener(chart, 'select', function() { const sel = chart.getSelection(); if (sel.length > 0) { const code = data.getValue(sel[0].row, 0); const k = Object.keys(countryMap).find(k => countryMap[k].code === code); if (k) showGlobalCountry(k); } });
+  chart.draw(data, { colorAxis: { colors: [ isDark ? '#333333' : '#e2e8f0', '#D4AF37' ]}, backgroundColor: isDark ? '#1e1e1e' : '#ffffff', datalessRegionColor: isDark ? '#2a2a2a' : '#f1f5f9', defaultColor: isDark ? '#333333' : '#e2e8f0', legend: 'none', width: '100%', height: 350 });
 }
 
 function initCharts() {
@@ -497,15 +494,8 @@ function initCharts() {
   try { if(kepss.labels.length > 0) { createChart("gc_kepss", { type: "line", data: { labels: kepss.labels, datasets: [{ label: "Monthly Settlement Value (KES Mn)", data: kepss.values, borderColor: "#4285F4", backgroundColor: "rgba(66, 133, 244, 0.1)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.1, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: CINTERACT, plugins: { legend: { display: false }, tooltip: { ...CTOOLTIP, callbacks: { label: ctx => ` Settlement Value: KES ${ctx.parsed.y ? ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 }) : '—'} Mn` } } }, scales: { x: { ...CSCALES.x, title: { display: true, text: 'Month / Year', font: { ...CFONT, size: 9 }, color: tickColor, align: 'end' }, ticks: { ...CSCALES.x.ticks, maxTicksLimit: 12, display: false } }, y: { ...CSCALES.y, title: { display: true, text: 'Value (KES Millions)', font: { ...CFONT, size: 9 }, color: tickColor, align: 'end' }, ticks: { ...CSCALES.y.ticks, callback: function(value) { return 'KES ' + (value / 1000).toFixed(0) + 'K Mn'; } } } } }); } } catch(e) {}
 }
 
-function updateChartsData() {
-    if (chartInstances["gc_inflation"]) { chartInstances["gc_inflation"].data.labels = CHART_DATA.inflation.labels; chartInstances["gc_inflation"].data.datasets[0].data = CHART_DATA.inflation.m12; chartInstances["gc_inflation"].update(); }
-    if (chartInstances["gc_gdp"]) { chartInstances["gc_gdp"].data.labels = CHART_DATA.gdp.labels; chartInstances["gc_gdp"].data.datasets[0].data = CHART_DATA.gdp.nominal.map(v => isNaN(v) ? null : v / 1e9); chartInstances["gc_gdp"].data.datasets[1].data = CHART_DATA.gdp.real.map(v => isNaN(v) ? null : v / 1e9); chartInstances["gc_gdp"].update(); }
-    if (chartInstances["gc_banks"]) { chartInstances["gc_banks"].data.labels = CHART_DATA.banks.labels; chartInstances["gc_banks"].data.datasets[0].data = CHART_DATA.banks.lending; chartInstances["gc_banks"].data.datasets[1].data = CHART_DATA.banks.overdraft; chartInstances["gc_banks"].data.datasets[2].data = CHART_DATA.banks.savings; chartInstances["gc_banks"].data.datasets[3].data = CHART_DATA.banks.deposit; chartInstances["gc_banks"].update(); }
-    if (chartInstances["gc_kepss"]) { chartInstances["gc_kepss"].data.labels = CHART_DATA.kepss.labels; chartInstances["gc_kepss"].data.datasets[0].data = CHART_DATA.kepss.values; chartInstances["gc_kepss"].update(); }
-}
-
 function createChart(id, config) { const ctx = document.getElementById(id); if (ctx) { if (chartInstances[id]) chartInstances[id].destroy(); chartInstances[id] = new Chart(ctx, config); } }
-function filterHeatmap(q) { const qU = (q || "").toUpperCase(); document.querySelectorAll(".tk-cell").forEach(cell => { cell.style.display = (cell.dataset.sym || "").toUpperCase().includes(qU) ? "" : "none"; }); }
+function filterHeatmap(q) { const qU = (q || "").toUpperCase(); document.querySelectorAll(".ticker-cell").forEach(cell => { cell.style.display = (cell.dataset.sym || "").toUpperCase().includes(qU) ? "" : "none"; }); }
 function startRefresh() { if (window.refreshTimer) clearInterval(window.refreshTimer); window.refreshTimer = setInterval(() => { if (!document.hidden) triggerRefresh(); }, 60 * 1000); }
 
 triggerRefresh(); startRefresh();
