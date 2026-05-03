@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🇰🇪 Market Data Analysis</title>
   
-  <!-- Removed Chart.js (No longer needed, saves memory!) -->
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
@@ -67,6 +66,7 @@
     .table-collapsed tbody tr:nth-child(n+6) { display: none; }
     .pdf-mode .table-collapsed tbody tr { display: table-row !important; } 
     .pdf-mode .expand-hint { display: none !important; }
+    
     .expand-hint { text-align: center; font-size: 9pt; color: #D4AF37; padding-top: 8px; margin-top: 8px; border-top: 1px dashed var(--border-color); user-select: none; }
     .table-collapsed .expand-hint::after { content: "▼ Tap card to view full table ▼"; } .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ Tap to collapse ▲"; color: #002060; }
     
@@ -108,7 +108,8 @@
     .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; } @media (max-width: 800px) { .graphs-grid { grid-template-columns: 1fr; } }
     .graph-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
     .graph-card h3 { font-size: 10pt; color: #002060; text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; } [data-theme="dark"] .graph-card h3 { color: #66a3ff; }
-    .chart-wrapper { position: relative; height: 350px; width: 100%; display: block; overflow: hidden; border-radius: 4px; }
+    .chart-wrapper { position: relative; height: 420px; width: 100%; display: block; overflow: hidden; border-radius: 4px; }
+    .chart-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
     
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: #7b1a1a; font-size: 11pt; line-height: 1.8; text-align: left; }
@@ -136,6 +137,11 @@
     .news-title { font-size: 10.5pt; color: var(--text-main); line-height: 1.3; } [data-theme="dark"] .news-title { color: #66a3ff; }
     .news-desc { font-size: 9pt; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: normal;}
     .news-date { font-size: 8pt; color: #D4AF37; margin-top: auto; font-weight: normal;}
+
+    .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9.5pt; }
+    .nse-native-table th { background: var(--table-header-bg); padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); text-align: left; } [data-theme="dark"] .nse-native-table th { color: #66a3ff; }
+    .nse-native-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-border); color: var(--text-main); }
+    .nse-native-table tr:hover td { background: var(--table-hover); } .nse-native-table img { max-height: 35px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -341,11 +347,15 @@ loadLiveNews();
 
 function loadCorporateActions() {
   const container = document.getElementById("corp-actions-container"); if(!container) return;
-  container.innerHTML = '<div style="padding:1rem;text-align:center;"><a href="https://www.nse.co.ke/corporate-actions/" target="_blank" rel="noopener" style="display:inline-block;padding:10px 24px;background:#002060;color:#D4AF37;border-radius:6px;text-decoration:none;font-size:11pt;">View Live Corporate Actions on NSE ↗</a></div>';
+  container.innerHTML = '<div style="padding:1rem;text-align:center;"><a href="https://www.nse.co.ke/corporate-actions/" target="_blank" rel="noopener" style="display:inline-block;padding:10px 24px;background:#002060;color:#D4AF37;border-radius:6px;text-decoration:none;font-size:11pt;font-weight:bold;">View Live Corporate Actions on NSE ↗</a></div>';
 }
 
 // ── DATA FETCHING ─────────────────────────────────────────────────────────
-function gid(t){return "tbl-"+t.replace(/\W+/g,'-').toLowerCase();}
+// THIS WAS THE MISSING FUNCTION! The Failsafe caught it perfectly.
+function getTableId(title) {
+  return "tbl-" + title.replace(/\W+/g, '-').toLowerCase();
+}
+
 function triggerRefresh(){if(isFetching)return;loadData();}
 
 function buildDiagnosticError(localData, globalData) {
@@ -512,16 +522,16 @@ function render(data, isInitialLoad) {
 
       document.getElementById("app-global").innerHTML = ['<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>', globalEquitiesHtml].join("");
 
-      // FIX #4: Native iFrames for Graphs directly from Google Sheets
+      // NATIVE GOOGLE SHEETS IFRAMES (Zero Mapping Overhead)
       const graphsHtml = `
         <div class="graphs-section">
           <div class="card-header"><h2>Graphs — Macro &amp; CBK Data</h2></div>
           <div class="card-body">
             <div class="graphs-grid">
-              <div class="graph-card"><h3>12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><iframe style="width:100%;height:100%;border:none;" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=91922334&amp;format=interactive"></iframe></div></div>
-              <div class="graph-card"><h3>Nominal vs Real GDP (Ksh Billion)</h3><div class="chart-wrapper"><iframe style="width:100%;height:100%;border:none;" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=1363623705&amp;format=interactive"></iframe></div></div>
-              <div class="graph-card"><h3>Commercial Bank Weighted Average Interest Rates (%)</h3><div class="chart-wrapper"><iframe style="width:100%;height:100%;border:none;" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=1481097401&amp;format=interactive"></iframe></div></div>
-              <div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Millions)</h3><div class="chart-wrapper"><iframe style="width:100%;height:100%;border:none;" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=1429532325&amp;format=interactive"></iframe></div></div>
+              <div class="graph-card"><h3>12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><iframe seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=91922334&amp;format=interactive"></iframe></div></div>
+              <div class="graph-card"><h3>Nominal vs Real GDP (Ksh Billion)</h3><div class="chart-wrapper"><iframe seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=1363623705&amp;format=interactive"></iframe></div></div>
+              <div class="graph-card"><h3>Commercial Bank Weighted Average Interest Rates (%)</h3><div class="chart-wrapper"><iframe seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=1481097401&amp;format=interactive"></iframe></div></div>
+              <div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Millions)</h3><div class="chart-wrapper"><iframe seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQKrRZmMvqr-3oJVoD9rw-bAMxwAWb_pXkyrE6klRPPksP-7oF32ruS7GdtXiOB_HsNCHzff8u4tBoV/pubchart?oid=1429532325&amp;format=interactive"></iframe></div></div>
             </div>
           </div>
         </div>`;
@@ -529,7 +539,7 @@ function render(data, isInitialLoad) {
       document.getElementById("app-kenya").innerHTML = [
         `<div class="metrics">` + metricsHtml + `</div>`, 
         standardCard("Key Macro Rates (CBK)", `<div class="macro-grid-container"><table class="rates-table"><tbody id="macro-rates-tbody-left">${ratesLeft}</tbody></table><table class="rates-table"><tbody id="macro-rates-tbody-right">${ratesRight}</tbody></table></div>`),
-        standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions directly from NSE...</div></div>`),
+        standardCard("Upcoming Corporate Actions", `<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions...</div></div>`),
         '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(tickerRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(tickerRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(tickerRow), "No unchanged stocks today."), '</div>',
         '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], forexRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
         '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rankRow_TO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rankRow_Vol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rankRow_Trades),"No trades data."), '</div>',
@@ -540,7 +550,7 @@ function render(data, isInitialLoad) {
         graphsHtml
       ].join("");
 
-      setTimeout(() => { loadCorporateActions(); attachTableSorting(); if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark"); }, 50);
+      setTimeout(() => { loadCorporateActions(); attachTableSorting(); }, 50);
 
   } else {
       document.querySelector(".metrics").innerHTML = metricsHtml; document.getElementById("macro-rates-tbody-left").innerHTML = ratesLeft; document.getElementById("macro-rates-tbody-right").innerHTML = ratesRight; document.getElementById("heatmap-grid").innerHTML = heatCells;
