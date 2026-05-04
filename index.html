@@ -68,7 +68,6 @@
     #market-status.open { color: var(--neon-up); border-color: var(--neon-up); background: rgba(16, 185, 129, 0.1); } 
     #market-status.closed { color: var(--neon-dn); border-color: var(--neon-dn); background: rgba(239, 68, 68, 0.1); }
     
-    /* FIX: Header Status & Clock Group locked width */
     .status-group { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.4; min-width: 140px; }
     .btn-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     
@@ -415,7 +414,7 @@
   </div>
 </div>
 
-<!-- AUTHENTICATION MODAL -->
+<!-- AUTHENTICATION MODAL (PHASE 3) -->
 <div class="modal-overlay" id="auth-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeAuthModal()">✖</span>
@@ -440,7 +439,7 @@
   </div>
 </div>
 
-<!-- TRADE MODAL -->
+<!-- TRADE MODAL (PHASE 3) -->
 <div class="modal-overlay" id="trade-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeTradeModal()">✖</span>
@@ -505,6 +504,7 @@ var currentUser = null, isSignupMode = false;
 var countryMap = { "usa":{"name":"USA","code":"US"}, "canada":{"name":"Canada","code":"CA"}, "south_africa":{"name":"South Africa","code":"ZA"}, "nigeria":{"name":"Nigeria","code":"NG"}, "egypt":{"name":"Egypt","code":"EG"}, "france":{"name":"France","code":"FR"}, "united_kingdom":{"name":"United Kingdom","code":"GB"}, "australia":{"name":"Australia","code":"AU"}, "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"} };
 var ALL_NSE_TICKERS = ["ABSA","ALP","AMAC","BAT","BKG","BOC","BRIT","CARB","CGEN","CIC","COOP","CRWN","CTUM","DTK","EABL","EGAD","EQTY","EVRD","FTGH","GLD","HAFR","HFCK","IMH","JUB","KAPC","KCB","KEGN","KNRE","KPLC","KQ","KUKZ","LBTY","LIMT","LKL","NBV","NCBA","NMG","NSE","OCH","PORT","SASN","SBIC","SCAN","SCBK","SCOM","SGL","SKL","SLAM","SMER","SMWF","TOTL","TPSE","UCHM","UMME","UNGA","WTK","XPRS","KPC"];
 
+// Pre-sorted list of brokers
 var ALL_BROKERS = [
   "ABC Capital Ltd", "AIB-AXYS Africa", "Absa Securities Ltd", "Capital A Investment Bank", 
   "Dry Associates", "Dyer & Blair Investment Bank Ltd", "EFG Hermes Kenya Ltd", 
@@ -544,6 +544,7 @@ setInterval(function() {
       }
   }
 
+  // 10-Minute Session Timeout Failsafe
   if(currentUser) {
       var loginTime = localStorage.getItem("pf_time");
       if(loginTime && (Date.now() - parseInt(loginTime)) > (10 * 60 * 1000)) {
@@ -563,7 +564,7 @@ function switchTab(tabId, evt) {
   
   var tc = document.getElementById('ticker-content');
   if (tc) {
-      // Portfolio uses Kenya ticker stream
+      // Fix #7: Default to Kenya ticker unless specifically in Global tab
       tc.innerHTML = (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML) + (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML);
   }
   if (tabId === 'global' && isGeoChartLoaded) setTimeout(drawRegionsMap, 150);
@@ -603,16 +604,19 @@ document.addEventListener("DOMContentLoaded", function() {
     var savedUser = localStorage.getItem("pf_username");
     if (savedUser) { 
         currentUser = savedUser; 
-        localStorage.setItem("pf_time", Date.now()); 
-        enablePortfolioMode(true); 
+        localStorage.setItem("pf_time", Date.now()); // Reset timer on fresh reload
+        enablePortfolioMode(false); 
     }
 });
 
 function openAuthModal() { 
     if (currentUser) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); return; }
+    
+    // Fix #3: Clear previously typed memory
     document.getElementById('auth-user').value = '';
     document.getElementById('auth-pass').value = '';
     document.getElementById('auth-name').value = '';
+    
     document.getElementById('auth-modal').style.display = 'flex'; 
 }
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; document.getElementById('auth-feedback').style.display = 'none'; }
@@ -647,7 +651,14 @@ async function handleAuth() {
     try {
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: isSignupMode ? "signup" : "login", username: u, password: p, name: n }) });
         var res = await resp.json();
-        if (res.status === "success") { currentUser = u; localStorage.setItem("pf_username", u); localStorage.setItem("pf_time", Date.now()); closeAuthModal(); enablePortfolioMode(true); } 
+        if (res.status === "success") { 
+            currentUser = u; 
+            localStorage.setItem("pf_username", u); 
+            localStorage.setItem("pf_time", Date.now()); 
+            closeAuthModal(); 
+            // Fix #6: Immediately redirect to Portfolio section upon successful login
+            enablePortfolioMode(true); 
+        } 
         else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     } catch (e) { fb.innerText = "Connection error."; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     btn.innerText = isSignupMode ? "Sign Up" : "Log In";
@@ -658,7 +669,9 @@ function enablePortfolioMode(autoSwitch) {
     btn.innerText = "🔒 " + currentUser.toUpperCase();
     document.getElementById('tab-portfolio').style.display = 'inline-block';
     
-    if (autoSwitch) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); }
+    if (autoSwitch) {
+        switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')});
+    }
     if (currentTab === 'portfolio') { fetchMyPortfolio(); }
 }
 
@@ -681,6 +694,7 @@ function renderFilteredPortfolio() {
     var tbP = document.getElementById('my-purchases-tbody');
     var tbS = document.getElementById('my-sales-tbody');
     
+    // Process History dynamically
     var htmlP = "", htmlS = "";
     var holdingsMap = {};
     
@@ -718,9 +732,10 @@ function renderFilteredPortfolio() {
         var pieLabels = [], pieData = [], pieColors = ['#002060', '#D4AF37', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b', '#14b8a6', '#6366f1', '#f43f5e', '#a855f7', '#ec4899', '#f97316', '#84cc16'];
         
         currentHoldings.forEach(function(row) {
-            // Strictly fetch from live tape. 0 if API failed or ticker doesn't exist
             var tickStr = String(row.ticker).trim().toUpperCase();
-            var ltp = LIVE_PRICES[tickStr] || 0; 
+            // Fix #5: Strictly fetch from live tape. 0 if API failed or ticker doesn't exist. Never fallback to avg_price.
+            var ltp = LIVE_PRICES[tickStr]; 
+            if (ltp === undefined || isNaN(ltp)) ltp = 0;
             
             var curVal = row.shares * ltp;
             var pnl = curVal - row.total_cost;
@@ -767,6 +782,7 @@ async function submitTrade() {
     var cleanPrice = parseFloat(tPrice.replace(/,/g, ""));
     if(isNaN(cleanShare) || isNaN(cleanPrice)) { fb.innerText = "Invalid number format."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
     
+    // Local block if selling more than held globally
     if (tType === "SOLD") {
         var currentHeld = 0;
         GLOBAL_HISTORY.forEach(function(r) { if(r.ticker === tTick) { if(r.type==="BOUGHT") currentHeld+=r.shares; else if(r.type==="SOLD") currentHeld-=r.shares; } });
@@ -855,6 +871,7 @@ function openExportModal() {
 function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
 function downloadPDF() { closeExportModal(); var el = document.getElementById('pdf-container'); el.classList.add('pdf-mode'); html2pdf().set({margin:0.2, filename:"Tear_Sheet_" + new Date().toISOString().split('T')[0] + ".pdf", image:{type:'jpeg',quality:1.0}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a3',orientation:'portrait'}}).from(el).save().then(function() { el.classList.remove('pdf-mode'); }); }
 
+// EXPORT TABLES TO CSV
 function exportTableToCSV(tableID, filename) {
     var table = document.getElementById(tableID);
     if(!table) return;
@@ -875,6 +892,7 @@ function exportTableToCSV(tableID, filename) {
     document.body.removeChild(downloadLink);
 }
 
+// EXPORT TABLES TO TRUE EXCEL (.XLS)
 function exportTableToExcel(tableID, filename) {
     var table = document.getElementById(tableID);
     if(!table) return;
@@ -898,6 +916,7 @@ function exportTableToExcel(tableID, filename) {
     document.body.removeChild(downloadLink);
 }
 
+// EXPORT DIV TO PDF (For tables)
 function exportTableToPDF(divID, filename) {
     var el = document.getElementById(divID);
     if(!el) return;
@@ -910,7 +929,7 @@ function loadCorporateActions() {
 }
 
 function getTableId(title) { return "tbl-" + title.replace(/\W+/g, '-').toLowerCase(); }
-function triggerRefresh() { if(isFetching) return; loadData(); if(currentUser) fetchMyPortfolio(); }
+function triggerRefresh() { if(isFetching) return; loadData(); }
 
 function buildDiagnosticError(localData, globalData) {
     return '<div class="error-box"><h2>🚨 Terminal Connection Interrupted</h2><p>The dashboard failed to authenticate with the backend API endpoints.</p><br><code style="background:transparent;padding:0;"><b>Local Node:</b> ' + (localData ? "Connected ✅" : "Failed ❌") + '<br><b>Global Node:</b> ' + (globalData ? "Connected ✅" : "Failed ❌") + '</code></div>';
@@ -923,14 +942,29 @@ function loadData() {
   var localData = null; var globalData = null;
   window["localCallback"] = function(d) { if(d && typeof d === "object") localData = d; check(); };
   window["globalCallback"] = function(d) { if(d && typeof d === "object") globalData = d; check(); };
-  var tid = setTimeout(function() { isFetching = false; if (!localData || !globalData) { if (isInitialLoad) { document.getElementById("app-kenya").innerHTML = buildDiagnosticError(localData, globalData); } else { if (btn) btn.innerHTML = "↻ Sync Failed"; setTimeout(function() { if(btn) btn.innerHTML = "↻ Sync"; }, 3000); } } }, JSONP_TIMEOUT_MS);
+  
+  var tid = setTimeout(function() { 
+      isFetching = false; 
+      if (!localData || !globalData) { 
+          if (isInitialLoad) { document.getElementById("app-kenya").innerHTML = buildDiagnosticError(localData, globalData); } 
+          else { if (btn) btn.innerHTML = "↻ Sync Failed"; setTimeout(function() { if(btn) btn.innerHTML = "↻ Sync"; }, 3000); } 
+      } 
+  }, JSONP_TIMEOUT_MS);
 
   function check() {
     if (localData && globalData) {
       clearTimeout(tid); isFetching = false; if (btn) btn.innerHTML = "↻ Sync";
       var mergedData = Object.assign({}, localData, globalData);
       if (isInitialLoad && (!localData.tickers || localData.tickers.length === 0)) { document.getElementById("app-kenya").innerHTML = '<div class="error-box"><h2>🚨 Empty Data Stream</h2></div>'; return; }
-      extractDynamicData(mergedData); render(mergedData, isInitialLoad); 
+      
+      extractDynamicData(mergedData); // This populates LIVE_PRICES
+      render(mergedData, isInitialLoad); 
+      
+      // Fix #2: Re-render the portfolio table once LIVE_PRICES are secured
+      if(currentUser && GLOBAL_HISTORY.length > 0) {
+          renderFilteredPortfolio();
+      }
+      
       document.getElementById("last-updated").textContent = "Updated: " + (mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { hour12: false }));
     }
   }
@@ -944,6 +978,16 @@ var cleanNum = function(str) { if (!str) return NaN; var s = String(str).replace
 function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
   CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
+  
+  // SECURE LIVE PRICES (Using rigorous uppercase & trim checking)
+  var tickersData = data.tickers || [];
+  tickersData.forEach(function(t) { 
+      if(t.symbol) {
+          var priceStr = String(t["last_price_(kshs)"] || t.last_price || t.price || "0");
+          LIVE_PRICES[String(t.symbol).trim().toUpperCase()] = parseFloat(priceStr.replace(/,/g, ''));
+      }
+  });
+
   var targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate"];
   if (data.macro && data.macro.length > 0) {
     data.macro.forEach(function(row) {
@@ -974,6 +1018,7 @@ function extractDynamicData(data) {
           }
           if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
               var yrStr = String(row.gdp_year).trim(), yrMatch = yrStr.match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
+              // Fix #5: Added Growth column extraction
               var nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), growth = cleanNum(row.gdp_growth_rate);
               if (!isNaN(yr) && !isNaN(nom) && !tmpGdp.find(function(g) { return g.year === yr; })) tmpGdp.push({ year: yr, nom: nom, real: real, growth: growth });
           }
@@ -1054,8 +1099,6 @@ function updateTableData(id, rows) { var tbody = document.querySelector('table[d
 function render(data, isInitialLoad) {
   var tickers = (data.tickers || []).filter(function(t) { return t && t.symbol; }), mw = (data.marketwatch || []).filter(function(t) { return t && t.symbol; }), indices = (data.indices || data.world_indices || []).filter(function(r) { return r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"; }), active = (data.mostactive || data.yahoo_most_active || []).filter(function(r) { return r && r.symbol && r.price; }), statsArr = (data.stats || []);
   
-  tickers.forEach(function(t) { if(t.symbol) LIVE_PRICES[String(t.symbol).trim().toUpperCase()] = parseFloat(t["last_price_(kshs)"] || 0); });
-  
   var apiStatus = "CLOSED"; if (data.market_assumptions && data.market_assumptions.length > 0) { var keys = Object.keys(data.market_assumptions[0]); if (keys.includes("open")) apiStatus = "OPEN"; else if (keys.includes("closed")) apiStatus = "CLOSED"; } setMarketStatus(apiStatus);
   var statsMap = {}, statsChange = {}; statsArr.forEach(function(r) { if (!r || !r.name) return; statsMap[r.name.trim()] = r.value; statsChange[r.name.trim()] = r.change; });
   function numMW(row, key) { var v = row[key] || row[key.toLowerCase()] || 0; return parseFloat(String(v).replace(/[^0-9.\-]/g, "")) || 0; }
@@ -1093,7 +1136,7 @@ function render(data, isInitialLoad) {
   var activeRows = active.map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td><td>' + fmtNum(r["market_cap"], 0) + '</td></tr>'; });
 
   if (isInitialLoad) {
-      var globalEquitiesHtml = '<div class="full-card"><div class="card-header"><h2 class="brand-font">Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">';
+      var globalEquitiesHtml = '<div class="full-card"><div class="card-header"><h2 class="brand-font">Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value, false)">';
       Object.keys(countryMap).forEach(function(key) { var isSelected = key === currentGlobalSelection ? "selected" : ""; globalEquitiesHtml += '<option value="' + key + '" ' + isSelected + '>' + countryMap[key].name + '</option>'; });
       globalEquitiesHtml += '</select></div><div id="regions_div" style="width:100%;height:350px;min-height:350px;"></div><div id="global-tables-container">';
       Object.keys(countryMap).forEach(function(countryKey) {
@@ -1172,9 +1215,9 @@ function initCharts() {
 
   try { if(d.inflation.labels.length>0) { createChart("gc_inflation", { type: "line", data: { labels: d.inflation.labels, datasets: [{ label: "12-Month Inflation (%)", data: d.inflation.m12, borderColor: "#3b82f6", borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true, backgroundColor: "rgba(59, 130, 246, 0.15)" }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Inflation: " + ctx.parsed.y.toFixed(2) + "%"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: Object.assign(yt('Rate (%)'), { min: 0 }) } } }); } } catch(e){}
   
-  // FIX #5: Added the secondary axis for GDP Growth Rate line chart overlay
   try { if(d.gdp.labels.length>0) { 
-      var nomTn = d.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e12; }), realTn = d.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e12; }); 
+      var nomTn = d.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e12; }); 
+      var realTn = d.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e12; }); 
       var datasets = [
           { label: "Nominal GDP", data: nomTn, type: "bar", backgroundColor: "#fbbf24", borderWidth: 0, order: 2, borderRadius: 4, yAxisID: 'y' }, 
           { label: "Real GDP", data: realTn, type: "bar", backgroundColor: "#3b82f6", borderWidth: 0, order: 3, borderRadius: 4, yAxisID: 'y' }
@@ -1204,6 +1247,18 @@ google.charts.load('current', { 'packages': ['geochart'] });
 google.charts.setOnLoadCallback(function() { isGeoChartLoaded = true; if (currentTab === 'global') drawRegionsMap(); });
 window.addEventListener('resize', function() { if (isGeoChartLoaded && currentTab === 'global') drawRegionsMap(); });
 
+function showGlobalCountry(key, fromMap) { 
+    currentGlobalSelection = key; 
+    document.querySelectorAll('.global-tables-section').forEach(function(el) { el.classList.remove('active-country'); }); 
+    var el = document.getElementById('country-'+key); 
+    if(el) el.classList.add('active-country'); 
+    var sel = document.getElementById("globalSearch"); 
+    if(sel && sel.value !== key) sel.value = key; 
+    
+    // Fix #2: Only redraw if the command didn't originate from a map click
+    if (!fromMap && isGeoChartLoaded) drawRegionsMap(); 
+}
+
 function drawRegionsMap() {
   var mapDiv = document.getElementById('regions_div'); if (!mapDiv || mapDiv.offsetParent === null) return; 
   var isDark = document.documentElement.getAttribute("data-theme") === "dark";
@@ -1219,7 +1274,8 @@ function drawRegionsMap() {
       if (sel.length > 0) { 
           var code = data.getValue(sel[0].row, 0); 
           var k = Object.keys(countryMap).find(function(key) { return countryMap[key].code === code; }); 
-          if (k) showGlobalCountry(k); 
+          // Fix #2: Pass `true` so it doesn't infinitely trigger redraws
+          if (k) showGlobalCountry(k, true); 
       } 
   });
   chart.draw(data, { colorAxis: { colors: [ isDark ? '#334155' : '#e2e8f0', '#D4AF37' ]}, backgroundColor: 'transparent', datalessRegionColor: isDark ? '#1e293b' : '#f1f5f9', defaultColor: isDark ? '#334155' : '#e2e8f0', legend: 'none', width: '100%', height: 350 });
