@@ -104,7 +104,7 @@
     .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; } @media (max-width: 800px) { .graphs-grid { grid-template-columns: 1fr; } }
     .graph-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
     .graph-card h3 { font-size: 10pt; color: #002060; text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; } [data-theme="dark"] .graph-card h3 { color: #66a3ff; }
-    .chart-wrapper { position: relative; height: 320px; width: 100%; display: block; padding-top: 10px; }
+    .chart-wrapper { position: relative; height: 350px; width: 100%; display: block; padding-top: 10px; }
     
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: #7b1a1a; font-size: 11pt; line-height: 1.8; text-align: left; }
@@ -305,15 +305,15 @@ async function loadLiveNews() {
       { url: "https://kenyanwallstreet.com/feed/", name: "Kenyan Wall Street" }, 
       { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" }, 
       { url: "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml", name: "Wall Street Journal" },
-      { url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?profile=12000000&id=10000664", name: "CNBC Finance" }
+      { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" } // CNBC frequently blocks proxies, Yahoo is stable
     ];
     var all = [];
     for (var i = 0; i < feeds.length; i++) {
       try {
-        var resp = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(feeds[i].url));
+        var resp = await fetch("https://api.allorigins.win/get?url=" + encodeURIComponent(feeds[i].url));
         if (!resp.ok) continue;
-        var xmlTxt = await resp.text();
-        var xml = new DOMParser().parseFromString(xmlTxt, "application/xml");
+        var data = await resp.json();
+        var xml = new DOMParser().parseFromString(data.contents, "application/xml");
         var items = Array.from(xml.querySelectorAll("item")).slice(0, 5);
         
         items.forEach(function(node) {
@@ -441,7 +441,7 @@ function extractDynamicData(data) {
               var len = cleanNum(row.lending), ovr = cleanNum(row.overdraft), sav = cleanNum(row.savings), dep = cleanNum(row.deposit);
               if (!isNaN(len)) { CHART_DATA.banks.labels.push(String(row.rates_date).trim()); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
           }
-          // 4. KEPSS
+          // 4. KEPSS (Fixed raw scaling assumption to match Trillions later)
           if (row.kepss_date && row.kepss_value !== undefined && row.kepss_value !== "") {
               var kv = cleanNum(row.kepss_value);
               if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(String(row.kepss_date).trim()); CHART_DATA.kepss.values.push(kv); }
@@ -544,10 +544,7 @@ function render(data, isInitialLoad) {
   var rFS = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td></tr>'; };
   var tFull = tickers.map(function(t) { return '<tr><td>' + t.symbol + '</td><td>' + fmtKsh(t["last_price_(kshs)"]) + '</td><td>' + formatChange(t["change"], false) + '</td><td>' + formatChange(pk(t), true) + '</td><td><span class="nt">' + (t["last_updated"] || "—") + '</span></td></tr>'; });
   var mwRows = mw.filter(function(r) { return numMW(r, "ltp_(kshs)") > 0 || numMW(r, "volume") > 0; }).map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td>' + fmtKsh(r["ltp_(kshs)"]) + '</td><td>' + fmtKsh(r["prev_close"]) + '</td><td>' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + (r.trades || "—") + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td></tr>'; });
-  
-  // FIX: Forex Rows Restored!
   var fxRows = FOREX_RATES.map(function(r) { return '<tr><td>' + r.ccy + '</td><td>' + r.crBuy + '</td><td>' + r.crSell + '</td><td>' + r.kBuy + '</td><td>' + r.kSell + '</td></tr>'; });
-  
   var heatCells = tickers.map(function(t) { var n = getPctNumForSort(t, "%_change"), cls = n > 0 ? "up-cell" : n < 0 ? "dn-cell" : "nt-cell"; return '<div class="ticker-cell ' + cls + '" data-sym="' + t.symbol + '"><div class="tc-sym">' + t.symbol + '</div><div class="tc-price">' + fmtKsh(t["last_price_(kshs)"]) + '</div><div class="tc-chg">' + formatChange(pk(t), true) + '</div></div>'; }).join("");
   var indicesRows = indices.map(function(r) { return '<tr><td>' + r.name + '</td><td>' + (r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + ((r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—") + '</td></tr>'; });
   var activeRows = active.map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td><td>' + fmtNum(r["market_cap"], 0) + '</td></tr>'; });
@@ -569,9 +566,9 @@ function render(data, isInitialLoad) {
 
       var graphsHtml = '<div class="graphs-section"><div class="card-header"><h2>Graphs — Macro &amp; CBK Data</h2></div><div class="card-body"><div class="graphs-grid">' +
         '<div class="graph-card"><h3>12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>' +
-        '<div class="graph-card"><h3>Nominal vs Real GDP (Ksh Billion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>' +
+        '<div class="graph-card"><h3>Nominal vs Real GDP (KSh Trillion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>' +
         '<div class="graph-card"><h3>Commercial Bank Weighted Average Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div>' +
-        '<div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Mn)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>' +
+        '<div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Tn)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>' +
         '</div></div></div>';
 
       document.getElementById("app-kenya").innerHTML = [
@@ -602,7 +599,7 @@ function render(data, isInitialLoad) {
   }
 }
 
-// ── NATIVE CHART.JS ENGINE (Premium Formatting) ───────────────────────────
+// ── NATIVE CHART.JS ENGINE ────────────────────────────────────────────────
 function updateChartTheme(mode) {
   var tc = mode === "dark" ? "#aaaaaa" : "#555555", gc = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
   for (var id in chartInstances) { 
@@ -620,7 +617,9 @@ function initCharts() {
   var isDark = document.documentElement.getAttribute("data-theme") === "dark"; 
   var tc = isDark ? "#aaaaaa" : "#555555"; 
   var gc = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
-  var SX = { ticks: { font: F, color: tc, maxRotation: 45, minRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { color: gc, display: false } };
+  
+  // FIX #2: Proper X-Axis with limits so it never gets too crowded
+  var SX = { ticks: { font: F, color: tc, maxRotation: 45, minRotation: 45, autoSkip: true, maxTicksLimit: 10 }, grid: { color: gc, display: false } };
   var SY = { ticks: { font: F, color: tc, padding: 8 }, grid: { color: gc, drawBorder: false }, border: { display: false } };
   var INT = { mode: "index", intersect: false };
   var LEG = { labels: { font: F, color: isDark ? "#e0e0e0" : "#2c3e50", boxWidth: 12, padding: 15 }, position: 'top', align: 'center' };
@@ -629,15 +628,22 @@ function initCharts() {
   function xt(t){ return Object.assign({}, SX, { title: { display: true, text: t, font: F, color: tc } }); }
   function yt(t, cb){ return Object.assign({}, SY, { title: { display: true, text: t, font: F, color: tc }, ticks: Object.assign({}, SY.ticks, cb ? { callback: cb } : {}) }); }
 
-  try { if(d.inflation.labels.length>0) { createChart("gc_inflation", { type: "line", data: { labels: d.inflation.labels, datasets: [{ label: "12-Month Inflation (%)", data: d.inflation.m12, borderColor: "#002060", borderWidth: 2, pointRadius: 2, pointHoverRadius: 6, tension: 0.3, fill: true, backgroundColor: "rgba(0,32,96,0.07)" }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Inflation: " + ctx.parsed.y.toFixed(2) + "%"; } } }) }, scales: { x: xt(''), y: Object.assign(yt(''), { min: 0 }) } } }); } } catch(e){}
-  try { if(d.gdp.labels.length>0) { var nomBn = d.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e9; }), realBn = d.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e9; }); createChart("gc_gdp", { type: "bar", data: { labels: d.gdp.labels, datasets: [ { label: "Nominal GDP", data: nomBn, type: "bar", backgroundColor: "#D4AF37", borderWidth: 0, order: 2, borderRadius: 3 }, { label: "Real GDP", data: realBn, type: "bar", backgroundColor: "#002060", borderWidth: 0, order: 1, borderRadius: 3 } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": KSh " + (ctx.parsed.y ? ctx.parsed.y.toFixed(1) : '—') + "Bn"; } } }) }, scales: { x: Object.assign(xt(''), { grid: { display: false } }), y: yt('', function(v) { return 'KSh ' + v.toFixed(0) + 'Bn'; }) } } }); } } catch(e){}
-  try { if(d.banks.labels.length>0) { createChart("gc_banks", { type: "line", data: { labels: d.banks.labels, datasets: [ { label: "Lending", data: d.banks.lending, borderColor: "#cf222e", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false }, { label: "Overdraft", data: d.banks.overdraft, borderColor: "#D4AF37", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false }, { label: "Savings", data: d.banks.savings, borderColor: "#1a7f37", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false }, { label: "Deposit", data: d.banks.deposit, borderColor: "#002060", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : '—') + "%"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: false }) }), y: yt('', function(v) { return v + '%'; }) } } }); } } catch(e){}
-  try { if(d.kepss.labels.length>0) { createChart("gc_kepss", { type: "line", data: { labels: d.kepss.labels, datasets: [{ label: "Settlement Value", data: d.kepss.values, borderColor: "#1a7f37", backgroundColor: "rgba(26,127,55,0.08)", borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.2, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Value: KES " + (ctx.parsed.y ? ctx.parsed.y.toLocaleString("en-KE", { maximumFractionDigits: 0 }) : '—') + " Mn"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: false }) }), y: yt('', function(v) { return (v / 1000).toFixed(0) + 'K'; }) } } }); } } catch(e){}
+  // FIX #3 & #4: Smooth line (tension: 0.4) and no points (pointRadius: 0)
+  try { if(d.inflation.labels.length>0) { createChart("gc_inflation", { type: "line", data: { labels: d.inflation.labels, datasets: [{ label: "12-Month Inflation (%)", data: d.inflation.m12, borderColor: "#002060", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true, backgroundColor: "rgba(0,32,96,0.15)" }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Inflation: " + ctx.parsed.y.toFixed(2) + "%"; } } }) }, scales: { x: Object.assign(xt('Date'), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: Object.assign(yt('Rate (%)'), { min: 0 }) } } }); } } catch(e){}
+  
+  // FIX #1: GDP properly scaled to Trillions (v / 1e12)
+  try { if(d.gdp.labels.length>0) { var nomTn = d.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e12; }), realTn = d.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e12; }); createChart("gc_gdp", { type: "bar", data: { labels: d.gdp.labels, datasets: [ { label: "Nominal GDP", data: nomTn, type: "bar", backgroundColor: "#D4AF37", borderWidth: 0, order: 2, borderRadius: 3 }, { label: "Real GDP", data: realTn, type: "bar", backgroundColor: "#002060", borderWidth: 0, order: 1, borderRadius: 3 } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": KSh " + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : '—') + "Tn"; } } }) }, scales: { x: Object.assign(xt('Year'), { grid: { display: false } }), y: yt('GDP (KSh Trillions)', function(v) { return 'KSh ' + v.toFixed(1) + 'Tn'; }) } } }); } } catch(e){}
+  
+  // FIX #4 & #5: Stacked Area Chart for Bank Rates (fill: true with opacity)
+  try { if(d.banks.labels.length>0) { createChart("gc_banks", { type: "line", data: { labels: d.banks.labels, datasets: [ { label: "Lending", data: d.banks.lending, borderColor: "#cf222e", backgroundColor: "rgba(207, 34, 46, 0.2)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Overdraft", data: d.banks.overdraft, borderColor: "#D4AF37", backgroundColor: "rgba(212, 175, 55, 0.2)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Savings", data: d.banks.savings, borderColor: "#1a7f37", backgroundColor: "rgba(26, 127, 55, 0.2)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Deposit", data: d.banks.deposit, borderColor: "#002060", backgroundColor: "rgba(0, 32, 96, 0.2)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : '—') + "%"; } } }) }, scales: { x: Object.assign(xt('Date'), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: yt('Rate (%)', function(v) { return v + '%'; }) } } }); } } catch(e){}
+  
+  // FIX #1 & #3 & #4: KEPSS to Trillions (v / 1,000,000 since base data is in Mn), smooth curve, no dots
+  try { if(d.kepss.labels.length>0) { createChart("gc_kepss", { type: "line", data: { labels: d.kepss.labels, datasets: [{ label: "Settlement Value (Tn)", data: d.kepss.values, borderColor: "#1a7f37", backgroundColor: "rgba(26,127,55,0.15)", borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Value: KES " + (ctx.parsed.y ? (ctx.parsed.y / 1000000).toFixed(2) : '—') + " Tn"; } } }) }, scales: { x: Object.assign(xt('Date'), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: yt('Value (KES Trillions)', function(v) { return (v / 1000000).toFixed(1) + 'Tn'; }) } } }); } } catch(e){}
 }
 
 function updateChartsData(){
   if(chartInstances["gc_inflation"]){chartInstances["gc_inflation"].data.labels=CHART_DATA.inflation.labels;chartInstances["gc_inflation"].data.datasets[0].data=CHART_DATA.inflation.m12;chartInstances["gc_inflation"].update();}
-  if(chartInstances["gc_gdp"]){chartInstances["gc_gdp"].data.labels=CHART_DATA.gdp.labels;chartInstances["gc_gdp"].data.datasets[0].data=CHART_DATA.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e9; });chartInstances["gc_gdp"].data.datasets[1].data=CHART_DATA.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e9; });chartInstances["gc_gdp"].update();}
+  if(chartInstances["gc_gdp"]){chartInstances["gc_gdp"].data.labels=CHART_DATA.gdp.labels;chartInstances["gc_gdp"].data.datasets[0].data=CHART_DATA.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e12; });chartInstances["gc_gdp"].data.datasets[1].data=CHART_DATA.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e12; });chartInstances["gc_gdp"].update();}
   if(chartInstances["gc_banks"]){chartInstances["gc_banks"].data.labels=CHART_DATA.banks.labels;chartInstances["gc_banks"].data.datasets[0].data=CHART_DATA.banks.lending;chartInstances["gc_banks"].data.datasets[1].data=CHART_DATA.banks.overdraft;chartInstances["gc_banks"].data.datasets[2].data=CHART_DATA.banks.savings;chartInstances["gc_banks"].data.datasets[3].data=CHART_DATA.banks.deposit;chartInstances["gc_banks"].update();}
   if(chartInstances["gc_kepss"]){chartInstances["gc_kepss"].data.labels=CHART_DATA.kepss.labels;chartInstances["gc_kepss"].data.datasets[0].data=CHART_DATA.kepss.values;chartInstances["gc_kepss"].update();}
 }
