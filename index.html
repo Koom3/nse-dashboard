@@ -207,7 +207,6 @@
     .news-desc { font-size: 9.5pt; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;}
     .news-date { font-size: 8.5pt; color: var(--brand-gold); margin-top: auto; text-transform: uppercase; letter-spacing: 0.5px;}
     
-    /* FIX: Button Mobile Layout Spacing */
     .port-btn-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end; }
     .action-btn { background: var(--brand-gold); color: #000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 10pt; transition: all 0.2s; white-space: nowrap;}
     .action-btn:hover { background: #e6c200; transform: translateY(-1px); }
@@ -414,7 +413,7 @@
   </div>
 </div>
 
-<!-- AUTHENTICATION MODAL (PHASE 3) -->
+<!-- AUTHENTICATION MODAL -->
 <div class="modal-overlay" id="auth-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeAuthModal()">✖</span>
@@ -439,7 +438,7 @@
   </div>
 </div>
 
-<!-- TRADE MODAL (PHASE 3) -->
+<!-- TRADE MODAL (WITH MATH ENGINE) -->
 <div class="modal-overlay" id="trade-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeTradeModal()">✖</span>
@@ -504,7 +503,6 @@ var currentUser = null, isSignupMode = false;
 var countryMap = { "usa":{"name":"USA","code":"US"}, "canada":{"name":"Canada","code":"CA"}, "south_africa":{"name":"South Africa","code":"ZA"}, "nigeria":{"name":"Nigeria","code":"NG"}, "egypt":{"name":"Egypt","code":"EG"}, "france":{"name":"France","code":"FR"}, "united_kingdom":{"name":"United Kingdom","code":"GB"}, "australia":{"name":"Australia","code":"AU"}, "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"} };
 var ALL_NSE_TICKERS = ["ABSA","ALP","AMAC","BAT","BKG","BOC","BRIT","CARB","CGEN","CIC","COOP","CRWN","CTUM","DTK","EABL","EGAD","EQTY","EVRD","FTGH","GLD","HAFR","HFCK","IMH","JUB","KAPC","KCB","KEGN","KNRE","KPLC","KQ","KUKZ","LBTY","LIMT","LKL","NBV","NCBA","NMG","NSE","OCH","PORT","SASN","SBIC","SCAN","SCBK","SCOM","SGL","SKL","SLAM","SMER","SMWF","TOTL","TPSE","UCHM","UMME","UNGA","WTK","XPRS","KPC"];
 
-// Pre-sorted list of brokers
 var ALL_BROKERS = [
   "ABC Capital Ltd", "AIB-AXYS Africa", "Absa Securities Ltd", "Capital A Investment Bank", 
   "Dry Associates", "Dyer & Blair Investment Bank Ltd", "EFG Hermes Kenya Ltd", 
@@ -544,7 +542,6 @@ setInterval(function() {
       }
   }
 
-  // 10-Minute Session Timeout Failsafe
   if(currentUser) {
       var loginTime = localStorage.getItem("pf_time");
       if(loginTime && (Date.now() - parseInt(loginTime)) > (10 * 60 * 1000)) {
@@ -667,9 +664,6 @@ function enablePortfolioMode(autoSwitch) {
     if (autoSwitch) {
         switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')});
     }
-    // Note: fetchMyPortfolio() is now explicitly called inside check() AFTER loadData finishes 
-    // to guarantee LIVE_PRICES are strictly populated first.
-    if (!isFetching) fetchMyPortfolio();
 }
 
 async function fetchMyPortfolio() {
@@ -686,6 +680,28 @@ async function fetchMyPortfolio() {
     } catch(e) { tbH.innerHTML = '<tr><td colspan="8" style="color:var(--neon-dn);text-align:center;">Connection Error.</td></tr>'; }
 }
 
+// ── EXACT NSE TRADING FEE ALGORITHM ──────────────────────────────
+function calculateTradeFee(baseValue, broker) {
+    var statLevy = baseValue * 0.0029; // 0.29% for NSE, CMA, CDSC, ICF
+    var stampDuty = Math.ceil(baseValue / 10000) * 2;
+    var brokerRate = 0.015; // default 1.50%
+    var minBrokerage = 0;
+    
+    if (broker === "Standard Investment Bank Ltd") brokerRate = 0.01;
+    else if (broker === "Dyer & Blair Investment Bank Ltd") brokerRate = 0.012;
+    else if (broker === "Faida Investment Bank Ltd") { brokerRate = 0.0125; minBrokerage = 100; }
+    else if (broker === "AIB-AXYS Africa" || broker === "Kestrel Capital (EA) Ltd" || broker === "EFG Hermes Kenya Ltd" || broker === "Ziidi Trader (Platform)") brokerRate = 0.015;
+    else {
+        brokerRate = (baseValue < 100000) ? 0.0176 : 0.015;
+    }
+    
+    var brokerage = baseValue * brokerRate;
+    if (brokerage < minBrokerage) brokerage = minBrokerage;
+    
+    var vat = brokerage * 0.16; // 16% VAT on brokerage ONLY
+    return statLevy + stampDuty + brokerage + vat;
+}
+
 function renderFilteredPortfolio() {
     var filterBroker = document.getElementById('portfolio-broker-filter').value;
     var tbH = document.getElementById('my-portfolio-tbody');
@@ -698,14 +714,19 @@ function renderFilteredPortfolio() {
     GLOBAL_HISTORY.forEach(function(row) {
         if(filterBroker !== "ALL" && row.broker !== filterBroker) return;
         
+        var baseValue = row.shares * row.price;
+        var tradeFee = calculateTradeFee(baseValue, row.broker);
+        // Frontend recalculates the TRUE total incorporating all fees on the fly
+        var actualTotal = (row.type === "BOUGHT") ? (baseValue + tradeFee) : (baseValue - tradeFee);
+        
         var dt = new Date(row.date).toLocaleDateString();
-        var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(row.total) + '</td><td>' + (row.broker||"—") + '</td></tr>';
+        var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(actualTotal) + '</td><td>' + (row.broker||"—") + '</td></tr>';
         if(row.type === "BOUGHT") htmlP += tr; else htmlS += tr;
         
         if(!holdingsMap[row.ticker]) holdingsMap[row.ticker] = { shares: 0, total_cost: 0 };
         if(row.type === "BOUGHT") {
             holdingsMap[row.ticker].shares += row.shares;
-            holdingsMap[row.ticker].total_cost += row.total;
+            holdingsMap[row.ticker].total_cost += actualTotal;
         } else if(row.type === "SOLD") {
             if(holdingsMap[row.ticker].shares > 0) {
                 var avg = holdingsMap[row.ticker].total_cost / holdingsMap[row.ticker].shares;
@@ -729,7 +750,6 @@ function renderFilteredPortfolio() {
         var pieLabels = [], pieData = [], pieColors = ['#002060', '#D4AF37', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b', '#14b8a6', '#6366f1', '#f43f5e', '#a855f7', '#ec4899', '#f97316', '#84cc16'];
         
         currentHoldings.forEach(function(row) {
-            // Fix #5: STRICT LTP Math. Checks LIVE_PRICES exact match. Never falls back to avg_price.
             var tickStr = String(row.ticker).trim().toUpperCase();
             var ltp = LIVE_PRICES[tickStr]; 
             if (ltp === undefined || isNaN(ltp)) ltp = 0;
@@ -739,16 +759,13 @@ function renderFilteredPortfolio() {
             var pnlPct = (pnl / row.total_cost) * 100;
             totInv += row.total_cost; totCur += curVal;
             
-            // Only plot pie slices if value is > 0
-            if(curVal > 0) {
-                pieLabels.push(row.ticker); pieData.push(curVal);
-            }
+            if(curVal > 0) { pieLabels.push(row.ticker); pieData.push(curVal); }
             
             htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.avg_price) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td></tr>';
         });
         tbH.innerHTML = htmlH;
         
-        var netPnl = totCur - totInv; var netPnlPct = (netPnl / totInv) * 100;
+        var netPnl = totCur - totInv; var netPnlPct = (totInv > 0) ? (netPnl / totInv) * 100 : 0;
         document.getElementById('port-sum-invested').innerText = fmtKsh(totInv);
         document.getElementById('port-sum-current').innerText = fmtKsh(totCur);
         document.getElementById('port-sum-pnl').innerText = fmtKsh(netPnl);
@@ -759,7 +776,6 @@ function renderFilteredPortfolio() {
         var ctxPie = document.getElementById('portfolio-pie-chart');
         if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
         
-        // Render Pie only if data exists
         if(pieData.length > 0) {
             chartInstances["portfolioPie"] = new Chart(ctxPie, {
                 type: 'doughnut',
@@ -798,7 +814,11 @@ async function submitTrade() {
         var res = await resp.json();
         if (res.status === "success") {
             fb.innerText = res.message; fb.style.color = "var(--neon-up)"; fb.style.display = "block";
-            GLOBAL_HISTORY.push({date: tDate, type: tType, ticker: tTick, shares: cleanShare, price: cleanPrice, total: cleanShare*cleanPrice, broker: tBroker});
+            // The frontend computes the TRUE math locally with fees, and pushes it into the session history
+            var baseVal = cleanShare * cleanPrice;
+            var tFee = calculateTradeFee(baseVal, tBroker);
+            var actTot = (tType === "BOUGHT") ? (baseVal + tFee) : (baseVal - tFee);
+            GLOBAL_HISTORY.push({date: tDate, type: tType, ticker: tTick, shares: cleanShare, price: cleanPrice, total: actTot, broker: tBroker});
             renderFilteredPortfolio();
             setTimeout(function() { closeTradeModal(); }, 1500);
         } else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
@@ -806,7 +826,7 @@ async function submitTrade() {
     btn.innerText = "UPDATE PORTFOLIO";
 }
 
-// ── BLENDED LIVE NEWS ENGINE (1 HOUR LOOP) ────────────────────────────────
+// ── BLENDED LIVE NEWS ENGINE ────────────────────────────────
 async function loadLiveNews() {
   var FB = 'https://via.placeholder.com/300x160/0f172a/FFFFFF?text=Market+Intelligence';
   var feeds = [ { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" }, { url: "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml", name: "Wall Street Journal" }, { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" } ];
@@ -922,7 +942,6 @@ function exportTableToPDF(divID, filename) {
     html2pdf().set({margin:0.5, filename: filename + "_" + new Date().toISOString().split('T')[0] + ".pdf", image:{type:'jpeg',quality:1.0}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4',orientation:'landscape'}}).from(el).save();
 }
 
-// FIX: Restored Corporate Actions
 function loadCorporateActions() {
   var container = document.getElementById("corp-actions-container"); if(!container) return;
   container.innerHTML = '<div style="padding:2rem;text-align:center;"><a href="https://www.nse.co.ke/corporate-actions/" target="_blank" rel="noopener" style="display:inline-block;padding:12px 28px;background:var(--brand-primary);color:#ffffff;border-radius:8px;text-decoration:none;font-size:11pt;transition:transform 0.2s, box-shadow 0.2s;">Access Live Corporate Actions Terminal ↗</a></div>';
@@ -950,7 +969,7 @@ function loadData() {
       var mergedData = Object.assign({}, localData, globalData);
       if (isInitialLoad && (!localData.tickers || localData.tickers.length === 0)) { document.getElementById("app-kenya").innerHTML = '<div class="error-box"><h2>🚨 Empty Data Stream</h2></div>'; return; }
       
-      extractDynamicData(mergedData); // This populates LIVE_PRICES
+      extractDynamicData(mergedData); 
       render(mergedData, isInitialLoad); 
       
       // FIX #1: Chain the fetchMyPortfolio here so it strictly runs AFTER LIVE_PRICES is populated
@@ -972,7 +991,7 @@ function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
   CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
   
-  // FIX #1 & #3: SECURE LIVE PRICES (Robust aggressive extraction)
+  // FIX #1: AGGRESSIVE PRICE EXTRACTOR
   var tickersData = data.tickers || [];
   tickersData.forEach(function(t) { 
       if(t.symbol) {
@@ -1011,7 +1030,6 @@ function extractDynamicData(data) {
           }
           if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
               var yrStr = String(row.gdp_year).trim(), yrMatch = yrStr.match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
-              // FIX #5: Added Growth column extraction
               var nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), growth = cleanNum(row.gdp_growth_rate);
               if (!isNaN(yr) && !isNaN(nom) && !tmpGdp.find(function(g) { return g.year === yr; })) tmpGdp.push({ year: yr, nom: nom, real: real, growth: growth });
           }
@@ -1208,7 +1226,6 @@ function initCharts() {
 
   try { if(d.inflation.labels.length>0) { createChart("gc_inflation", { type: "line", data: { labels: d.inflation.labels, datasets: [{ label: "12-Month Inflation (%)", data: d.inflation.m12, borderColor: "#3b82f6", borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true, backgroundColor: "rgba(59, 130, 246, 0.15)" }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Inflation: " + ctx.parsed.y.toFixed(2) + "%"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: Object.assign(yt('Rate (%)'), { min: 0 }) } } }); } } catch(e){}
   
-  // FIX #5: Dual Axis GDP
   try { if(d.gdp.labels.length>0) { 
       var nomTn = d.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e12; }); 
       var realTn = d.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e12; }); 
@@ -1249,7 +1266,7 @@ function showGlobalCountry(key, fromMap) {
     var sel = document.getElementById("globalSearch"); 
     if(sel && sel.value !== key) sel.value = key; 
     
-    // FIX #2: Detach rendering from the click event loop to prevent freezing.
+    // FIX #1: Decouple redraw from map click loop
     if (!fromMap && isGeoChartLoaded) drawRegionsMap(); 
 }
 
