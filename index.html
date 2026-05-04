@@ -141,7 +141,7 @@
     .macro-mc-val { font-size: 14pt; color: var(--brand-primary); } 
     [data-theme="dark"] .macro-mc-val { color: var(--brand-primary); }
 
-    /* ── GLOBAL EXPLORER & HEATMAP ──────────────────── */
+    /* ── GLOBAL EXPLORER ──────────────────── */
     .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1.5rem; padding: 1.5rem; }
     .country-filter { display: flex; justify-content: center; padding-bottom: 1.5rem; border-bottom: 1px dashed var(--border-color); }
     .country-filter select { padding: 10px 20px; font-size: 10.5pt; border: 2px solid var(--brand-primary); border-radius: 8px; color: var(--brand-primary); background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
@@ -203,8 +203,11 @@
     .news-desc { font-size: 9.5pt; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;}
     .news-date { font-size: 8.5pt; color: var(--brand-gold); margin-top: auto; text-transform: uppercase; letter-spacing: 0.5px;}
     
-    .action-btn { background: var(--brand-gold); color: #000; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 9pt; transition: all 0.2s; }
+    .action-btn { background: var(--brand-gold); color: #000; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 9pt; transition: all 0.2s; margin-left: 8px;}
     .action-btn:hover { background: #e6c200; transform: translateY(-1px); }
+    
+    .signout-btn { background: transparent; color: var(--neon-dn); border: 1px solid var(--neon-dn); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 9pt; transition: all 0.2s; margin-left: 15px;}
+    .signout-btn:hover { background: rgba(239, 68, 68, 0.1); transform: translateY(-1px); }
 
     /* ── PORTFOLIO UI ──────────────────── */
     .port-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
@@ -214,8 +217,8 @@
     .port-summary-val { font-size: 18pt; color: var(--text-main); }
     .port-summary-sub { font-size: 11pt; margin-top: 8px; }
 
-    .port-tabs { display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; }
-    .port-tab-btn { background: transparent; color: var(--text-muted); border: none; padding: 10px 20px; font-size: 11pt; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .port-tabs { display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; align-items: center; padding-bottom: 10px; flex-wrap: wrap;}
+    .port-tab-btn { background: transparent; color: var(--text-muted); border: none; padding: 10px 20px; font-size: 11pt; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -12px; transition: all 0.2s; }
     .port-tab-btn:hover { color: var(--text-main); }
     .port-tab-btn.active { color: var(--brand-primary); border-bottom-color: var(--brand-primary); }
     [data-theme="dark"] .port-tab-btn.active { color: var(--brand-gold); border-bottom-color: var(--brand-gold); }
@@ -223,6 +226,9 @@
     .port-view { display: none; animation: fadeIn 0.4s ease; } .port-view.active { display: block; }
     
     .chart-container-pie { position: relative; height: 350px; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 2rem; border-top: 1px dashed var(--border-color); padding-top: 2rem;}
+    
+    .export-icon-btn { background: var(--table-header-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 8.5pt; margin-left: 5px; transition: all 0.2s;}
+    .export-icon-btn:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
   </style>
 </head>
 <body>
@@ -265,7 +271,10 @@
       <div class="full-card">
           <div class="card-header">
               <h2>My Live Holdings</h2>
-              <button class="action-btn" onclick="openTradeModal()">+ Add Stock</button>
+              <div>
+                  <button class="action-btn" onclick="openTradeModal()">+ Add Stock</button>
+                  <button class="signout-btn" onclick="logoutUser()">Sign Out</button>
+              </div>
           </div>
           <div class="card-body padded">
               
@@ -291,10 +300,22 @@
                   <button class="port-tab-btn active" onclick="switchPortTab('holdings', event)">Portfolio Holdings</button>
                   <button class="port-tab-btn" onclick="switchPortTab('purchases', event)">Purchase History</button>
                   <button class="port-tab-btn" onclick="switchPortTab('sales', event)">Sales History</button>
+                  
+                  <div style="margin-left:auto; display:flex; align-items:center; gap: 10px;">
+                      <span style="font-size:9pt; color:var(--text-muted); text-transform:uppercase;">Filter Broker:</span>
+                      <select id="portfolio-broker-filter" onchange="renderFilteredPortfolio()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-main); outline: none;">
+                          <option value="ALL">All Brokers</option>
+                      </select>
+                  </div>
               </div>
 
               <!-- Holdings Table -->
               <div id="port-view-holdings" class="port-view active table-responsive">
+                  <div style="margin-bottom: 10px; text-align:right;">
+                      <button class="export-icon-btn" onclick="exportTableToCSV('my-portfolio-table', 'Portfolio_Holdings')">CSV</button>
+                      <button class="export-icon-btn" onclick="exportTableToCSV('my-portfolio-table', 'Portfolio_Holdings')">Excel</button>
+                      <button class="export-icon-btn" onclick="exportTableToPDF('port-view-holdings', 'Portfolio_Holdings')">PDF</button>
+                  </div>
                   <table id="my-portfolio-table">
                       <thead>
                           <tr><th>Security</th><th>Quantity</th><th>Average Price</th><th>Invested Value</th><th>LTP</th><th>Current Value</th><th>P&L Value</th><th>P&L %</th></tr>
@@ -312,6 +333,11 @@
 
               <!-- Purchase History Table -->
               <div id="port-view-purchases" class="port-view table-responsive">
+                  <div style="margin-bottom: 10px; text-align:right;">
+                      <button class="export-icon-btn" onclick="exportTableToCSV('my-purchases-table', 'Purchase_History')">CSV</button>
+                      <button class="export-icon-btn" onclick="exportTableToCSV('my-purchases-table', 'Purchase_History')">Excel</button>
+                      <button class="export-icon-btn" onclick="exportTableToPDF('port-view-purchases', 'Purchase_History')">PDF</button>
+                  </div>
                   <table id="my-purchases-table">
                       <thead><tr><th>Date</th><th>Ticker</th><th>Shares Bought</th><th>Execution Price</th><th>Total Value</th><th>Broker</th></tr></thead>
                       <tbody id="my-purchases-tbody"></tbody>
@@ -320,6 +346,11 @@
 
               <!-- Sales History Table -->
               <div id="port-view-sales" class="port-view table-responsive">
+                  <div style="margin-bottom: 10px; text-align:right;">
+                      <button class="export-icon-btn" onclick="exportTableToCSV('my-sales-table', 'Sales_History')">CSV</button>
+                      <button class="export-icon-btn" onclick="exportTableToCSV('my-sales-table', 'Sales_History')">Excel</button>
+                      <button class="export-icon-btn" onclick="exportTableToPDF('port-view-sales', 'Sales_History')">PDF</button>
+                  </div>
                   <table id="my-sales-table">
                       <thead><tr><th>Date</th><th>Ticker</th><th>Shares Sold</th><th>Execution Price</th><th>Total Value</th><th>Broker</th></tr></thead>
                       <tbody id="my-sales-tbody"></tbody>
@@ -347,30 +378,32 @@
   <div class="modal-box">
     <span class="modal-close" onclick="closeExportModal()">✖</span>
     <h3>Export Tear Sheet</h3>
-    <button class="secondary-btn" id="download-btn" onclick="downloadPDF()">⬇️ Download PDF Now</button>
-    <hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;">
-    <h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3>
-    <p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p>
-    <div class="form-group">
-      <label>Email address</label>
-      <input type="email" id="sub-email" placeholder="e.g. analyst@firm.com">
+    <div id="export-modal-body">
+        <button class="secondary-btn" id="download-btn" onclick="downloadPDF()" style="width:100%;">⬇️ Download PDF Now</button>
+        <hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;">
+        <h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3>
+        <p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p>
+        <div class="form-group">
+          <label>Email address</label>
+          <input type="email" id="sub-email" placeholder="e.g. analyst@firm.com">
+        </div>
+        <div class="form-group">
+          <label>Delivery Time (EAT)</label>
+          <input type="time" id="sub-time" value="17:00">
+        </div>
+        <div class="form-group">
+          <label>Delivery Days</label>
+          <div class="days-grid">
+            <label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label>
+            <label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label>
+            <label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label>
+            <label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label>
+            <label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label>
+          </div>
+        </div>
+        <button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button>
+        <div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;">✅ Subscription saved successfully!</div>
     </div>
-    <div class="form-group">
-      <label>Delivery Time (EAT)</label>
-      <input type="time" id="sub-time" value="17:00">
-    </div>
-    <div class="form-group">
-      <label>Delivery Days</label>
-      <div class="days-grid">
-        <label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label>
-        <label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label>
-        <label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label>
-        <label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label>
-        <label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label>
-      </div>
-    </div>
-    <button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button>
-    <div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;">✅ Subscription saved successfully!</div>
   </div>
 </div>
 
@@ -422,20 +455,16 @@
     </div>
     <div class="form-group">
       <label>Number of Shares</label>
-      <input type="number" id="trade-shares" placeholder="e.g. 1000" min="1">
+      <!-- Changed type to text with inputmode to prevent auto-scrolling number bug -->
+      <input type="text" inputmode="decimal" id="trade-shares" placeholder="e.g. 1000">
     </div>
     <div class="form-group">
       <label>Execution Price (KES)</label>
-      <input type="number" id="trade-price" placeholder="e.g. 35.50" step="0.01" min="0">
+      <input type="text" inputmode="decimal" id="trade-price" placeholder="e.g. 35.50">
     </div>
     <div class="form-group">
       <label>Broker / Platform</label>
-      <select id="trade-broker">
-          <option value="AIB-AXYS">AIB-AXYS</option>
-          <option value="Dyer & Blair">Dyer & Blair</option>
-          <option value="NCBA">NCBA Investment</option>
-          <option value="Other">Other</option>
-      </select>
+      <select id="trade-broker"></select>
     </div>
     
     <button class="primary-btn" id="trade-submit-btn" onclick="submitTrade()">UPDATE PORTFOLIO</button>
@@ -459,6 +488,7 @@ var JSONP_TIMEOUT_MS = 15000;
 var KEY_RATES = [], FOREX_RATES = [];
 var CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
 var LIVE_PRICES = {}; 
+var GLOBAL_HISTORY = []; // To compute Holdings dynamically per broker
 
 var currentTab = 'kenya', isNewsFetched = false, isFetching = false;
 var hasRenderedOnce = false, isGeoChartLoaded = false, currentGlobalSelection = "usa";
@@ -467,8 +497,9 @@ var currentUser = null, isSignupMode = false;
 
 var countryMap = { "usa":{"name":"USA","code":"US"}, "canada":{"name":"Canada","code":"CA"}, "south_africa":{"name":"South Africa","code":"ZA"}, "nigeria":{"name":"Nigeria","code":"NG"}, "egypt":{"name":"Egypt","code":"EG"}, "france":{"name":"France","code":"FR"}, "united_kingdom":{"name":"United Kingdom","code":"GB"}, "australia":{"name":"Australia","code":"AU"}, "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"} };
 var ALL_NSE_TICKERS = ["ABSA","ALP","AMAC","BAT","BKG","BOC","BRIT","CARB","CGEN","CIC","COOP","CRWN","CTUM","DTK","EABL","EGAD","EQTY","EVRD","FTGH","GLD","HAFR","HFCK","IMH","JUB","KAPC","KCB","KEGN","KNRE","KPLC","KQ","KUKZ","LBTY","LIMT","LKL","NBV","NCBA","NMG","NSE","OCH","PORT","SASN","SBIC","SCAN","SCBK","SCOM","SGL","SKL","SLAM","SMER","SMWF","TOTL","TPSE","UCHM","UMME","UNGA","WTK","XPRS","KPC"];
+var ALL_BROKERS = ["ABC Capital Ltd", "AIB-AXYS Africa", "Absa Securities Ltd", "Capital A Investment Bank", "Dry Associates", "Dyer & Blair Investment Bank Ltd", "EFG Hermes Kenya Ltd", "Equity Investment Bank Ltd", "Faida Investment Bank Ltd", "Francis Drummond & Company Ltd", "Genghis Capital Ltd", "KCB Investment Bank", "Kestrel Capital (EA) Ltd", "Kingdom Securities Ltd", "NCBA Investment Bank Ltd", "OMNI MARCHE SECURITE (OMS) Africa Ltd", "Pergamon Investment Bank", "Renaissance Capital (Kenya) Ltd", "SBG Securities Ltd", "Standard Investment Bank Ltd", "Sterling Capital Ltd", "Suntra Investment Bank Ltd", "Ziidi Trader (Platform)"];
 
-// ── CLOCK & COUNTDOWN ──────────────────────────────
+// ── CLOCK & 10-MIN SECURITY PROTOCOL ──────────────────────────────
 function padZero(n) { return n < 10 ? '0' + n : n; }
 setInterval(function() {
   var now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
@@ -493,6 +524,15 @@ setInterval(function() {
           var dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
           var dayStr = (target.getDate() !== now.getDate()) ? (" [" + dayNames[target.getDay()] + "]") : "";
           cdEl.innerHTML = "(Market Opens" + dayStr + " in " + padZero(hours) + ":" + padZero(mins) + ":" + padZero(secs) + ")";
+      }
+  }
+
+  // 10-Minute Session Timeout Failsafe
+  if(currentUser) {
+      var loginTime = localStorage.getItem("pf_time");
+      if(loginTime && (Date.now() - parseInt(loginTime)) > (10 * 60 * 1000)) {
+          logoutUser();
+          alert("Your session has securely timed out after 10 minutes. Please log in again.");
       }
   }
 }, 1000);
@@ -529,11 +569,24 @@ function setMarketStatus(s) { var el=document.getElementById("market-status"); i
 document.addEventListener("DOMContentLoaded", function() {
     var tickerSelect = document.getElementById('trade-ticker');
     ALL_NSE_TICKERS.sort().forEach(function(t) { tickerSelect.innerHTML += '<option value="'+t+'">'+t+'</option>'; });
+    
+    var brokerSelect = document.getElementById('trade-broker');
+    var filterSelect = document.getElementById('portfolio-broker-filter');
+    ALL_BROKERS.forEach(function(b) { 
+        brokerSelect.innerHTML += '<option value="'+b+'">'+b+'</option>'; 
+        filterSelect.innerHTML += '<option value="'+b+'">'+b+'</option>';
+    });
+    
     var today = new Date().toISOString().split('T')[0];
     document.getElementById('trade-date').value = today;
     
     var savedUser = localStorage.getItem("pf_username");
-    if (savedUser) { currentUser = savedUser; enablePortfolioMode(); }
+    if (savedUser) { 
+        currentUser = savedUser; 
+        // Reset timer on fresh reload
+        localStorage.setItem("pf_time", Date.now());
+        enablePortfolioMode(); 
+    }
 });
 
 function openAuthModal() { 
@@ -543,6 +596,12 @@ function openAuthModal() {
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; document.getElementById('auth-feedback').style.display = 'none'; }
 function openTradeModal() { document.getElementById('trade-modal').style.display = 'flex'; }
 function closeTradeModal() { document.getElementById('trade-modal').style.display = 'none'; document.getElementById('trade-feedback').style.display = 'none'; }
+function logoutUser() {
+    currentUser = null; localStorage.removeItem("pf_username"); localStorage.removeItem("pf_time");
+    document.getElementById('btn-portfolio-auth').innerText = "👤 My Portfolio";
+    document.getElementById('tab-portfolio').style.display = 'none';
+    if(currentTab === 'portfolio') switchTab('kenya', {currentTarget: document.getElementById('tab-kenya')});
+}
 
 function toggleAuthMode() {
     isSignupMode = !isSignupMode;
@@ -566,7 +625,7 @@ async function handleAuth() {
     try {
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: isSignupMode ? "signup" : "login", username: u, password: p, name: n }) });
         var res = await resp.json();
-        if (res.status === "success") { currentUser = u; localStorage.setItem("pf_username", u); closeAuthModal(); enablePortfolioMode(); } 
+        if (res.status === "success") { currentUser = u; localStorage.setItem("pf_username", u); localStorage.setItem("pf_time", Date.now()); closeAuthModal(); enablePortfolioMode(); } 
         else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     } catch (e) { fb.innerText = "Connection error."; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     btn.innerText = isSignupMode ? "Sign Up" : "Log In";
@@ -586,59 +645,85 @@ async function fetchMyPortfolio() {
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "get_portfolio", username: currentUser }) });
         var res = await resp.json();
         if (res.status === "success") {
-            // 1. Process Holdings
-            if (res.portfolio.length === 0) {
-                tbH.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted); font-style:italic;">No holdings found. Click + Add Stock.</td></tr>';
-                document.getElementById('port-sum-invested').innerText = "KES 0.00"; document.getElementById('port-sum-current').innerText = "KES 0.00"; document.getElementById('port-sum-pnl').innerText = "KES 0.00"; document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
-                if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
-            } else {
-                var htmlH = "", totInv = 0, totCur = 0;
-                var pieLabels = [], pieData = [], pieColors = ['#002060', '#D4AF37', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b', '#14b8a6', '#6366f1', '#f43f5e'];
-                
-                res.portfolio.forEach(function(row, index) {
-                    var ltp = LIVE_PRICES[row.ticker] || row.avg_price; 
-                    var curVal = row.shares * ltp;
-                    var pnl = curVal - row.total_cost;
-                    var pnlPct = (pnl / row.total_cost) * 100;
-                    totInv += row.total_cost; totCur += curVal;
-                    
-                    pieLabels.push(row.ticker); pieData.push(curVal);
-                    
-                    htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.avg_price) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td></tr>';
-                });
-                tbH.innerHTML = htmlH;
-                
-                // Update Summary Cards
-                var netPnl = totCur - totInv; var netPnlPct = (netPnl / totInv) * 100;
-                document.getElementById('port-sum-invested').innerText = fmtKsh(totInv);
-                document.getElementById('port-sum-current').innerText = fmtKsh(totCur);
-                document.getElementById('port-sum-pnl').innerText = fmtKsh(netPnl);
-                document.getElementById('port-sum-pnl').className = "port-summary-val " + (netPnl >= 0 ? "up" : "dn");
-                document.getElementById('port-sum-pnl-pct').innerText = (netPnl >= 0 ? '+' : '') + netPnlPct.toFixed(2) + "%";
-                document.getElementById('port-sum-pnl-pct').className = "port-summary-sub " + (netPnl >= 0 ? "up" : "dn");
-                
-                // Draw Pie Chart
-                var ctxPie = document.getElementById('portfolio-pie-chart');
-                if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
-                chartInstances["portfolioPie"] = new Chart(ctxPie, {
-                    type: 'doughnut',
-                    data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors.slice(0, pieLabels.length), borderWidth: 2, borderColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#151e32" : "#ffffff" }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: "'Hadassah Friedlaender', Georgia, serif", size: 11, weight: 'bold'}, color: document.documentElement.getAttribute("data-theme") === "dark" ? "#f8fafc" : "#1e293b", padding: 20 } }, tooltip: { callbacks: { label: function(ctx) { var v = ctx.parsed; var tot = ctx.chart._metasets[ctx.datasetIndex].total; var pct = (v/tot*100).toFixed(1); return " " + ctx.label + ": KES " + v.toLocaleString() + " (" + pct + "%)"; } } } }, cutout: '65%' }
-                });
-            }
-            
-            // 2. Process History
-            var htmlP = "", htmlS = "";
-            res.history.forEach(function(row) {
-                var dt = new Date(row.date).toLocaleDateString();
-                var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(row.total) + '</td><td>' + (row.broker||"—") + '</td></tr>';
-                if(row.type === "BOUGHT") htmlP += tr; else htmlS += tr;
-            });
-            tbP.innerHTML = htmlP || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No purchases logged.</td></tr>';
-            tbS.innerHTML = htmlS || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No sales logged.</td></tr>';
-            
+            GLOBAL_HISTORY = res.history || [];
+            renderFilteredPortfolio();
         } else { tbH.innerHTML = '<tr><td colspan="8" style="color:var(--neon-dn);text-align:center;">Failed to load.</td></tr>'; }
     } catch(e) { tbH.innerHTML = '<tr><td colspan="8" style="color:var(--neon-dn);text-align:center;">Connection Error.</td></tr>'; }
+}
+
+function renderFilteredPortfolio() {
+    var filterBroker = document.getElementById('portfolio-broker-filter').value;
+    var tbH = document.getElementById('my-portfolio-tbody');
+    var tbP = document.getElementById('my-purchases-tbody');
+    var tbS = document.getElementById('my-sales-tbody');
+    
+    // Process History dynamically
+    var htmlP = "", htmlS = "";
+    var holdingsMap = {};
+    
+    GLOBAL_HISTORY.forEach(function(row) {
+        if(filterBroker !== "ALL" && row.broker !== filterBroker) return;
+        
+        var dt = new Date(row.date).toLocaleDateString();
+        var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(row.total) + '</td><td>' + (row.broker||"—") + '</td></tr>';
+        if(row.type === "BOUGHT") htmlP += tr; else htmlS += tr;
+        
+        if(!holdingsMap[row.ticker]) holdingsMap[row.ticker] = { shares: 0, total_cost: 0 };
+        if(row.type === "BOUGHT") {
+            holdingsMap[row.ticker].shares += row.shares;
+            holdingsMap[row.ticker].total_cost += row.total;
+        } else if(row.type === "SOLD") {
+            // Adjust average cost basis
+            if(holdingsMap[row.ticker].shares > 0) {
+                var avg = holdingsMap[row.ticker].total_cost / holdingsMap[row.ticker].shares;
+                holdingsMap[row.ticker].shares -= row.shares;
+                holdingsMap[row.ticker].total_cost = holdingsMap[row.ticker].shares * avg;
+            }
+        }
+    });
+    
+    tbP.innerHTML = htmlP || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No purchases logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
+    tbS.innerHTML = htmlS || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No sales logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
+    
+    var currentHoldings = Object.keys(holdingsMap).map(function(k) { return { ticker: k, shares: holdingsMap[k].shares, total_cost: holdingsMap[k].total_cost, avg_price: holdingsMap[k].shares > 0 ? holdingsMap[k].total_cost / holdingsMap[k].shares : 0 }; }).filter(function(h) { return h.shares > 0.001; });
+    
+    if (currentHoldings.length === 0) {
+        tbH.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted); font-style:italic;">No holdings found. Click + Add Stock.</td></tr>';
+        document.getElementById('port-sum-invested').innerText = "KES 0.00"; document.getElementById('port-sum-current').innerText = "KES 0.00"; document.getElementById('port-sum-pnl').innerText = "KES 0.00"; document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
+        if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
+    } else {
+        var htmlH = "", totInv = 0, totCur = 0;
+        var pieLabels = [], pieData = [], pieColors = ['#002060', '#D4AF37', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b', '#14b8a6', '#6366f1', '#f43f5e', '#a855f7', '#ec4899', '#f97316', '#84cc16'];
+        
+        currentHoldings.forEach(function(row) {
+            var ltp = LIVE_PRICES[row.ticker] || row.avg_price; 
+            var curVal = row.shares * ltp;
+            var pnl = curVal - row.total_cost;
+            var pnlPct = (pnl / row.total_cost) * 100;
+            totInv += row.total_cost; totCur += curVal;
+            
+            pieLabels.push(row.ticker); pieData.push(curVal);
+            
+            htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.avg_price) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td></tr>';
+        });
+        tbH.innerHTML = htmlH;
+        
+        var netPnl = totCur - totInv; var netPnlPct = (netPnl / totInv) * 100;
+        document.getElementById('port-sum-invested').innerText = fmtKsh(totInv);
+        document.getElementById('port-sum-current').innerText = fmtKsh(totCur);
+        document.getElementById('port-sum-pnl').innerText = fmtKsh(netPnl);
+        document.getElementById('port-sum-pnl').className = "port-summary-val " + (netPnl >= 0 ? "up" : "dn");
+        document.getElementById('port-sum-pnl-pct').innerText = (netPnl >= 0 ? '+' : '') + netPnlPct.toFixed(2) + "%";
+        document.getElementById('port-sum-pnl-pct').className = "port-summary-sub " + (netPnl >= 0 ? "up" : "dn");
+        
+        var ctxPie = document.getElementById('portfolio-pie-chart');
+        if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
+        chartInstances["portfolioPie"] = new Chart(ctxPie, {
+            type: 'doughnut',
+            data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors.slice(0, pieLabels.length), borderWidth: 2, borderColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#151e32" : "#ffffff" }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: "'Hadassah Friedlaender', Georgia, serif", size: 11, weight: 'bold'}, color: document.documentElement.getAttribute("data-theme") === "dark" ? "#f8fafc" : "#1e293b", padding: 20 } }, tooltip: { callbacks: { label: function(ctx) { var v = ctx.parsed; var tot = ctx.chart._metasets[ctx.datasetIndex].total; var pct = (v/tot*100).toFixed(1); return " " + ctx.label + ": KES " + v.toLocaleString() + " (" + pct + "%)"; } } } }, cutout: '65%' }
+        });
+    }
 }
 
 async function submitTrade() {
@@ -653,26 +738,39 @@ async function submitTrade() {
     
     if(!tDate || !tShare || !tPrice) { fb.innerText = "Fill in Date, Shares, and Price."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
     
+    var cleanShare = parseFloat(tShare.replace(/,/g, ""));
+    var cleanPrice = parseFloat(tPrice.replace(/,/g, ""));
+    if(isNaN(cleanShare) || isNaN(cleanPrice)) { fb.innerText = "Invalid number format."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
+    
+    // Local block if selling more than held globally
+    if (tType === "SOLD") {
+        var currentHeld = 0;
+        GLOBAL_HISTORY.forEach(function(r) { if(r.ticker === tTick) { if(r.type==="BOUGHT") currentHeld+=r.shares; else if(r.type==="SOLD") currentHeld-=r.shares; } });
+        if (currentHeld < cleanShare) { fb.innerText = "Stock not available in your portfolio."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
+    }
+
     btn.innerText = "Transmitting..."; fb.style.display="none";
     try {
-        var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "update_portfolio", username: currentUser, date: tDate, type: tType, ticker: tTick, shares: tShare, price: tPrice, broker: tBroker }) });
+        var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "update_portfolio", username: currentUser, date: tDate, type: tType, ticker: tTick, shares: cleanShare, price: cleanPrice, broker: tBroker }) });
         var res = await resp.json();
         if (res.status === "success") {
             fb.innerText = res.message; fb.style.color = "var(--neon-up)"; fb.style.display = "block";
-            setTimeout(function() { closeTradeModal(); fetchMyPortfolio(); }, 1500);
+            // Local history update to avoid full reload delay
+            GLOBAL_HISTORY.push({date: tDate, type: tType, ticker: tTick, shares: cleanShare, price: cleanPrice, total: cleanShare*cleanPrice, broker: tBroker});
+            renderFilteredPortfolio();
+            setTimeout(function() { closeTradeModal(); }, 1500);
         } else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     } catch(e) { fb.innerText = "Network Error."; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     btn.innerText = "UPDATE PORTFOLIO";
 }
 
-// ── DOUBLE-PROXY FALLBACK LIVE NEWS ENGINE ────────────────────────────────
+// ── BLENDED LIVE NEWS ENGINE (DOUBLE PROXY FALLBACK) ───────────────────────
 async function loadLiveNews() {
   if (isNewsFetched) return;
   var FB = 'https://via.placeholder.com/300x160/0f172a/FFFFFF?text=Market+Intelligence';
   var feeds = [ { url: "https://kenyanwallstreet.com/feed/", name: "Kenyan Wall Street" }, { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" }, { url: "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml", name: "Wall Street Journal" }, { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" } ];
   
   try {
-    // Primary Protocol: rss2json
     var fetchPromises = feeds.map(function(f) {
         return fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(f.url))
             .then(function(resp) { return resp.json(); }).then(function(data) {
@@ -690,7 +788,6 @@ async function loadLiveNews() {
     var results = await Promise.all(fetchPromises); var all = [];
     results.forEach(function(resArray) { all = all.concat(resArray); });
     
-    // Fallback Protocol if rss2json is rate limited
     if(all.length === 0) {
         var fbPromises = feeds.map(function(f) {
             return fetch("https://api.allorigins.win/get?url=" + encodeURIComponent(f.url)).then(function(resp) { return resp.json(); }).then(function(data) {
@@ -702,7 +799,6 @@ async function loadLiveNews() {
                    var link = node.querySelector("link") ? node.querySelector("link").textContent : "";
                    var pubDate = node.querySelector("pubDate") ? node.querySelector("pubDate").textContent : "";
                    var desc = node.querySelector("description") ? node.querySelector("description").textContent : "";
-                   var imgUrl = "";
                    if(title && link) { parsedItems.push({ title: title, link: link, pubDate: pubDate, desc: desc.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...', img: FB, src: f.name }); }
                 }); return parsedItems;
             }).catch(function() { return []; });
@@ -726,9 +822,45 @@ async function loadLiveNews() {
 loadLiveNews();
 
 // ── CORE DATA ENGINE ──────────────────────────────────────────────────────
-function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
+function openExportModal() { 
+    if (currentTab === 'portfolio') { 
+        document.getElementById('export-modal-body').innerHTML = '<p style="color:var(--neon-dn);text-align:center;padding:2rem;font-size:11pt;">Access Denied. Tear Sheet generation is restricted while in Personal Portfolio mode to protect sensitive data.</p>';
+    } else {
+        document.getElementById('export-modal-body').innerHTML = '<button class="secondary-btn" id="download-btn" onclick="downloadPDF()" style="width:100%;">⬇️ Download PDF Now</button><hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;"><h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3><p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p><div class="form-group"><label>Email address</label><input type="email" id="sub-email" placeholder="e.g. analyst@firm.com"></div><div class="form-group"><label>Delivery Time (EAT)</label><input type="time" id="sub-time" value="17:00"></div><div class="form-group"><label>Delivery Days</label><div class="days-grid"><label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label><label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label><label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label><label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label><label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label></div></div><button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button><div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;">✅ Subscription saved successfully!</div>';
+    }
+    document.getElementById('export-modal').style.display = 'flex'; 
+}
 function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
 function downloadPDF() { closeExportModal(); var el = document.getElementById('pdf-container'); el.classList.add('pdf-mode'); html2pdf().set({margin:0.2, filename:"Tear_Sheet_" + new Date().toISOString().split('T')[0] + ".pdf", image:{type:'jpeg',quality:1.0}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a3',orientation:'portrait'}}).from(el).save().then(function() { el.classList.remove('pdf-mode'); }); }
+
+// EXPORT TABLES TO CSV
+function exportTableToCSV(tableID, filename) {
+    var table = document.getElementById(tableID);
+    if(!table) return;
+    var csv = [];
+    var rows = table.querySelectorAll("tr");
+    for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll("td, th");
+        for (var j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+        csv.push(row.join(","));
+    }
+    var csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+    var downloadLink = document.createElement("a");
+    downloadLink.download = filename + "_" + new Date().toISOString().split('T')[0] + ".csv";
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+// EXPORT DIV TO PDF (For tables)
+function exportTableToPDF(divID, filename) {
+    var el = document.getElementById(divID);
+    if(!el) return;
+    html2pdf().set({margin:0.5, filename: filename + "_" + new Date().toISOString().split('T')[0] + ".pdf", image:{type:'jpeg',quality:1.0}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4',orientation:'landscape'}}).from(el).save();
+}
+
 function getTableId(title) { return "tbl-" + title.replace(/\W+/g, '-').toLowerCase(); }
 function triggerRefresh() { if(isFetching) return; loadData(); if(currentUser) fetchMyPortfolio(); }
 
@@ -873,10 +1005,7 @@ function updateTableData(id, rows) { var tbody = document.querySelector('table[d
 
 function render(data, isInitialLoad) {
   var tickers = (data.tickers || []).filter(function(t) { return t && t.symbol; }), mw = (data.marketwatch || []).filter(function(t) { return t && t.symbol; }), indices = (data.indices || data.world_indices || []).filter(function(r) { return r && r.name && r.name !== "Name" && r.price && r.price !== "N/A"; }), active = (data.mostactive || data.yahoo_most_active || []).filter(function(r) { return r && r.symbol && r.price; }), statsArr = (data.stats || []);
-  
-  // Save live prices for Portfolio P&L Math
   tickers.forEach(function(t) { LIVE_PRICES[t.symbol] = parseFloat(t["last_price_(kshs)"] || 0); });
-  
   var apiStatus = "CLOSED"; if (data.market_assumptions && data.market_assumptions.length > 0) { var keys = Object.keys(data.market_assumptions[0]); if (keys.includes("open")) apiStatus = "OPEN"; else if (keys.includes("closed")) apiStatus = "CLOSED"; } setMarketStatus(apiStatus);
   var statsMap = {}, statsChange = {}; statsArr.forEach(function(r) { if (!r || !r.name) return; statsMap[r.name.trim()] = r.value; statsChange[r.name.trim()] = r.change; });
   function numMW(row, key) { var v = row[key] || row[key.toLowerCase()] || 0; return parseFloat(String(v).replace(/[^0-9.\-]/g, "")) || 0; }
