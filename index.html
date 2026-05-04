@@ -76,14 +76,12 @@
     tr:hover td { background: var(--table-hover); }
     .up { color: #00b050 !important; } .dn { color: #ff5252 !important; } .nt { color: var(--text-sub) !important; }
     
-    .macro-grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2rem; }
-    @media (max-width: 800px) { .macro-grid-container { grid-template-columns: 1fr; } }
-    .rates-table { width: 100%; border-collapse: collapse; }
-    .rates-table td { padding: 7px 12px; border-bottom: 1px solid var(--table-border); font-size: 10pt; color: var(--text-main); vertical-align: middle; }
-    .rates-table tr:hover td { background: var(--table-hover); }
-    .rates-table .rate-label-cell { color: var(--text-muted); font-size: 9.5pt; text-transform: uppercase; width: 60%; }
-    .rates-table .rate-value-cell { font-size: 11pt; color: #002060; font-weight: bold; width: 40%; text-align: right; } 
-    [data-theme="dark"] .rates-table .rate-value-cell { color: #66a3ff; }
+    /* ── MACRO CARDS REDESIGN ──────────────────── */
+    .macro-cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; padding: 5px; }
+    .macro-mini-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: transform 0.2s; }
+    .macro-mini-card:hover { transform: translateY(-2px); border-color: #D4AF37; }
+    .macro-mc-lbl { font-size: 8.5pt; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+    .macro-mc-val { font-size: 13pt; color: #002060; font-weight: bold; } [data-theme="dark"] .macro-mc-val { color: #66a3ff; }
 
     /* ── GLOBAL EXPLORER & HEATMAP ──────────────────── */
     .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1rem; }
@@ -104,7 +102,7 @@
     .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; } @media (max-width: 800px) { .graphs-grid { grid-template-columns: 1fr; } }
     .graph-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
     .graph-card h3 { font-size: 10pt; color: #002060; text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; } [data-theme="dark"] .graph-card h3 { color: #66a3ff; }
-    .chart-wrapper { position: relative; height: 350px; width: 100%; display: block; padding-top: 10px; }
+    .chart-wrapper { position: relative; height: 320px; width: 100%; display: block; padding-top: 10px; }
     
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
     .error-box { background: #fdecea; border: 1px solid #cf222e; border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: #7b1a1a; font-size: 11pt; line-height: 1.8; text-align: left; }
@@ -202,6 +200,10 @@
   </div>
 </div>
 
+<div style="text-align: center; padding: 2.5rem 1rem 1rem; color: var(--text-sub); font-size: 10pt; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">
+  TO GOD BE THE GLORY
+</div>
+
 <script>
 // 🛡️ ERROR CATCHER
 window.addEventListener('error', function(e) {
@@ -229,30 +231,50 @@ var countryMap = {
   "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"}
 };
 
-// ── CLOCK & COUNTDOWN ─────────────────────────────────────────────────────
+// ── CLOCK & COUNTDOWN (Intelligent Market Timing) ─────────────────────────
+function padZero(n) { return n < 10 ? '0' + n : n; }
 setInterval(function() {
-  var now = new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Nairobi"}));
+  var now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
   var clockEl = document.getElementById("live-clock");
-  if (clockEl) clockEl.textContent = "EAT: " + now.toLocaleTimeString("en-KE",{hour12:false});
+  if (clockEl) clockEl.textContent = "EAT: " + padZero(now.getHours()) + ":" + padZero(now.getMinutes()) + ":" + padZero(now.getSeconds());
   
   var cdEl = document.getElementById("market-countdown");
   if (cdEl) {
-      var target = new Date(now); target.setHours(9, 30, 0, 0);
-      var day = now.getDay(), isWeekend = (day === 0 || day === 6), addDays = 0;
+      var day = now.getDay();
+      var h = now.getHours();
+      var m = now.getMinutes();
+      var timeInMins = h * 60 + m;
       
-      if (now > target || isWeekend) {
-          if (day === 5) addDays = 3; else if (day === 6) addDays = 2; else addDays = 1;
+      // NSE is Open Mon-Fri, 09:30 (570) to 15:00 (900)
+      var isOpen = (day >= 1 && day <= 5) && (timeInMins >= 570 && timeInMins < 900);
+      var target = new Date(now);
+      
+      if (isOpen) {
+          target.setHours(15, 0, 0, 0);
+          var diff = target - now;
+          var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          var secs = Math.floor((diff % (1000 * 60)) / 1000);
+          cdEl.innerHTML = "(Market Closes in " + padZero(hours) + ":" + padZero(mins) + ":" + padZero(secs) + ")";
+      } else {
+          target.setHours(9, 30, 0, 0);
+          var addDays = 0;
+          if (timeInMins >= 900) { addDays = 1; }
+          target.setDate(target.getDate() + addDays);
+          
+          var tDay = target.getDay();
+          if (tDay === 6) target.setDate(target.getDate() + 2); // Sat -> Mon
+          else if (tDay === 0) target.setDate(target.getDate() + 1); // Sun -> Mon
+          
+          var diff = target - now;
+          var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          var secs = Math.floor((diff % (1000 * 60)) / 1000);
+          
+          var dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+          var dayStr = (target.getDate() !== now.getDate()) ? (" [" + dayNames[target.getDay()] + "]") : "";
+          cdEl.innerHTML = "(Market Opens" + dayStr + " in " + padZero(hours) + ":" + padZero(mins) + ":" + padZero(secs) + ")";
       }
-      target.setDate(target.getDate() + addDays);
-      
-      var diff = target - now;
-      var h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
-      var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
-      var s = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
-      
-      var dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-      var dayStr = addDays > 0 ? " [" + dayNames[target.getDay()] + "]" : "";
-      cdEl.innerHTML = "(Market Opens" + dayStr + " in " + h + ":" + m + ":" + s + ")";
   }
 }, 1000);
 
@@ -296,7 +318,7 @@ if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttr
 function setMarketStatus(s) { var el=document.getElementById("market-status"); if(s==="OPEN"){el.textContent="⬤ OPEN";el.className="open";}else{el.textContent="⬤ CLOSED";el.className="closed";} }
 function showGlobalCountry(key) { currentGlobalSelection=key; document.querySelectorAll('.global-tables-section').forEach(function(el) { el.classList.remove('active-country'); }); var el=document.getElementById('country-'+key); if(el) el.classList.add('active-country'); var sel=document.getElementById("globalSearch"); if(sel&&sel.value!==key) sel.value=key; if (isGeoChartLoaded) drawRegionsMap(); }
 
-// ── ROBUST XML NEWS SCRAPER ───────────────────────────────────────────────
+// ── TRUE BLENDED LIVE NEWS ENGINE (Concurrent Promise.all) ────────────────
 async function loadLiveNews() {
   if (isNewsFetched) return;
   var FB = 'https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News';
@@ -305,53 +327,55 @@ async function loadLiveNews() {
       { url: "https://kenyanwallstreet.com/feed/", name: "Kenyan Wall Street" }, 
       { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" }, 
       { url: "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml", name: "Wall Street Journal" },
-      { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" } // CNBC frequently blocks proxies, Yahoo is stable
+      { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" }
     ];
-    var all = [];
-    for (var i = 0; i < feeds.length; i++) {
-      try {
-        var resp = await fetch("https://api.allorigins.win/get?url=" + encodeURIComponent(feeds[i].url));
-        if (!resp.ok) continue;
-        var data = await resp.json();
-        var xml = new DOMParser().parseFromString(data.contents, "application/xml");
-        var items = Array.from(xml.querySelectorAll("item")).slice(0, 5);
-        
-        items.forEach(function(node) {
-           var titleNode = node.querySelector("title");
-           var linkNode = node.querySelector("link");
-           var pubDateNode = node.querySelector("pubDate");
-           var descNode = node.querySelector("description");
-           
-           var title = titleNode ? titleNode.textContent : "";
-           var link = linkNode ? linkNode.textContent : "";
-           var pubDate = pubDateNode ? pubDateNode.textContent : "";
-           var desc = descNode ? descNode.textContent : "";
-           
-           var encodedNodes = node.getElementsByTagNameNS("*", "encoded");
-           var content = encodedNodes.length > 0 ? encodedNodes[0].textContent : "";
-           
-           var imgUrl = "";
-           var contentNodes = node.getElementsByTagNameNS("*", "content");
-           if (contentNodes.length > 0 && contentNodes[0].getAttribute("url")) { imgUrl = contentNodes[0].getAttribute("url"); }
-           if (!imgUrl) { var enclosure = node.querySelector("enclosure"); if (enclosure && enclosure.getAttribute("url")) { imgUrl = enclosure.getAttribute("url"); } }
-           if (!imgUrl && content) { var m = content.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) imgUrl = m[1]; }
-           if (!imgUrl && desc) { var m = desc.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) imgUrl = m[1]; }
-           
-           if(title && link) {
-               all.push({ title: title, link: link, pubDate: pubDate, desc: desc.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...', img: imgUrl || FB, src: feeds[i].name });
-           }
-        });
-      } catch(e) {}
-    }
     
+    // Fetch all feeds simultaneously to ensure mixing and speed
+    var fetchPromises = feeds.map(function(f) {
+        return fetch("https://api.allorigins.win/get?url=" + encodeURIComponent(f.url) + "&_cb=" + Date.now())
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                var xml = new DOMParser().parseFromString(data.contents, "application/xml");
+                var items = Array.from(xml.querySelectorAll("item")).slice(0, 4); // Take top 4 from each source
+                var parsedItems = [];
+                items.forEach(function(node) {
+                   var title = node.querySelector("title") ? node.querySelector("title").textContent : "";
+                   var link = node.querySelector("link") ? node.querySelector("link").textContent : "";
+                   var pubDate = node.querySelector("pubDate") ? node.querySelector("pubDate").textContent : "";
+                   var desc = node.querySelector("description") ? node.querySelector("description").textContent : "";
+                   var encoded = node.getElementsByTagNameNS("*", "encoded");
+                   var content = encoded.length > 0 ? encoded[0].textContent : "";
+                   
+                   var imgUrl = "";
+                   var contentNodes = node.getElementsByTagNameNS("*", "content");
+                   if (contentNodes.length > 0 && contentNodes[0].getAttribute("url")) imgUrl = contentNodes[0].getAttribute("url");
+                   if (!imgUrl) { var enc = node.querySelector("enclosure"); if (enc && enc.getAttribute("url")) imgUrl = enc.getAttribute("url"); }
+                   if (!imgUrl && content) { var m = content.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) imgUrl = m[1]; }
+                   if (!imgUrl && desc) { var m = desc.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) imgUrl = m[1]; }
+                   
+                   if(title && link) {
+                       parsedItems.push({ title: title, link: link, pubDate: pubDate, desc: desc.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...', img: imgUrl || FB, src: f.name });
+                   }
+                });
+                return parsedItems;
+            }).catch(function() { return []; });
+    });
+    
+    var results = await Promise.all(fetchPromises);
+    var all = [];
+    results.forEach(function(resArray) { all = all.concat(resArray); });
+    
+    // Sort combined articles chronologically
     all.sort(function(a,b) { return new Date(b.pubDate) - new Date(a.pubDate); });
+    
     var html = '<div class="news-grid">';
     all.slice(0, 12).forEach(function(i) {
       var dt = new Date(i.pubDate);
       html += '<a href="' + i.link + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="news-item"><img src="' + i.img + '" class="news-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + FB + '\';"><div class="news-title">' + i.title + '</div><div class="news-desc">' + i.desc + '</div><div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><div class="news-date">' + (isNaN(dt) ? 'Recent' : dt.toLocaleString()) + '</div><div style="font-size:8pt;color:var(--text-sub);font-style:italic;">Source: ' + i.src + '</div></div></div></a>';
     });
     html += '</div>';
-    document.getElementById("live-news-container").innerHTML = html; isNewsFetched = true;
+    document.getElementById("live-news-container").innerHTML = html; 
+    isNewsFetched = true;
   } catch(e){ document.getElementById("live-news-container").innerHTML='<p style="color:var(--text-muted);padding:1rem;">Unable to load live news.</p>'; }
 }
 loadLiveNews();
@@ -413,11 +437,24 @@ function extractDynamicData(data) {
          var idx = cols.findIndex(function(x) { return x.toLowerCase() === targetRates[i].toLowerCase(); });
          if (idx !== -1 && idx + 1 < cols.length) { var val = cols[idx + 1]; var num = parseFloat(val.replace(/,/g,'').replace(/%/g,'')); if (!isNaN(num)) { if (num < 1 && !val.includes('%')) val = (num * 100).toFixed(2) + "%"; else if (!val.includes('%')) val = num.toFixed(2) + "%"; if (!KEY_RATES.find(function(r) { return r.label === targetRates[i]; })) KEY_RATES.push({ label: targetRates[i], value: val }); } }
       }
-      for (var j = 0; j < validCcys.length; j++) {
-         var idxC = cols.findIndex(function(x) { return x.toLowerCase() === validCcys[j].toLowerCase(); });
-         if (idxC !== -1 && !FOREX_RATES.find(function(f) { return f.ccy === validCcys[j]; })) { var nums = cols.slice(idxC + 1).filter(function(n) { return !isNaN(parseFloat(n)); }); if (nums.length >= 4) FOREX_RATES.push({ ccy: validCcys[j], crBuy: nums[0], crSell: nums[1], kBuy: nums[2], kSell: nums[3] }); else if (nums.length >= 2) FOREX_RATES.push({ ccy: validCcys[j], crBuy: "—", crSell: "—", kBuy: nums[0], kSell: nums[1] }); }
-      }
     });
+  }
+
+  // ── FIX #6: SPECIFIC FOREX EXTRACTOR (B21:E31 from CBK Grouped Data) ──
+  // Sheet Rows 21 to 31 = Array Indices 19 to 29
+  if (data.cbk && data.cbk.length >= 29) {
+      for (var r = 19; r <= 29; r++) {
+          if (data.cbk[r]) {
+              var vals = Object.values(data.cbk[r]);
+              var ccy = String(vals[1] || "").trim(); // Col B
+              var crBuy = String(vals[2] || "—").trim(); // Col C
+              var crSell = String(vals[3] || "—").trim(); // Col D
+              var kBuy = String(vals[4] || "—").trim(); // Col E
+              if (ccy && ccy !== "—" && ccy.toLowerCase() !== "currency" && ccy.toLowerCase() !== "mean") {
+                  FOREX_RATES.push({ ccy: ccy, crBuy: crBuy, crSell: crSell, kBuy: kBuy, kSell: "—" });
+              }
+          }
+      }
   }
 
   // ── THE FLAT CHART DATA MAPPER ──
@@ -441,13 +478,18 @@ function extractDynamicData(data) {
               var len = cleanNum(row.lending), ovr = cleanNum(row.overdraft), sav = cleanNum(row.savings), dep = cleanNum(row.deposit);
               if (!isNaN(len)) { CHART_DATA.banks.labels.push(String(row.rates_date).trim()); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
           }
-          // 4. KEPSS (Fixed raw scaling assumption to match Trillions later)
+          // 4. KEPSS
           if (row.kepss_date && row.kepss_value !== undefined && row.kepss_value !== "") {
               var kv = cleanNum(row.kepss_value);
               if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(String(row.kepss_date).trim()); CHART_DATA.kepss.values.push(kv); }
           }
       });
       if(tmpGdp.length>0){tmpGdp.sort(function(a,b) { return a.year-b.year; }); tmpGdp.forEach(function(d) { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });}
+      
+      // FIX #1: Reverse the arrays so the X-axis plots correctly from Oldest (Left) to Newest (Right)
+      if(CHART_DATA.inflation.labels.length > 0) { CHART_DATA.inflation.labels.reverse(); CHART_DATA.inflation.m12.reverse(); }
+      if(CHART_DATA.kepss.labels.length > 0) { CHART_DATA.kepss.labels.reverse(); CHART_DATA.kepss.values.reverse(); }
+      if(CHART_DATA.banks.labels.length > 0) { CHART_DATA.banks.labels.reverse(); CHART_DATA.banks.lending.reverse(); CHART_DATA.banks.overdraft.reverse(); CHART_DATA.banks.savings.reverse(); CHART_DATA.banks.deposit.reverse(); }
   }
 }
 
@@ -528,12 +570,12 @@ function render(data, isInitialLoad) {
 
   var metricsHtml = '<div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">' + fmtNum(statsMap["NSE ALL SHARE INDEX"], 2) + '</div><div class="sub">' + formatChange(statsChange["NSE ALL SHARE INDEX"], false) + ' vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">' + fmtNum(statsMap["NSE 20 SHARE INDEX"], 2) + '</div><div class="sub">Blue-chip index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">' + fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2) + 'B</div><div class="sub">KES total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">' + fmtNum(totalTurnover, 0) + '</div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">' + fmtNum(totalTrades, 0) + '</div><div class="sub">Trades today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">' + fmtNum(totalFBuy, 0) + '</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">' + fmtNum(totalFSell, 0) + '</span></div><div class="sub">KES today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">' + gainers.length + '</span> / <span class="dn">' + losers.length + '</span></div><div class="sub">' + unchanged.length + ' unchanged · ' + tickers.length + ' total</div></div>';
 
-  var ratesLeft="", ratesRight="";
-  if(KEY_RATES.length===0) ratesLeft='<tr><td colspan="2" style="color:var(--text-muted);font-style:italic;">Data unavailable.</td></tr>';
-  KEY_RATES.forEach(function(r, index) { 
-    var row = '<tr><td class="rate-label-cell">' + r.label + '</td><td class="rate-value-cell">' + r.value + '</td></tr>';
-    if(index % 2 === 0) ratesLeft += row; else ratesRight += row;
+  // ── FIX #3: BEAUTIFUL MACRO CARDS REDESIGN ──
+  var macroCardsHtml = '<div class="macro-cards-container">';
+  KEY_RATES.forEach(function(r) { 
+      macroCardsHtml += '<div class="macro-mini-card"><div class="macro-mc-lbl">' + r.label + '</div><div class="macro-mc-val">' + r.value + '</div></div>';
   });
+  macroCardsHtml += '</div>';
 
   var statsRows = statsArr.filter(function(r) { return r && r.name && r.value !== undefined && r.value !== ""; }).map(function(r) { return '<tr><td>' + r.name + '</td><td>' + fmtNum(r.value, 2) + '</td><td>' + ((r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—") + '</td></tr>'; });
   function trRow(t) { return '<tr><td>' + t.symbol + '</td><td>' + fmtKsh(t["last_price_(kshs)"]) + '</td><td>' + formatChange(pk(t), true) + '</td></tr>'; }
@@ -544,7 +586,9 @@ function render(data, isInitialLoad) {
   var rFS = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td></tr>'; };
   var tFull = tickers.map(function(t) { return '<tr><td>' + t.symbol + '</td><td>' + fmtKsh(t["last_price_(kshs)"]) + '</td><td>' + formatChange(t["change"], false) + '</td><td>' + formatChange(pk(t), true) + '</td><td><span class="nt">' + (t["last_updated"] || "—") + '</span></td></tr>'; });
   var mwRows = mw.filter(function(r) { return numMW(r, "ltp_(kshs)") > 0 || numMW(r, "volume") > 0; }).map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td>' + fmtKsh(r["ltp_(kshs)"]) + '</td><td>' + fmtKsh(r["prev_close"]) + '</td><td>' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + (r.trades || "—") + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td></tr>'; });
+  
   var fxRows = FOREX_RATES.map(function(r) { return '<tr><td>' + r.ccy + '</td><td>' + r.crBuy + '</td><td>' + r.crSell + '</td><td>' + r.kBuy + '</td><td>' + r.kSell + '</td></tr>'; });
+  
   var heatCells = tickers.map(function(t) { var n = getPctNumForSort(t, "%_change"), cls = n > 0 ? "up-cell" : n < 0 ? "dn-cell" : "nt-cell"; return '<div class="ticker-cell ' + cls + '" data-sym="' + t.symbol + '"><div class="tc-sym">' + t.symbol + '</div><div class="tc-price">' + fmtKsh(t["last_price_(kshs)"]) + '</div><div class="tc-chg">' + formatChange(pk(t), true) + '</div></div>'; }).join("");
   var indicesRows = indices.map(function(r) { return '<tr><td>' + r.name + '</td><td>' + (r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + ((r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—") + '</td></tr>'; });
   var activeRows = active.map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td><td>' + fmtNum(r["market_cap"], 0) + '</td></tr>'; });
@@ -566,14 +610,14 @@ function render(data, isInitialLoad) {
 
       var graphsHtml = '<div class="graphs-section"><div class="card-header"><h2>Graphs — Macro &amp; CBK Data</h2></div><div class="card-body"><div class="graphs-grid">' +
         '<div class="graph-card"><h3>12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>' +
-        '<div class="graph-card"><h3>Nominal vs Real GDP (KSh Trillion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>' +
+        '<div class="graph-card"><h3>Nominal vs Real GDP (Ksh Trillion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>' +
         '<div class="graph-card"><h3>Commercial Bank Weighted Average Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div>' +
         '<div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Tn)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>' +
         '</div></div></div>';
 
       document.getElementById("app-kenya").innerHTML = [
         '<div class="metrics">' + metricsHtml + '</div>', 
-        standardCard("Key Macro Rates (CBK)", '<div class="macro-grid-container"><table class="rates-table"><tbody id="macro-rates-tbody-left">' + ratesLeft + '</tbody></table><table class="rates-table"><tbody id="macro-rates-tbody-right">' + ratesRight + '</tbody></table></div>'),
+        standardCard("Key Macro Rates (CBK)", macroCardsHtml),
         standardCard("Upcoming Corporate Actions", '<div id="corp-actions-container"><div class="loader">⏳ Fetching Corporate Actions...</div></div>'),
         '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(trRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(trRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(trRow), "No unchanged stocks today."), '</div>',
         '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], fxRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
@@ -589,8 +633,7 @@ function render(data, isInitialLoad) {
 
   } else {
       var me = document.querySelector(".metrics"); if (me) me.innerHTML = metricsHtml; 
-      var ml = document.getElementById("macro-rates-tbody-left"); if (ml) ml.innerHTML = ratesLeft; 
-      var mr = document.getElementById("macro-rates-tbody-right"); if (mr) mr.innerHTML = ratesRight; 
+      var mg = document.querySelector(".macro-cards-container"); if (mg) mg.innerHTML = macroCardsHtml; 
       var hg = document.getElementById("heatmap-grid"); if (hg) hg.innerHTML = heatCells;
       updateTableData(getTableId("Top Gainers"), gainers.map(trRow)); updateTableData(getTableId("Top Losers"), losers.map(trRow)); updateTableData(getTableId("Unchanged Stocks"), unchanged.map(trRow)); updateTableData(getTableId("Indicative Forex Rates"), fxRows); updateTableData(getTableId("NSE Market Statistics"), statsRows); updateTableData(getTableId("Top by Turnover"), topTurnover.map(rTO)); updateTableData(getTableId("Top by Volume"), topVolume.map(rVol)); updateTableData(getTableId("Top by Trades"), topTrades.map(rTR)); updateTableData(getTableId("Top Foreign Inflows (Buys)"), topFBuy.map(rFB)); updateTableData(getTableId("Top Foreign Outflows (Sells)"), topFSell.map(rFS)); updateTableData(getTableId("Ticker Prices — Full List"), tFull); updateTableData(getTableId("Market Watch — Full Order Book Detail"), mwRows);
       updateTableData(getTableId("Global Markets (World Indices)"), indicesRows); updateTableData(getTableId("Yahoo Most Active (US Equities)"), activeRows);
@@ -599,7 +642,7 @@ function render(data, isInitialLoad) {
   }
 }
 
-// ── NATIVE CHART.JS ENGINE ────────────────────────────────────────────────
+// ── NATIVE CHART.JS ENGINE (Premium Formatting) ───────────────────────────
 function updateChartTheme(mode) {
   var tc = mode === "dark" ? "#aaaaaa" : "#555555", gc = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
   for (var id in chartInstances) { 
@@ -618,7 +661,7 @@ function initCharts() {
   var tc = isDark ? "#aaaaaa" : "#555555"; 
   var gc = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
   
-  // FIX #2: Proper X-Axis with limits so it never gets too crowded
+  // FIX #2: Proper X-Axis with display: true and maxTicksLimit
   var SX = { ticks: { font: F, color: tc, maxRotation: 45, minRotation: 45, autoSkip: true, maxTicksLimit: 10 }, grid: { color: gc, display: false } };
   var SY = { ticks: { font: F, color: tc, padding: 8 }, grid: { color: gc, drawBorder: false }, border: { display: false } };
   var INT = { mode: "index", intersect: false };
