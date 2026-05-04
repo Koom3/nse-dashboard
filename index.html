@@ -10,26 +10,27 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <style>
-    /* ── PREMIUM "NOBLE FINANCE" THEME ──────────────────── */
+    /* ── RESTORED PREMIUM LIGHT MODE & REFINED DARK MODE ──────────────────── */
     :root { 
-      --bg-body: #f0f4f8; 
+      --bg-body: #f4f6f9; 
       --bg-card: #ffffff; 
-      --text-main: #1e293b; 
-      --text-muted: #64748b; 
-      --text-sub: #94a3b8; 
+      --text-main: #2c3e50; 
+      --text-muted: #666666; 
+      --text-sub: #999999; 
       --border-color: #e2e8f0; 
       --table-header-bg: #f8fafc; 
       --table-border: #f1f5f9; 
-      --table-hover: #f8fafc; 
-      --input-border: #cbd5e1; 
+      --table-hover: #fafbfd; 
+      --input-border: #d1d5db; 
       --input-bg: #ffffff; 
-      --card-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); 
-      --card-shadow-hover: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
-      --ticker-bg: #0f172a;
+      --card-shadow: 0 2px 6px rgba(0,0,0,0.07); 
+      --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.11);
+      --ticker-bg: #001030;
       --brand-primary: #002060;
       --brand-gold: #D4AF37;
-      --neon-up: #10b981;
-      --neon-dn: #ef4444;
+      --neon-up: #00b050;
+      --neon-dn: #ff5252;
+      --ticker-cell-bg: #ffffff;
     }
     
     [data-theme="dark"] { 
@@ -47,42 +48,40 @@
       --card-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); 
       --card-shadow-hover: 0 20px 25px -5px rgba(0,0,0,0.5);
       --ticker-bg: #070b14;
-      --brand-primary: #60a5fa;
-      --brand-gold: #fbbf24;
+      --brand-primary: #66a3ff;
+      --brand-gold: #D4AF37;
       --neon-up: #10b981;
       --neon-dn: #ef4444;
+      --ticker-cell-bg: #1e293b;
     }
     
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    /* Elegant Font Blending: Headers get custom font, Data gets crisp sans-serif */
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-body); color: var(--text-main); font-size: 10pt; transition: background 0.3s, color 0.3s; }
-    h1, h2, h3, .brand-font { font-family: 'Hadassah Friedlaender', Georgia, serif !important; font-weight: bold; }
-    table, .val, .ti-prc, .tc-price, .macro-mc-val { font-family: "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    /* Strict Hadassah Friedlaender Font & Bold Enforcement Everywhere */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Hadassah Friedlaender', Georgia, serif !important; font-weight: bold !important; }
+    body { background: var(--bg-body); color: var(--text-main); font-size: 10pt; transition: background 0.3s, color 0.3s; }
 
-    header { background: var(--ticker-bg); color: #fff; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; border-bottom: 3px solid var(--brand-gold); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    header { background: var(--ticker-bg); color: #fff; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; border-bottom: 3px solid var(--brand-gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
     header h1 { font-size: 15pt; letter-spacing: 0.03em; color: #fff; }
     .header-right { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
     
-    #market-status { font-size: 10pt; font-weight: bold; padding: 6px 16px; border-radius: 30px; border: 1.5px solid rgba(255,255,255,0.2); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px; }
-    #market-status.open { color: #10b981; border-color: #10b981; background: rgba(16, 185, 129, 0.1); } 
-    #market-status.closed { color: #ef4444; border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    #market-status { font-size: 11pt; padding: 6px 16px; border-radius: 30px; border: 1.5px solid rgba(255,255,255,0.3); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px; }
+    #market-status.open { color: var(--neon-up); border-color: var(--neon-up); background: rgba(16, 185, 129, 0.1); } 
+    #market-status.closed { color: var(--neon-dn); border-color: var(--neon-dn); background: rgba(239, 68, 68, 0.1); }
     
-    .header-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 9.5pt; font-weight: 600; transition: all 0.2s ease; backdrop-filter: blur(4px); }
-    .header-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); border-color: rgba(255,255,255,0.3); }
+    .header-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 10pt; transition: all 0.2s ease; backdrop-filter: blur(4px); }
+    .header-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); border-color: rgba(255,255,255,0.4); }
     
     /* ── SCROLLING TICKER ──────────────────── */
-    .ticker-wrap { width: 100%; background: #000; color: #fff; overflow: hidden; height: 38px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
+    .ticker-wrap { width: 100%; background: var(--ticker-bg); color: #fff; overflow: hidden; height: 38px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
     .ticker { display: flex; width: max-content; animation: ticker-scroll 120s linear infinite; }
     .ticker:hover { animation-play-state: paused; }
     @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    .ticker-item { margin: 0 18px; font-size: 10pt; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
-    .ti-sym { color: var(--brand-gold); font-weight: bold; } .ti-prc { color: #e2e8f0; } 
+    .ticker-item { margin: 0 18px; font-size: 10pt; display: inline-flex; align-items: center; gap: 8px; }
+    .ti-sym { color: var(--brand-gold); } .ti-prc { color: #e2e8f0; } 
     .ti-up { color: var(--neon-up); } .ti-dn { color: var(--neon-dn); } .ti-nt { color: #64748b; }
     
     /* ── TABS ──────────────────── */
     .tab-container { display: flex; justify-content: center; margin: 2rem 0 1.5rem; gap: 1rem; }
-    .tab-btn { padding: 10px 28px; font-size: 11pt; font-weight: 600; background: transparent; color: var(--text-muted); border: 2px solid transparent; border-radius: 30px; cursor: pointer; transition: all 0.3s ease; }
+    .tab-btn { padding: 10px 28px; font-size: 11pt; background: transparent; color: var(--text-muted); border: 2px solid transparent; border-radius: 30px; cursor: pointer; transition: all 0.3s ease; }
     .tab-btn:hover { color: var(--text-main); }
     .tab-btn.active { background: var(--bg-card); color: var(--brand-primary); border-color: var(--brand-primary); box-shadow: var(--card-shadow); }
     [data-theme="dark"] .tab-btn.active { color: var(--brand-gold); border-color: var(--brand-gold); }
@@ -97,16 +96,18 @@
     @media (max-width: 1100px) { .grid3 { grid-template-columns: 1fr 1fr; } } @media (max-width: 768px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
     
     .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
-    .metric-card { background: var(--bg-card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); transition: all 0.3s ease; display: flex; flex-direction: column; justify-content: center; }
+    .metric-card { background: var(--bg-card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); transition: all 0.3s ease; display: flex; flex-direction: column; justify-content: center; border-top: 4px solid var(--brand-primary); }
     .metric-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: var(--brand-gold); }
-    .metric-card .lbl { font-size: 8pt; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 8px; }
-    .metric-card .val { font-size: 16pt; color: var(--text-main); font-weight: 800; } 
-    .metric-card .sub { font-size: 8.5pt; color: var(--text-sub); margin-top: 6px; font-weight: 500; }
+    .metric-card:nth-child(even) { border-top-color: var(--brand-gold); }
+    .metric-card .lbl { font-size: 9pt; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .metric-card .val { font-size: 15pt; color: var(--brand-primary); } 
+    [data-theme="dark"] .metric-card .val { color: var(--brand-primary); }
+    .metric-card .sub { font-size: 9pt; color: var(--text-sub); margin-top: 6px; }
 
     .card, .full-card { background: var(--bg-card); border-radius: 12px; box-shadow: var(--card-shadow); margin-bottom: 1.5rem; border: 1px solid var(--border-color); overflow: hidden; }
-    .card-header { padding: 1.25rem 1.5rem 1rem; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.01); }
-    [data-theme="dark"] .card-header { background: rgba(255,255,255,0.01); }
-    .card-header h2 { font-size: 11pt; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; margin: 0; } 
+    .card-header { padding: 1.25rem 1.5rem 1rem; border-bottom: 1px solid var(--border-color); background: var(--table-header-bg); }
+    .card-header h2 { font-size: 11.5pt; color: var(--brand-primary); text-transform: uppercase; letter-spacing: 1px; margin: 0; } 
+    [data-theme="dark"] .card-header h2 { color: var(--brand-primary); }
     .card-body { padding: 0; }
     .card-body.padded { padding: 1.5rem; }
     .interactive-card { cursor: pointer; transition: all 0.3s ease; } 
@@ -115,101 +116,108 @@
     .table-collapsed tbody tr:nth-child(n+6) { display: none; }
     .pdf-mode .table-collapsed tbody tr { display: table-row !important; } 
     .pdf-mode .expand-hint { display: none !important; }
-    .expand-hint { text-align: center; font-size: 8.5pt; font-weight: bold; color: var(--brand-gold); padding: 12px; background: var(--table-hover); border-top: 1px solid var(--border-color); user-select: none; transition: background 0.2s; }
+    .expand-hint { text-align: center; font-size: 9pt; color: var(--brand-gold); padding: 12px; background: var(--table-hover); border-top: 1px dashed var(--border-color); user-select: none; transition: background 0.2s; }
     .expand-hint:hover { background: var(--border-color); }
     .table-collapsed .expand-hint::after { content: "▼ VIEW FULL TABLE ▼"; } .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ COLLAPSE TABLE ▲"; color: var(--text-muted); }
     
     /* ── TABLES ──────────────────── */
     .table-responsive { width: 100%; overflow-x: auto; } 
     table { width: 100%; border-collapse: collapse; white-space: nowrap; } 
-    th { text-align: left; padding: 12px 16px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; background: var(--table-header-bg); cursor: pointer; user-select: none; }
-    th:hover { color: var(--text-main); } 
-    td { padding: 10px 16px; border-bottom: 1px solid var(--table-border); font-size: 9.5pt; color: var(--text-main); font-weight: 500; }
+    th { text-align: left; padding: 10px 14px; color: var(--brand-primary); border-bottom: 2px solid var(--border-color); font-size: 10pt; text-transform: uppercase; letter-spacing: 0.5px; background: var(--table-header-bg); cursor: pointer; user-select: none; }
+    th:hover { color: var(--text-main); background: var(--table-border); } 
+    [data-theme="dark"] th { color: var(--brand-primary); }
+    td { padding: 8px 14px; border-bottom: 1px solid var(--table-border); font-size: 10.5pt; color: var(--text-main); }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--table-hover); }
-    .up { color: var(--neon-up) !important; font-weight: 600; } 
-    .dn { color: var(--neon-dn) !important; font-weight: 600; } 
+    .up { color: var(--neon-up) !important; } 
+    .dn { color: var(--neon-dn) !important; } 
     .nt { color: var(--text-sub) !important; }
     
     /* ── MACRO CARDS REDESIGN ──────────────────── */
-    .macro-cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 1.5rem; }
-    .macro-mini-card { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; text-align: center; transition: all 0.2s ease; }
+    .macro-cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; padding: 1.5rem; }
+    .macro-mini-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; text-align: center; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
     .macro-mini-card:hover { transform: translateY(-2px); border-color: var(--brand-gold); box-shadow: var(--card-shadow); }
-    .macro-mc-lbl { font-size: 8pt; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; }
-    .macro-mc-val { font-size: 14pt; color: var(--text-main); font-weight: 800; } 
+    .macro-mc-lbl { font-size: 9pt; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .macro-mc-val { font-size: 14pt; color: var(--brand-primary); } 
+    [data-theme="dark"] .macro-mc-val { color: var(--brand-primary); }
 
     /* ── GLOBAL EXPLORER & HEATMAP ──────────────────── */
     .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1.5rem; padding: 1.5rem; }
-    .country-filter { display: flex; justify-content: center; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
-    .country-filter select { padding: 10px 20px; font-size: 10pt; font-weight: 600; border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-main); background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .country-filter select:focus { border-color: var(--brand-primary); box-shadow: 0 0 0 3px rgba(0,32,96,0.1); }
-    [data-theme="dark"] .country-filter select:focus { border-color: var(--brand-gold); box-shadow: 0 0 0 3px rgba(251,191,36,0.1); }
+    .country-filter { display: flex; justify-content: center; padding-bottom: 1.5rem; border-bottom: 1px dashed var(--border-color); }
+    .country-filter select { padding: 10px 20px; font-size: 10.5pt; border: 2px solid var(--brand-primary); border-radius: 8px; color: var(--brand-primary); background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .country-filter select:focus { border-color: var(--brand-gold); }
+    [data-theme="dark"] .country-filter select { border-color: var(--brand-primary); color: var(--brand-primary); }
+    .country-filter select:hover { background: var(--table-hover); }
     .global-tables-section { display: none; } .global-tables-section.active-country { display: block; animation: fadeIn 0.4s ease; }
 
-    .heatmap-search { width: calc(100% - 3rem); margin: 0 1.5rem 1rem; padding: 10px 16px; border: 1px solid var(--input-border); border-radius: 8px; font-size: 10pt; background: var(--input-bg); color: var(--text-main); outline: none; transition: all 0.2s; }
+    .heatmap-search { width: calc(100% - 3rem); margin: 0 1.5rem 1rem; padding: 10px 16px; border: 1px solid var(--input-border); border-radius: 8px; font-size: 10.5pt; background: var(--input-bg); color: var(--text-main); outline: none; transition: all 0.2s; }
     .heatmap-search:focus { border-color: var(--brand-primary); }
     .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; padding: 0 1.5rem 1.5rem; }
-    .ticker-cell { background: var(--bg-body); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--border-color); transition: all 0.2s; }
+    .ticker-cell { background: var(--ticker-cell-bg); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--border-color); transition: all 0.2s; }
     .ticker-cell:hover { box-shadow: var(--card-shadow); transform: translateY(-2px); }
-    .ticker-cell.up-cell { border-left-color: var(--neon-up); } .ticker-cell.dn-cell { border-left-color: var(--neon-dn); } 
-    .tc-sym { font-size: 10pt; color: var(--text-main); font-weight: 700; } 
-    .tc-price { font-size: 11pt; color: var(--text-main); font-weight: 600; margin: 4px 0; } .tc-chg { font-size: 8.5pt; font-weight: 600; }
+    .ticker-cell.up-cell { border-left-color: var(--neon-up); } .ticker-cell.dn-cell { border-left-color: var(--neon-dn); } .ticker-cell.nt-cell { border-left-color: var(--text-sub); }
+    .tc-sym { font-size: 10.5pt; color: var(--brand-primary); } 
+    [data-theme="dark"] .tc-sym { color: var(--brand-primary); } 
+    .tc-price { font-size: 10pt; color: var(--text-main); margin: 4px 0; } .tc-chg { font-size: 9pt; }
     
     /* ── CHART.JS GRAPHS ──────────────────── */
     .graphs-section { background: var(--bg-card); border-radius: 12px; box-shadow: var(--card-shadow); margin-bottom: 2rem; border: 1px solid var(--border-color); overflow: hidden; }
     .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem; } @media (max-width: 800px) { .graphs-grid { grid-template-columns: 1fr; } }
-    .graph-card { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; }
-    .graph-card h3 { font-size: 9pt; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; text-align: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; } 
+    .graph-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; }
+    .graph-card h3 { font-size: 10.5pt; color: var(--brand-primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; text-align: center; } 
+    [data-theme="dark"] .graph-card h3 { color: var(--brand-primary); }
     .chart-wrapper { position: relative; height: 320px; width: 100%; display: block; }
     
-    .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 11pt; font-weight: 600; }
-    .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--neon-dn); border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: var(--text-main); font-size: 10.5pt; line-height: 1.6; }
+    .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
+    .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--neon-dn); border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: var(--text-main); font-size: 11pt; line-height: 1.6; }
     .error-box h2 { color: var(--neon-dn); margin-top: 0; }
     .error-box code { background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; display:block; margin-top: 10px; font-family: monospace !important; }
     
     /* ── MODAL & NEWS ──────────────────── */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .modal-box { background: var(--bg-card); padding: 2.5rem; border-radius: 16px; width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1.25rem; position: relative; }
-    .modal-box h3 { color: var(--text-main); font-size: 14pt; margin-bottom: 0.5rem; text-align: center; } 
+    .modal-box h3 { color: var(--brand-primary); font-size: 14.5pt; margin-bottom: 0.5rem; text-align: center; } 
+    [data-theme="dark"] .modal-box h3 { color: var(--brand-primary); }
     .modal-close { position: absolute; top: 18px; right: 22px; cursor: pointer; font-size: 16px; color: var(--text-muted); transition: color 0.2s; }
     .modal-close:hover { color: var(--text-main); }
     .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 8.5pt; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .form-group input, .form-group select { padding: 12px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text-main); outline: none; font-size: 10pt; transition: border-color 0.2s; }
+    .form-group label { font-size: 9.5pt; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group input, .form-group select { padding: 12px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text-main); outline: none; font-size: 10.5pt; transition: border-color 0.2s; }
     .form-group input:focus { border-color: var(--brand-primary); }
     .days-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
-    .day-chk { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 8.5pt; font-weight: 600; color: var(--text-main); cursor: pointer; }
+    .day-chk { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 9.5pt; color: var(--text-main); cursor: pointer; }
     .day-chk input { margin: 0; cursor: pointer; }
-    .primary-btn { background: var(--text-main); color: var(--bg-card); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 10.5pt; font-weight: 700; margin-top: 10px; transition: transform 0.2s, box-shadow 0.2s; }
+    .primary-btn { background: var(--brand-primary); color: #ffffff; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 11pt; margin-top: 10px; transition: transform 0.2s, box-shadow 0.2s; }
     .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); } 
-    .secondary-btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); padding: 12px; border-radius: 8px; cursor: pointer; font-size: 10.5pt; font-weight: 700; text-align: center; transition: all 0.2s; }
-    .secondary-btn:hover { border-color: var(--text-main); }
+    .secondary-btn { background: transparent; color: var(--brand-primary); border: 2px solid var(--border-color); padding: 12px; border-radius: 8px; cursor: pointer; font-size: 11pt; text-align: center; transition: all 0.2s; }
+    .secondary-btn:hover { border-color: var(--brand-primary); }
     
     .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; padding: 1.5rem; }
     .news-item { display: flex; flex-direction: column; gap: 0.85rem; background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; height: 100%; transition: all 0.3s ease; }
     .news-item:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); border-color: var(--brand-gold); }
     .news-image { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: var(--table-header-bg); display: block; }
-    .news-title { font-size: 11pt; color: var(--text-main); line-height: 1.4; font-family: 'Hadassah Friedlaender', Georgia, serif !important; }
-    .news-desc { font-size: 9.5pt; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500;}
-    .news-date { font-size: 8pt; font-weight: 700; color: var(--brand-gold); margin-top: auto; text-transform: uppercase; letter-spacing: 0.5px;}
+    .news-title { font-size: 11.5pt; color: var(--text-main); line-height: 1.4; } 
+    [data-theme="dark"] .news-title { color: var(--brand-primary); }
+    .news-desc { font-size: 9.5pt; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;}
+    .news-date { font-size: 8.5pt; color: var(--brand-gold); margin-top: auto; text-transform: uppercase; letter-spacing: 0.5px;}
 
-    .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9.5pt; }
-    .nse-native-table th { background: var(--table-header-bg); padding: 10px 16px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-align: left; text-transform: uppercase; letter-spacing: 0.5px;}
-    .nse-native-table td { padding: 10px 16px; border-bottom: 1px solid var(--table-border); color: var(--text-main); font-weight: 500; }
+    .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 10pt; }
+    .nse-native-table th { background: var(--table-header-bg); padding: 10px 16px; color: var(--brand-primary); border-bottom: 1px solid var(--border-color); text-align: left; text-transform: uppercase; letter-spacing: 0.5px;}
+    .nse-native-table td { padding: 10px 16px; border-bottom: 1px solid var(--table-border); color: var(--text-main); }
     .nse-native-table tr:hover td { background: var(--table-hover); } .nse-native-table img { max-height: 35px; border-radius: 4px; }
   </style>
 </head>
 <body>
 
 <header data-html2canvas-ignore="true">
-  <h1><span class="brand-font">🇰🇪 Market Data Analysis</span></h1>
+  <h1>🇰🇪 Market Data Analysis</h1>
   <div class="header-right">
     <span id="market-status" class="closed">STATUS PENDING</span>
     <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.4;">
-      <span id="last-updated" style="font-size:8pt; color:var(--text-sub); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Loading…</span>
+      <span id="last-updated" style="font-size:8.5pt; color:var(--text-sub); text-transform:uppercase; letter-spacing:0.5px;">Loading…</span>
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span id="live-clock" style="font-size: 10.5pt; font-family: 'SF Pro Text', sans-serif !important;">EAT: --:--:--</span>
-        <span id="market-countdown" style="font-size: 9pt; color: #fbbf24; font-family: 'SF Pro Text', sans-serif !important;"></span>
+        <span id="live-clock" style="font-size: 11pt;">EAT: --:--:--</span>
+        <span id="market-countdown" style="font-size: 9.5pt; color: #fbbf24;"></span>
       </div>
     </div>
     <button class="header-btn" onclick="openExportModal()">📄 Export</button>
@@ -218,7 +226,7 @@
   </div>
 </header>
 
-<div class="ticker-wrap" id="ticker-wrap"><div class="ticker" id="ticker-content"><div style="padding:0 20px;font-style:italic;color:#64748b;">Aggregating live ticker stream...</div></div></div>
+<div class="ticker-wrap" id="ticker-wrap"><div class="ticker" id="ticker-content"><div style="padding:0 20px;color:#64748b;">Aggregating live ticker stream...</div></div></div>
 
 <div class="tab-container" data-html2canvas-ignore="true">
   <button class="tab-btn active" onclick="switchTab('kenya',event)">🇰🇪 Kenyan Market</button>
@@ -235,7 +243,7 @@
       </div>
   </div>
   
-  <div style="text-align: center; padding: 2.5rem 1rem 1rem; color: var(--text-sub); font-size: 9pt; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; font-family: sans-serif !important;">
+  <div style="text-align: center; padding: 2.5rem 1rem 1rem; color: var(--text-sub); font-size: 11pt; letter-spacing: 2px; text-transform: uppercase;">
     TO GOD BE THE GLORY
   </div>
 </div>
@@ -243,11 +251,11 @@
 <div class="modal-overlay" id="export-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeExportModal()">✖</span>
-    <h3 class="brand-font">Export Tear Sheet</h3>
+    <h3>Export Tear Sheet</h3>
     <button class="secondary-btn" id="download-btn" onclick="downloadPDF()">⬇️ Download PDF Now</button>
     <hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;">
-    <h3 class="brand-font" style="font-size:12pt; margin-bottom: 0;">Automated Delivery</h3>
-    <p style="font-size:9pt; color:var(--text-muted); text-align:center; font-weight:500; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p>
+    <h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3>
+    <p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p>
     
     <div class="form-group">
       <label>Email address</label>
@@ -268,7 +276,7 @@
       </div>
     </div>
     <button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button>
-    <div id="sub-feedback" style="text-align:center; font-size:9.5pt; font-weight:700; margin-top:10px; color:var(--neon-up); display:none;">✅ Subscription saved successfully!</div>
+    <div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;">✅ Subscription saved successfully!</div>
   </div>
 </div>
 
@@ -299,7 +307,7 @@ var countryMap = {
   "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"}
 };
 
-// ── CLOCK & COUNTDOWN (Noble Terminal Specs) ──────────────────────────────
+// ── CLOCK & COUNTDOWN (Intelligent Market Timing) ─────────────────────────
 function padZero(n) { return n < 10 ? '0' + n : n; }
 setInterval(function() {
   var now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
@@ -386,10 +394,10 @@ if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttr
 function setMarketStatus(s) { var el=document.getElementById("market-status"); if(s==="OPEN"){el.textContent="OPEN";el.className="open";}else{el.textContent="CLOSED";el.className="closed";} }
 function showGlobalCountry(key) { currentGlobalSelection=key; document.querySelectorAll('.global-tables-section').forEach(function(el) { el.classList.remove('active-country'); }); var el=document.getElementById('country-'+key); if(el) el.classList.add('active-country'); var sel=document.getElementById("globalSearch"); if(sel&&sel.value!==key) sel.value=key; if (isGeoChartLoaded) drawRegionsMap(); }
 
-// ── TRUE BLENDED LIVE NEWS ENGINE (Concurrent Promise.all) ────────────────
+// ── TRUE BLENDED LIVE NEWS ENGINE (JSON API BYPASS) ───────────────────────
 async function loadLiveNews() {
   if (isNewsFetched) return;
-  var FB = 'https://via.placeholder.com/300x160/0f172a/FFFFFF?text=Market+Intelligence';
+  var FB = 'https://via.placeholder.com/300x160/002060/FFFFFF?text=Market+Intelligence';
   try {
     var feeds = [
       { url: "https://kenyanwallstreet.com/feed/", name: "Kenyan Wall Street" }, 
@@ -398,8 +406,9 @@ async function loadLiveNews() {
       { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" }
     ];
     
+    // Uses rss2json to bypass XML parsing errors and browser CORS entirely
     var fetchPromises = feeds.map(function(f) {
-        return fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(f.url) + "&api_key=&count=6")
+        return fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(f.url))
             .then(function(resp) { return resp.json(); })
             .then(function(data) {
                 if (data.status !== 'ok') return [];
@@ -419,23 +428,29 @@ async function loadLiveNews() {
     var results = await Promise.all(fetchPromises);
     var all = [];
     results.forEach(function(resArray) { all = all.concat(resArray); });
+    
+    if(all.length === 0) throw new Error("No news returned");
+    
+    // Sort combined articles chronologically
     all.sort(function(a,b) { return new Date(b.pubDate) - new Date(a.pubDate); });
     
     var html = '<div class="news-grid">';
     all.slice(0, 12).forEach(function(i) {
       var dt = new Date(i.pubDate);
-      html += '<a href="' + i.link + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="news-item"><img src="' + i.img + '" class="news-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + FB + '\';"><div class="news-title">' + i.title + '</div><div class="news-desc">' + i.desc + '</div><div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><div class="news-date">' + (isNaN(dt) ? 'Recent' : dt.toLocaleString()) + '</div><div style="font-size:8pt;color:var(--text-sub);font-style:italic;font-weight:600;">Source: ' + i.src + '</div></div></div></a>';
+      html += '<a href="' + i.link + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="news-item"><img src="' + i.img + '" class="news-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + FB + '\';"><div class="news-title">' + i.title + '</div><div class="news-desc">' + i.desc + '</div><div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><div class="news-date">' + (isNaN(dt) ? 'Recent' : dt.toLocaleString()) + '</div><div style="font-size:8.5pt;color:var(--text-sub);font-style:italic;">Source: ' + i.src + '</div></div></div></a>';
     });
     html += '</div>';
     document.getElementById("live-news-container").innerHTML = html; 
     isNewsFetched = true;
-  } catch(e){ document.getElementById("live-news-container").innerHTML='<p style="color:var(--text-muted);padding:1.5rem;font-weight:600;text-align:center;">Unable to stream live intelligence at this time.</p>'; }
+  } catch(e){ 
+    document.getElementById("live-news-container").innerHTML='<p style="color:var(--text-muted);padding:1.5rem;text-align:center;">Unable to stream live intelligence. Please verify network connection.</p>'; 
+  }
 }
 loadLiveNews();
 
 function loadCorporateActions() {
   var container = document.getElementById("corp-actions-container"); if(!container) return;
-  container.innerHTML = '<div style="padding:2rem;text-align:center;"><a href="https://www.nse.co.ke/corporate-actions/" target="_blank" rel="noopener" style="display:inline-block;padding:12px 28px;background:var(--text-main);color:var(--bg-card);border-radius:8px;text-decoration:none;font-size:11pt;font-weight:700;transition:transform 0.2s, box-shadow 0.2s;">Access Live Corporate Actions Terminal ↗</a></div>';
+  container.innerHTML = '<div style="padding:2rem;text-align:center;"><a href="https://www.nse.co.ke/corporate-actions/" target="_blank" rel="noopener" style="display:inline-block;padding:12px 28px;background:var(--brand-primary);color:#ffffff;border-radius:8px;text-decoration:none;font-size:11pt;transition:transform 0.2s, box-shadow 0.2s;">Access Live Corporate Actions Terminal ↗</a></div>';
 }
 
 // ── DATA FETCHING ─────────────────────────────────────────────────────────
@@ -494,7 +509,7 @@ function extractDynamicData(data) {
     });
   }
 
-  // ── FIX #6: SPECIFIC FOREX EXTRACTOR (B21:E31 from CBK Grouped Data) ──
+  // ── SPECIFIC FOREX EXTRACTOR (B21:E31 from CBK Grouped Data) ──
   if (data.cbk && data.cbk.length >= 29) {
       for (var r = 19; r <= 29; r++) {
           if (data.cbk[r]) {
@@ -535,7 +550,7 @@ function extractDynamicData(data) {
       });
       if(tmpGdp.length>0){tmpGdp.sort(function(a,b) { return a.year-b.year; }); tmpGdp.forEach(function(d) { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });}
       
-      // FIX #1: Reverse the arrays so the X-axis plots correctly from Oldest (Left) to Newest (Right)
+      // Reverse the arrays so the X-axis plots correctly from Oldest (Left) to Newest (Right)
       if(CHART_DATA.inflation.labels.length > 0) { CHART_DATA.inflation.labels.reverse(); CHART_DATA.inflation.m12.reverse(); }
       if(CHART_DATA.kepss.labels.length > 0) { CHART_DATA.kepss.labels.reverse(); CHART_DATA.kepss.values.reverse(); }
       if(CHART_DATA.banks.labels.length > 0) { CHART_DATA.banks.labels.reverse(); CHART_DATA.banks.lending.reverse(); CHART_DATA.banks.overdraft.reverse(); CHART_DATA.banks.savings.reverse(); CHART_DATA.banks.deposit.reverse(); }
@@ -556,10 +571,10 @@ function fmtKsh(v) { var n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); re
 function fmtUSD(v) { if (!v) return "—"; var s = String(v); if (s.includes("$")) return s; var n = parseFloat(s.replace(/[^0-9.\-]/g, "")); return isNaN(n) ? s : "$" + fmtNum(n, 2); }
 
 function tableCard(title, headers, rows, emptyMsg) {
-  if (!rows || rows.length === 0) return '<div class="card"><div class="card-header"><h2 class="brand-font">' + title + '</h2></div><div class="card-body padded"><p style="color:var(--text-muted);font-weight:600;font-style:italic;">' + (emptyMsg || "Stream empty or offline.") + '</p></div></div>';
+  if (!rows || rows.length === 0) return '<div class="card"><div class="card-header"><h2>' + title + '</h2></div><div class="card-body padded"><p style="color:var(--text-muted);font-style:italic;">' + (emptyMsg || "Stream empty or offline.") + '</p></div></div>';
   var many = rows.length > 5, cls = many ? "card table-collapsed interactive-card" : "card", onclick = many ? "onclick=\"this.classList.toggle('table-collapsed')\"" : "";
   var hdrHtml = headers.map(function(h) { return '<th>' + h + ' <span class="sort-icon" style="color:var(--text-sub);">↕</span></th>'; }).join(""), bodyHtml = rows.join("");
-  return '<div class="' + cls + '" ' + onclick + '><div class="card-header"><h2 class="brand-font">' + title + '</h2></div><div class="card-body"><div class="table-responsive"><table data-id="' + getTableId(title) + '"><thead><tr>' + hdrHtml + '</tr></thead><tbody>' + bodyHtml + '</tbody></table></div>' + (many ? '<div class="expand-hint"></div>' : '') + '</div></div>';
+  return '<div class="' + cls + '" ' + onclick + '><div class="card-header"><h2>' + title + '</h2></div><div class="card-body"><div class="table-responsive"><table data-id="' + getTableId(title) + '"><thead><tr>' + hdrHtml + '</tr></thead><tbody>' + bodyHtml + '</tbody></table></div>' + (many ? '<div class="expand-hint"></div>' : '') + '</div></div>';
 }
 
 function buildGenericTableRows(sheetData) {
@@ -570,7 +585,7 @@ function buildGenericTableRows(sheetData) {
   return { headers: displayHeaders, rows: rows };
 }
 
-function standardCard(title, bodyHtml) { return '<div class="full-card"><div class="card-header"><h2 class="brand-font">' + title + '</h2></div><div class="card-body">' + bodyHtml + '</div></div>'; }
+function standardCard(title, bodyHtml) { return '<div class="full-card"><div class="card-header"><h2>' + title + '</h2></div><div class="card-body">' + bodyHtml + '</div></div>'; }
 
 function runSort(table, colIndex, direction, th) {
   var tbody = table.querySelector('tbody'), allRows = Array.from(tbody.querySelectorAll('tr'));
@@ -619,7 +634,6 @@ function render(data, isInitialLoad) {
 
   var metricsHtml = '<div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">' + fmtNum(statsMap["NSE ALL SHARE INDEX"], 2) + '</div><div class="sub">' + formatChange(statsChange["NSE ALL SHARE INDEX"], false) + ' vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">' + fmtNum(statsMap["NSE 20 SHARE INDEX"], 2) + '</div><div class="sub">Blue-chip Index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">' + fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2) + 'B</div><div class="sub">KES Total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">' + fmtNum(totalTurnover, 0) + '</div><div class="sub">KES Today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">' + fmtNum(totalTrades, 0) + '</div><div class="sub">Trades Today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">' + fmtNum(totalFBuy, 0) + '</span></div><div class="sub">KES Today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">' + fmtNum(totalFSell, 0) + '</span></div><div class="sub">KES Today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">' + gainers.length + '</span> / <span class="dn">' + losers.length + '</span></div><div class="sub">' + unchanged.length + ' unchanged · ' + tickers.length + ' total</div></div>';
 
-  // ── FIX #3: BEAUTIFUL MACRO CARDS REDESIGN ──
   var macroCardsHtml = '<div class="macro-cards-container">';
   KEY_RATES.forEach(function(r) { 
       macroCardsHtml += '<div class="macro-mini-card"><div class="macro-mc-lbl">' + r.label + '</div><div class="macro-mc-val">' + r.value + '</div></div>';
@@ -628,10 +642,10 @@ function render(data, isInitialLoad) {
 
   var statsRows = statsArr.filter(function(r) { return r && r.name && r.value !== undefined && r.value !== ""; }).map(function(r) { return '<tr><td>' + r.name + '</td><td>' + fmtNum(r.value, 2) + '</td><td>' + ((r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—") + '</td></tr>'; });
   function trRow(t) { return '<tr><td>' + t.symbol + '</td><td>' + fmtKsh(t["last_price_(kshs)"]) + '</td><td>' + formatChange(pk(t), true) + '</td></tr>'; }
-  var rTO = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td style="color:var(--text-main);font-weight:700;">' + fmtKsh(r["turnover_(kshs)"]) + '</td><td>' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + (r.trades || "—") + '</td></tr>'; };
-  var rVol = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td style="color:var(--text-main);font-weight:700;">' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td></tr>'; };
-  var rTR = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td style="color:var(--text-main);font-weight:700;">' + fmtNum(numMW(r, "trades"), 0) + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td></tr>'; };
-  var rFB = function(r) { var net = numMW(r, "foreign_buy") - numMW(r, "foreign_sell"); return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td><td style="color:' + (net >= 0 ? "var(--neon-up)" : "var(--neon-dn)") + ';font-weight:700;">' + fmtNum(net, 0) + '</td></tr>'; };
+  var rTO = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td style="color:var(--brand-primary);">' + fmtKsh(r["turnover_(kshs)"]) + '</td><td>' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + (r.trades || "—") + '</td></tr>'; };
+  var rVol = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td style="color:var(--brand-primary);">' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td></tr>'; };
+  var rTR = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td style="color:var(--brand-primary);">' + fmtNum(numMW(r, "trades"), 0) + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td></tr>'; };
+  var rFB = function(r) { var net = numMW(r, "foreign_buy") - numMW(r, "foreign_sell"); return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td><td style="color:' + (net >= 0 ? "var(--neon-up)" : "var(--neon-dn)") + ';">' + fmtNum(net, 0) + '</td></tr>'; };
   var rFS = function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td></tr>'; };
   var tFull = tickers.map(function(t) { return '<tr><td>' + t.symbol + '</td><td>' + fmtKsh(t["last_price_(kshs)"]) + '</td><td>' + formatChange(t["change"], false) + '</td><td>' + formatChange(pk(t), true) + '</td><td><span class="nt">' + (t["last_updated"] || "—") + '</span></td></tr>'; });
   var mwRows = mw.filter(function(r) { return numMW(r, "ltp_(kshs)") > 0 || numMW(r, "volume") > 0; }).map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td>' + fmtKsh(r["ltp_(kshs)"]) + '</td><td>' + fmtKsh(r["prev_close"]) + '</td><td>' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + (r.trades || "—") + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td></tr>'; });
@@ -643,7 +657,7 @@ function render(data, isInitialLoad) {
   var activeRows = active.map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td><td>' + fmtNum(r["market_cap"], 0) + '</td></tr>'; });
 
   if (isInitialLoad) {
-      var globalEquitiesHtml = '<div class="full-card"><div class="card-header"><h2 class="brand-font">Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">';
+      var globalEquitiesHtml = '<div class="full-card"><div class="card-header"><h2>Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value)">';
       Object.keys(countryMap).forEach(function(key) { var isSelected = key === currentGlobalSelection ? "selected" : ""; globalEquitiesHtml += '<option value="' + key + '" ' + isSelected + '>' + countryMap[key].name + '</option>'; });
       globalEquitiesHtml += '</select></div><div id="regions_div" style="width:100%;height:350px;min-height:350px;"></div><div id="global-tables-container">';
       Object.keys(countryMap).forEach(function(countryKey) {
@@ -657,11 +671,11 @@ function render(data, isInitialLoad) {
 
       document.getElementById("app-global").innerHTML = ['<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>', globalEquitiesHtml].join("");
 
-      var graphsHtml = '<div class="graphs-section"><div class="card-header"><h2 class="brand-font">Graphs — Macro &amp; CBK Data</h2></div><div class="card-body padding-0"><div class="graphs-grid">' +
-        '<div class="graph-card"><h3 class="brand-font">12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>' +
-        '<div class="graph-card"><h3 class="brand-font">Nominal vs Real GDP (KSh Trillion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>' +
-        '<div class="graph-card"><h3 class="brand-font">Commercial Bank Weighted Average Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div>' +
-        '<div class="graph-card"><h3 class="brand-font">KEPSS RTGS Monthly Settlement Value (KES Tn)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>' +
+      var graphsHtml = '<div class="graphs-section"><div class="card-header"><h2>Graphs — Macro &amp; CBK Data</h2></div><div class="card-body padding-0"><div class="graphs-grid">' +
+        '<div class="graph-card"><h3>12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>' +
+        '<div class="graph-card"><h3>Nominal vs Real GDP (KSh Trillion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>' +
+        '<div class="graph-card"><h3>Commercial Bank Weighted Average Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div>' +
+        '<div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value (KES Tn)</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>' +
         '</div></div></div>';
 
       document.getElementById("app-kenya").innerHTML = [
@@ -672,7 +686,7 @@ function render(data, isInitialLoad) {
         '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], fxRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
         '<div class="grid3">', tableCard("Top by Turnover", ["Symbol","Security","Turnover (KSh)","Volume","Trades"], topTurnover.map(rTO), "No turnover data."), tableCard("Top by Volume", ["Symbol","Security","Volume","Turnover (KSh)"], topVolume.map(rVol), "No volume data."), tableCard("Top by Trades", ["Symbol","Security","Trades","Turnover (KSh)"], topTrades.map(rTR),"No trades data."), '</div>',
         '<div class="grid2">', tableCard("Top Foreign Inflows (Buys)", ["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"], topFBuy.map(rFB), "No foreign buy data."), tableCard("Top Foreign Outflows (Sells)", ["Symbol","Security","Foreign Sell","Foreign Buy"], topFSell.map(rFS), "No foreign sell data."), '</div>',
-        standardCard("Equity Heat Map — All Tickers", '<p style="font-size:9pt;margin-bottom:15px;color:var(--text-muted);font-weight:600;">' + tickers.length + ' tickers &nbsp;·&nbsp; <span class="up">' + gainers.length + ' gainers</span> &nbsp;·&nbsp; <span class="dn">' + losers.length + ' losers</span> &nbsp;·&nbsp; ' + unchanged.length + ' unchanged</p><input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol…" oninput="filterHeatmap(this.value)"><div class="ticker-grid" id="heatmap-grid">' + heatCells + '</div>'),
+        standardCard("Equity Heat Map — All Tickers", '<p style="font-size:9pt;margin-bottom:15px;color:var(--text-muted);">' + tickers.length + ' tickers &nbsp;·&nbsp; <span class="up">' + gainers.length + ' gainers</span> &nbsp;·&nbsp; <span class="dn">' + losers.length + ' losers</span> &nbsp;·&nbsp; ' + unchanged.length + ' unchanged</p><input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol…" oninput="filterHeatmap(this.value)"><div class="ticker-grid" id="heatmap-grid">' + heatCells + '</div>'),
         tableCard("Ticker Prices — Full List", ["Symbol","Price (KSh)","Change","% Change","Updated"], tFull, "Ticker data not loaded."),
         tableCard("Market Watch — Full Order Book Detail", ["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"], mwRows, "Market Watch data not loaded."),
         graphsHtml
@@ -691,7 +705,7 @@ function render(data, isInitialLoad) {
   }
 }
 
-// ── NATIVE CHART.JS ENGINE (Premium Formatting) ───────────────────────────
+// ── NATIVE CHART.JS ENGINE ────────────────────────────────────────────────
 function updateChartTheme(mode) {
   var tc = mode === "dark" ? "#94a3b8" : "#64748b", gc = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
   for (var id in chartInstances) { 
@@ -704,7 +718,7 @@ function updateChartTheme(mode) {
 }
 
 function initCharts() {
-  var F = { family: "sans-serif", size: 10, weight: "600" };
+  var F = { family: "'Hadassah Friedlaender', Georgia, serif", size: 10, weight: "bold" };
   var TT = { backgroundColor: "#0f172a", padding: 12, cornerRadius: 8, titleFont: F, bodyFont: F, titleColor: "#fbbf24", bodyColor: "#f8fafc", borderColor: "rgba(255,255,255,0.1)", borderWidth: 1 };
   var isDark = document.documentElement.getAttribute("data-theme") === "dark"; 
   var tc = isDark ? "#94a3b8" : "#64748b"; 
@@ -721,9 +735,9 @@ function initCharts() {
 
   try { if(d.inflation.labels.length>0) { createChart("gc_inflation", { type: "line", data: { labels: d.inflation.labels, datasets: [{ label: "12-Month Inflation (%)", data: d.inflation.m12, borderColor: "#3b82f6", borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true, backgroundColor: "rgba(59, 130, 246, 0.15)" }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Inflation: " + ctx.parsed.y.toFixed(2) + "%"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: Object.assign(yt('Rate (%)'), { min: 0 }) } } }); } } catch(e){}
   
-  try { if(d.gdp.labels.length>0) { var nomTn = d.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e12; }), realTn = d.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e12; }); createChart("gc_gdp", { type: "bar", data: { labels: d.gdp.labels, datasets: [ { label: "Nominal GDP", data: nomTn, type: "bar", backgroundColor: "#fbbf24", borderWidth: 0, order: 2, borderRadius: 4 }, { label: "Real GDP", data: realTn, type: "bar", backgroundColor: "#3b82f6", borderWidth: 0, order: 1, borderRadius: 4 } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": KSh " + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : '—') + "Tn"; } } }) }, scales: { x: Object.assign(xt(''), { grid: { display: false } }), y: yt('GDP (KSh Trillions)', function(v) { return 'KSh ' + v.toFixed(1) + 'Tn'; }) } } }); } } catch(e){}
+  try { if(d.gdp.labels.length>0) { var nomTn = d.gdp.nominal.map(function(v) { return isNaN(v) ? null : v / 1e12; }), realTn = d.gdp.real.map(function(v) { return isNaN(v) ? null : v / 1e12; }); createChart("gc_gdp", { type: "bar", data: { labels: d.gdp.labels, datasets: [ { label: "Nominal GDP", data: nomTn, type: "bar", backgroundColor: "#D4AF37", borderWidth: 0, order: 2, borderRadius: 4 }, { label: "Real GDP", data: realTn, type: "bar", backgroundColor: "#002060", borderWidth: 0, order: 1, borderRadius: 4 } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": KSh " + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : '—') + "Tn"; } } }) }, scales: { x: Object.assign(xt(''), { grid: { display: false } }), y: yt('GDP (KSh Trillions)', function(v) { return 'KSh ' + v.toFixed(1) + 'Tn'; }) } } }); } } catch(e){}
   
-  try { if(d.banks.labels.length>0) { createChart("gc_banks", { type: "line", data: { labels: d.banks.labels, datasets: [ { label: "Lending", data: d.banks.lending, borderColor: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Overdraft", data: d.banks.overdraft, borderColor: "#fbbf24", backgroundColor: "rgba(251, 191, 36, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Savings", data: d.banks.savings, borderColor: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Deposit", data: d.banks.deposit, borderColor: "#3b82f6", backgroundColor: "rgba(59, 130, 246, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : '—') + "%"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: yt('Rate (%)', function(v) { return v + '%'; }) } } }); } } catch(e){}
+  try { if(d.banks.labels.length>0) { createChart("gc_banks", { type: "line", data: { labels: d.banks.labels, datasets: [ { label: "Lending", data: d.banks.lending, borderColor: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Overdraft", data: d.banks.overdraft, borderColor: "#D4AF37", backgroundColor: "rgba(212, 175, 55, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Savings", data: d.banks.savings, borderColor: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }, { label: "Deposit", data: d.banks.deposit, borderColor: "#002060", backgroundColor: "rgba(0, 32, 96, 0.15)", borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: LEG, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " " + ctx.dataset.label + ": " + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : '—') + "%"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: yt('Rate (%)', function(v) { return v + '%'; }) } } }); } } catch(e){}
   
   try { if(d.kepss.labels.length>0) { createChart("gc_kepss", { type: "line", data: { labels: d.kepss.labels, datasets: [{ label: "Settlement Value (Tn)", data: d.kepss.values, borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.15)", borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: INT, plugins: { legend: { display: false }, tooltip: Object.assign({}, TT, { callbacks: { label: function(ctx) { return " Value: KES " + (ctx.parsed.y ? (ctx.parsed.y / 1000000).toFixed(2) : '—') + " Tn"; } } }) }, scales: { x: Object.assign(xt(''), { ticks: Object.assign({}, SX.ticks, { display: true }) }), y: yt('Value (KES Trillions)', function(v) { return (v / 1000000).toFixed(1) + 'Tn'; }) } } }); } } catch(e){}
 }
@@ -751,7 +765,7 @@ function drawRegionsMap() {
   data.addRows(mapData);
   var chart = new google.visualization.GeoChart(mapDiv);
   google.visualization.events.addListener(chart, 'select', function() { var sel = chart.getSelection(); if (sel.length > 0) { var code = data.getValue(sel[0].row, 0); var k = Object.keys(countryMap).find(function(k) { return countryMap[k].code === code; }); if (k) showGlobalCountry(k); } });
-  chart.draw(data, { colorAxis: { colors: [ isDark ? '#334155' : '#e2e8f0', '#fbbf24' ]}, backgroundColor: 'transparent', datalessRegionColor: isDark ? '#1e293b' : '#f1f5f9', defaultColor: isDark ? '#334155' : '#e2e8f0', legend: 'none', width: '100%', height: 350 });
+  chart.draw(data, { colorAxis: { colors: [ isDark ? '#334155' : '#e2e8f0', '#D4AF37' ]}, backgroundColor: 'transparent', datalessRegionColor: isDark ? '#1e293b' : '#f1f5f9', defaultColor: isDark ? '#334155' : '#e2e8f0', legend: 'none', width: '100%', height: 350 });
 }
 
 function filterHeatmap(q) { var qU = (q || "").toUpperCase(); document.querySelectorAll(".ticker-cell").forEach(function(cell) { cell.style.display = (cell.dataset.sym || "").toUpperCase().includes(qU) ? "" : "none"; }); }
