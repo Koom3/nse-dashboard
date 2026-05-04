@@ -131,11 +131,6 @@
     .news-title { font-size: 10.5pt; color: var(--text-main); line-height: 1.3; } [data-theme="dark"] .news-title { color: #66a3ff; }
     .news-desc { font-size: 9pt; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: normal;}
     .news-date { font-size: 8pt; color: #D4AF37; margin-top: auto; font-weight: normal;}
-
-    .nse-native-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 9.5pt; }
-    .nse-native-table th { background: var(--table-header-bg); padding: 8px 10px; color: #002060; border-bottom: 2px solid var(--border-color); text-align: left; } [data-theme="dark"] .nse-native-table th { color: #66a3ff; }
-    .nse-native-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-border); color: var(--text-main); }
-    .nse-native-table tr:hover td { background: var(--table-hover); } .nse-native-table img { max-height: 35px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -301,7 +296,7 @@ if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttr
 function setMarketStatus(s) { var el=document.getElementById("market-status"); if(s==="OPEN"){el.textContent="⬤ OPEN";el.className="open";}else{el.textContent="⬤ CLOSED";el.className="closed";} }
 function showGlobalCountry(key) { currentGlobalSelection=key; document.querySelectorAll('.global-tables-section').forEach(function(el) { el.classList.remove('active-country'); }); var el=document.getElementById('country-'+key); if(el) el.classList.add('active-country'); var sel=document.getElementById("globalSearch"); if(sel&&sel.value!==key) sel.value=key; if (isGeoChartLoaded) drawRegionsMap(); }
 
-// ── ROBUST XML NEWS SCRAPER (Economist, WSJ, CNBC) ────────────────────────
+// ── ROBUST XML NEWS SCRAPER ───────────────────────────────────────────────
 async function loadLiveNews() {
   if (isNewsFetched) return;
   var FB = 'https://via.placeholder.com/300x150/002060/FFFFFF?text=Market+News';
@@ -410,7 +405,6 @@ function extractDynamicData(data) {
   
   var targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate"];
   var validCcys = ["USD", "GBP", "EUR", "JPY", "ZAR", "CHF", "CAD", "KES/UGX", "KES/TZS"];
-  var tempGdp = []; 
 
   if (data.macro && data.macro.length > 0) {
     data.macro.forEach(function(row) {
@@ -426,44 +420,35 @@ function extractDynamicData(data) {
     });
   }
 
-  var gd = data.graphs || [];
-  if (gd.length > 0) {
-      var h = Object.keys(gd[0]);
-      var cInfDate = h.find(function(k) { return k.toLowerCase().includes("month") || (k.toLowerCase().includes("date") && !k.toLowerCase().includes("year")); });
-      var cInf12 = h.find(function(k) { return k.toLowerCase().includes("12") || k.toLowerCase().includes("inflation"); });
-      var cGdpY = h.find(function(k) { return k.toLowerCase().includes("year"); });
-      var cGdpN = h.find(function(k) { return k.toLowerCase().includes("nominal"); });
-      var cGdpR = h.find(function(k) { return k.toLowerCase().includes("real"); });
-      var cBDate = h.find(function(k) { return k.toLowerCase().includes("month") && k !== cInfDate; }) || cInfDate;
-      var cBDep = h.find(function(k) { return k.toLowerCase().includes("deposit"); });
-      var cBSav = h.find(function(k) { return k.toLowerCase().includes("saving"); });
-      var cBLen = h.find(function(k) { return k.toLowerCase().includes("lending"); });
-      var cBOvr = h.find(function(k) { return k.toLowerCase().includes("overdraft"); });
-      var cKepDate = h.find(function(k) { return k.toLowerCase().includes("month") && k !== cInfDate && k !== cBDate; }) || cBDate || cInfDate;
-      var cKepVal = h.find(function(k) { return k.toLowerCase().includes("value") || k.toLowerCase().includes("settlement"); });
-
-      gd.forEach(function(row) {
-          if (cInfDate && cInf12 && row[cInf12] !== undefined && row[cInf12] !== "") {
-              var lbl = String(row[cInfDate]).trim(), val = cleanNum(row[cInf12]);
-              if (lbl && lbl !== "undefined" && !isNaN(val)) { CHART_DATA.inflation.labels.push(lbl); CHART_DATA.inflation.m12.push(val); }
+  // ── THE FLAT CHART DATA MAPPER ──
+  var cd = data.chart_data || [];
+  if (cd.length > 0) {
+      var tmpGdp = [];
+      cd.forEach(function(row) {
+          // 1. Inflation
+          if (row.inf_date && row["12-month_inflation"] !== undefined && row["12-month_inflation"] !== "") {
+              var infVal = cleanNum(row["12-month_inflation"]);
+              if (!isNaN(infVal)) { CHART_DATA.inflation.labels.push(String(row.inf_date).trim()); CHART_DATA.inflation.m12.push(infVal); }
           }
-          if (cGdpY && cGdpN && row[cGdpN] !== undefined && row[cGdpN] !== "") {
-              var ys = String(row[cGdpY]).trim(), ym = ys.match(/20\d{2}/), yr = ym ? parseInt(ym[0]) : parseInt(ys);
-              var nom = cleanNum(row[cGdpN]), real = cGdpR ? cleanNum(row[cGdpR]) : NaN;
-              if (!isNaN(yr) && !isNaN(nom) && !tempGdp.find(function(g) { return g.year === yr; })) tempGdp.push({ year: yr, nom: nom, real: real });
+          // 2. GDP
+          if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
+              var yrStr = String(row.gdp_year).trim(), yrMatch = yrStr.match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
+              var nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp);
+              if (!isNaN(yr) && !isNaN(nom) && !tmpGdp.find(function(g) { return g.year === yr; })) tmpGdp.push({ year: yr, nom: nom, real: real });
           }
-          if (cBDate && cBDep && row[cBDep] !== undefined && row[cBDep] !== "") {
-              var lbl2 = String(row[cBDate]).trim(), dep = cleanNum(row[cBDep]);
-              var sav = cBSav ? cleanNum(row[cBSav]) : NaN, len = cBLen ? cleanNum(row[cBLen]) : NaN, ovr = cBOvr ? cleanNum(row[cBOvr]) : NaN;
-              if (lbl2 && lbl2 !== "undefined" && !isNaN(dep)) { CHART_DATA.banks.labels.push(lbl2); CHART_DATA.banks.deposit.push(dep); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); }
+          // 3. Banks
+          if (row.rates_date && row.lending !== undefined && row.lending !== "") {
+              var len = cleanNum(row.lending), ovr = cleanNum(row.overdraft), sav = cleanNum(row.savings), dep = cleanNum(row.deposit);
+              if (!isNaN(len)) { CHART_DATA.banks.labels.push(String(row.rates_date).trim()); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
           }
-          if (cKepDate && cKepVal && row[cKepVal] !== undefined && row[cKepVal] !== "") {
-              var lbl3 = String(row[cKepDate]).trim(), val2 = cleanNum(row[cKepVal]);
-              if (lbl3 && lbl3 !== "undefined" && !isNaN(val2) && val2 > 10) { CHART_DATA.kepss.labels.push(lbl3); CHART_DATA.kepss.values.push(val2); }
+          // 4. KEPSS
+          if (row.kepss_date && row.kepss_value !== undefined && row.kepss_value !== "") {
+              var kv = cleanNum(row.kepss_value);
+              if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(String(row.kepss_date).trim()); CHART_DATA.kepss.values.push(kv); }
           }
       });
+      if(tmpGdp.length>0){tmpGdp.sort(function(a,b) { return a.year-b.year; }); tmpGdp.forEach(function(d) { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });}
   }
-  if(tempGdp.length>0){tempGdp.sort(function(a,b) { return a.year-b.year; }); tempGdp.forEach(function(d) { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });}
 }
 
 // ── FORMATTING ────────────────────────────────────────────────────────────
@@ -560,7 +545,7 @@ function render(data, isInitialLoad) {
   var tFull = tickers.map(function(t) { return '<tr><td>' + t.symbol + '</td><td>' + fmtKsh(t["last_price_(kshs)"]) + '</td><td>' + formatChange(t["change"], false) + '</td><td>' + formatChange(pk(t), true) + '</td><td><span class="nt">' + (t["last_updated"] || "—") + '</span></td></tr>'; });
   var mwRows = mw.filter(function(r) { return numMW(r, "ltp_(kshs)") > 0 || numMW(r, "volume") > 0; }).map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r["security_name"] || "") + '</td><td>' + fmtKsh(r["ltp_(kshs)"]) + '</td><td>' + fmtKsh(r["prev_close"]) + '</td><td>' + fmtNum(numMW(r, "volume"), 0) + '</td><td>' + (r.trades || "—") + '</td><td>' + fmtKsh(r["turnover_(kshs)"]) + '</td><td class="up">' + fmtNum(numMW(r, "foreign_buy"),  0) + '</td><td class="dn">' + fmtNum(numMW(r, "foreign_sell"), 0) + '</td></tr>'; });
   
-  // FIX #1: The Missing Variable that crashed the render
+  // FIX: Forex Rows Restored!
   var fxRows = FOREX_RATES.map(function(r) { return '<tr><td>' + r.ccy + '</td><td>' + r.crBuy + '</td><td>' + r.crSell + '</td><td>' + r.kBuy + '</td><td>' + r.kSell + '</td></tr>'; });
   
   var heatCells = tickers.map(function(t) { var n = getPctNumForSort(t, "%_change"), cls = n > 0 ? "up-cell" : n < 0 ? "dn-cell" : "nt-cell"; return '<div class="ticker-cell ' + cls + '" data-sym="' + t.symbol + '"><div class="tc-sym">' + t.symbol + '</div><div class="tc-price">' + fmtKsh(t["last_price_(kshs)"]) + '</div><div class="tc-chg">' + formatChange(pk(t), true) + '</div></div>'; }).join("");
