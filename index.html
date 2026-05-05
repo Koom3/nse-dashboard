@@ -324,10 +324,10 @@
                   </div>
                   <table id="my-portfolio-table">
                       <thead>
-                          <tr><th>Security</th><th>Quantity</th><th>Average Price</th><th>Invested Value</th><th>LTP</th><th>Current Value</th><th>P&L Value</th><th>P&L %</th></tr>
+                          <tr><th>Security</th><th>Quantity</th><th>Base VWAP</th><th>Net Avg Cost</th><th>Invested Value</th><th>LTP</th><th>Current Value</th><th>P&L Value</th><th>P&L %</th></tr>
                       </thead>
                       <tbody id="my-portfolio-tbody">
-                          <tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading portfolio...</td></tr>
+                          <tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading portfolio...</td></tr>
                       </tbody>
                   </table>
                   
@@ -345,7 +345,7 @@
                       <button class="export-icon-btn" onclick="exportTableToPDF('port-view-purchases', 'Purchase_History')">PDF</button>
                   </div>
                   <table id="my-purchases-table">
-                      <thead><tr><th>Date</th><th>Ticker</th><th>Shares Bought</th><th>Execution Price</th><th>Total Value</th><th>Broker</th></tr></thead>
+                      <thead><tr><th>Date</th><th>Ticker</th><th>Shares Bought</th><th>Exec. Price</th><th>Trading Fees</th><th>Total Cost</th><th>Broker</th></tr></thead>
                       <tbody id="my-purchases-tbody"></tbody>
                   </table>
               </div>
@@ -358,7 +358,7 @@
                       <button class="export-icon-btn" onclick="exportTableToPDF('port-view-sales', 'Sales_History')">PDF</button>
                   </div>
                   <table id="my-sales-table">
-                      <thead><tr><th>Date</th><th>Ticker</th><th>Shares Sold</th><th>Execution Price</th><th>Total Value</th><th>Broker</th></tr></thead>
+                      <thead><tr><th>Date</th><th>Ticker</th><th>Shares Sold</th><th>Exec. Price</th><th>Trading Fees</th><th>Net Proceeds</th><th>Broker</th></tr></thead>
                       <tbody id="my-sales-tbody"></tbody>
                   </table>
               </div>
@@ -438,7 +438,7 @@
   </div>
 </div>
 
-<!-- TRADE MODAL (WITH MATH ENGINE) -->
+<!-- TRADE MODAL -->
 <div class="modal-overlay" id="trade-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeTradeModal()">✖</span>
@@ -464,12 +464,16 @@
       <input type="text" inputmode="decimal" id="trade-shares" placeholder="e.g. 1000">
     </div>
     <div class="form-group">
-      <label>Execution Price (KES)</label>
+      <label>Execution Price (RAW)</label>
       <input type="text" inputmode="decimal" id="trade-price" placeholder="e.g. 35.50">
     </div>
     <div class="form-group">
       <label>Broker / Platform</label>
       <select id="trade-broker"></select>
+    </div>
+    <div class="form-group" style="margin-top:5px;">
+      <label style="color:var(--brand-gold);">Custom Trading Fee (Optional)</label>
+      <input type="text" inputmode="decimal" id="trade-fees" placeholder="Leave blank to auto-calculate via API">
     </div>
     
     <button class="primary-btn" id="trade-submit-btn" onclick="submitTrade()">UPDATE PORTFOLIO</button>
@@ -661,45 +665,21 @@ function enablePortfolioMode(autoSwitch) {
     btn.innerText = "🔒 " + currentUser.toUpperCase();
     document.getElementById('tab-portfolio').style.display = 'inline-block';
     
-    if (autoSwitch) {
-        switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')});
-    }
+    if (autoSwitch) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); }
 }
 
 async function fetchMyPortfolio() {
     if(!currentUser) return;
     var tbH = document.getElementById('my-portfolio-tbody');
-    tbH.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted);">Syncing portfolio database...</td></tr>';
+    tbH.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">Syncing portfolio database...</td></tr>';
     try {
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "get_portfolio", username: currentUser }) });
         var res = await resp.json();
         if (res.status === "success") {
             GLOBAL_HISTORY = res.history || [];
             renderFilteredPortfolio();
-        } else { tbH.innerHTML = '<tr><td colspan="8" style="color:var(--neon-dn);text-align:center;">Failed to load.</td></tr>'; }
-    } catch(e) { tbH.innerHTML = '<tr><td colspan="8" style="color:var(--neon-dn);text-align:center;">Connection Error.</td></tr>'; }
-}
-
-// ── EXACT NSE TRADING FEE ALGORITHM ──────────────────────────────
-function calculateTradeFee(baseValue, broker) {
-    var statLevy = baseValue * 0.0029; // 0.29% for NSE, CMA, CDSC, ICF
-    var stampDuty = Math.ceil(baseValue / 10000) * 2;
-    var brokerRate = 0.015; // default 1.50%
-    var minBrokerage = 0;
-    
-    if (broker === "Standard Investment Bank Ltd") brokerRate = 0.01;
-    else if (broker === "Dyer & Blair Investment Bank Ltd") brokerRate = 0.012;
-    else if (broker === "Faida Investment Bank Ltd") { brokerRate = 0.0125; minBrokerage = 100; }
-    else if (broker === "AIB-AXYS Africa" || broker === "Kestrel Capital (EA) Ltd" || broker === "EFG Hermes Kenya Ltd" || broker === "Ziidi Trader (Platform)") brokerRate = 0.015;
-    else {
-        brokerRate = (baseValue < 100000) ? 0.0176 : 0.015;
-    }
-    
-    var brokerage = baseValue * brokerRate;
-    if (brokerage < minBrokerage) brokerage = minBrokerage;
-    
-    var vat = brokerage * 0.16; // 16% VAT on brokerage ONLY
-    return statLevy + stampDuty + brokerage + vat;
+        } else { tbH.innerHTML = '<tr><td colspan="9" style="color:var(--neon-dn);text-align:center;">Failed to load.</td></tr>'; }
+    } catch(e) { tbH.innerHTML = '<tr><td colspan="9" style="color:var(--neon-dn);text-align:center;">Connection Error.</td></tr>'; }
 }
 
 function renderFilteredPortfolio() {
@@ -714,35 +694,48 @@ function renderFilteredPortfolio() {
     GLOBAL_HISTORY.forEach(function(row) {
         if(filterBroker !== "ALL" && row.broker !== filterBroker) return;
         
-        var baseValue = row.shares * row.price;
-        var tradeFee = calculateTradeFee(baseValue, row.broker);
-        // Frontend recalculates the TRUE total incorporating all fees on the fly
-        var actualTotal = (row.type === "BOUGHT") ? (baseValue + tradeFee) : (baseValue - tradeFee);
-        
         var dt = new Date(row.date).toLocaleDateString();
-        var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(actualTotal) + '</td><td>' + (row.broker||"—") + '</td></tr>';
+        var fee = row.fee || 0; // True fee computed by backend
+        
+        // Dynamically build History tables with fee breakdown
+        var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(fee) + '</td><td>' + fmtKsh(row.total) + '</td><td>' + (row.broker||"—") + '</td></tr>';
         if(row.type === "BOUGHT") htmlP += tr; else htmlS += tr;
         
-        if(!holdingsMap[row.ticker]) holdingsMap[row.ticker] = { shares: 0, total_cost: 0 };
+        // Advanced Portfolio Mathematics
+        if(!holdingsMap[row.ticker]) holdingsMap[row.ticker] = { shares: 0, total_cost: 0, total_base: 0 };
+        var baseExecutionVal = row.shares * row.price;
+        
         if(row.type === "BOUGHT") {
             holdingsMap[row.ticker].shares += row.shares;
-            holdingsMap[row.ticker].total_cost += actualTotal;
+            holdingsMap[row.ticker].total_cost += row.total;
+            holdingsMap[row.ticker].total_base += baseExecutionVal;
         } else if(row.type === "SOLD") {
             if(holdingsMap[row.ticker].shares > 0) {
-                var avg = holdingsMap[row.ticker].total_cost / holdingsMap[row.ticker].shares;
+                var avgCost = holdingsMap[row.ticker].total_cost / holdingsMap[row.ticker].shares;
+                var avgBase = holdingsMap[row.ticker].total_base / holdingsMap[row.ticker].shares;
                 holdingsMap[row.ticker].shares -= row.shares;
-                holdingsMap[row.ticker].total_cost = holdingsMap[row.ticker].shares * avg;
+                holdingsMap[row.ticker].total_cost = holdingsMap[row.ticker].shares * avgCost;
+                holdingsMap[row.ticker].total_base = holdingsMap[row.ticker].shares * avgBase;
             }
         }
     });
     
-    tbP.innerHTML = htmlP || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No purchases logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
-    tbS.innerHTML = htmlS || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No sales logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
+    tbP.innerHTML = htmlP || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No purchases logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
+    tbS.innerHTML = htmlS || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No sales logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
     
-    var currentHoldings = Object.keys(holdingsMap).map(function(k) { return { ticker: k, shares: holdingsMap[k].shares, total_cost: holdingsMap[k].total_cost, avg_price: holdingsMap[k].shares > 0 ? holdingsMap[k].total_cost / holdingsMap[k].shares : 0 }; }).filter(function(h) { return h.shares > 0.001; });
+    var currentHoldings = Object.keys(holdingsMap).map(function(k) { 
+        var sh = holdingsMap[k].shares;
+        return { 
+            ticker: k, 
+            shares: sh, 
+            total_cost: holdingsMap[k].total_cost, 
+            avg_cost: sh > 0 ? holdingsMap[k].total_cost / sh : 0,
+            vwap: sh > 0 ? holdingsMap[k].total_base / sh : 0
+        }; 
+    }).filter(function(h) { return h.shares > 0.001; });
     
     if (currentHoldings.length === 0) {
-        tbH.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: var(--text-muted); font-style:italic;">No holdings found. Click + Add Stock.</td></tr>';
+        tbH.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted); font-style:italic;">No holdings found. Click + Add Stock.</td></tr>';
         document.getElementById('port-sum-invested').innerText = "KES 0.00"; document.getElementById('port-sum-current').innerText = "KES 0.00"; document.getElementById('port-sum-pnl').innerText = "KES 0.00"; document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
         if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
     } else {
@@ -752,7 +745,7 @@ function renderFilteredPortfolio() {
         currentHoldings.forEach(function(row) {
             var tickStr = String(row.ticker).trim().toUpperCase();
             var ltp = LIVE_PRICES[tickStr]; 
-            if (ltp === undefined || isNaN(ltp)) ltp = 0;
+            if (ltp === undefined || isNaN(ltp)) ltp = 0.00; 
             
             var curVal = row.shares * ltp;
             var pnl = curVal - row.total_cost;
@@ -761,7 +754,8 @@ function renderFilteredPortfolio() {
             
             if(curVal > 0) { pieLabels.push(row.ticker); pieData.push(curVal); }
             
-            htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.avg_price) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td></tr>';
+            // Note: Added VWAP to the visual output matrix
+            htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.vwap) + '</td><td>' + fmtKsh(row.avg_cost) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td></tr>';
         });
         tbH.innerHTML = htmlH;
         
@@ -793,6 +787,8 @@ async function submitTrade() {
     var tShare = document.getElementById('trade-shares').value;
     var tPrice = document.getElementById('trade-price').value;
     var tBroker = document.getElementById('trade-broker').value;
+    var tFeeOverride = document.getElementById('trade-fees').value;
+    
     var fb = document.getElementById('trade-feedback');
     var btn = document.getElementById('trade-submit-btn');
     
@@ -807,20 +803,26 @@ async function submitTrade() {
         GLOBAL_HISTORY.forEach(function(r) { if(r.ticker === tTick) { if(r.type==="BOUGHT") currentHeld+=r.shares; else if(r.type==="SOLD") currentHeld-=r.shares; } });
         if (currentHeld < cleanShare) { fb.innerText = "Stock not available in your portfolio."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
     }
+    
+    // Package fee override logic for backend via JSON object transmission
+    var cleanFee = "";
+    if (tFeeOverride && tFeeOverride.trim() !== "") {
+        cleanFee = parseFloat(tFeeOverride.replace(/,/g, ""));
+    }
 
     btn.innerText = "Transmitting..."; fb.style.display="none";
     try {
-        var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "update_portfolio", username: currentUser, date: tDate, type: tType, ticker: tTick, shares: cleanShare, price: cleanPrice, broker: tBroker }) });
+        var bodyPayload = { action: "update_portfolio", username: currentUser, date: tDate, type: tType, ticker: tTick, shares: cleanShare, price: cleanPrice, broker: tBroker };
+        if (cleanFee !== "" && !isNaN(cleanFee)) bodyPayload.feeOverride = cleanFee;
+        
+        var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(bodyPayload) });
         var res = await resp.json();
+        
         if (res.status === "success") {
             fb.innerText = res.message; fb.style.color = "var(--neon-up)"; fb.style.display = "block";
-            // The frontend computes the TRUE math locally with fees, and pushes it into the session history
-            var baseVal = cleanShare * cleanPrice;
-            var tFee = calculateTradeFee(baseVal, tBroker);
-            var actTot = (tType === "BOUGHT") ? (baseVal + tFee) : (baseVal - tFee);
-            GLOBAL_HISTORY.push({date: tDate, type: tType, ticker: tTick, shares: cleanShare, price: cleanPrice, total: actTot, broker: tBroker});
-            renderFilteredPortfolio();
-            setTimeout(function() { closeTradeModal(); }, 1500);
+            // Force pure portfolio reload to perfectly sync with backend calculations
+            fetchMyPortfolio();
+            setTimeout(function() { closeTradeModal(); document.getElementById('trade-fees').value = ''; }, 1500);
         } else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     } catch(e) { fb.innerText = "Network Error."; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     btn.innerText = "UPDATE PORTFOLIO";
@@ -872,7 +874,7 @@ async function loadLiveNews() {
     var html = '<div class="news-grid">';
     all.slice(0, 12).forEach(function(i) {
       var dt = new Date(i.pubDate);
-      html += '<a href="' + i.link + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="news-item"><img src="' + i.img + '" class="news-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + FB + '\';"><div class="news-title">' + i.title + '</div><div class="news-desc">' + i.desc + '</div><div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><div class="news-date">' + (isNaN(dt) ? 'Recent' : dt.toLocaleString()) + '</div><div style="font-size:8.5pt;color:var(--text-sub);font-style:italic;">Source: ' + i.src + '</div></div></div></a>';
+      html += '<a href="' + i.link + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="news-item"><img src="' + i.img + '" class="news-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + FB + '\';"><div class="news-title">' + i.title + '</div><div class="news-desc">' + i.desc + '</div><div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><div class="news-date">' + (isNaN(dt) ? 'Recent' :toLocaleString()) + '</div><div style="font-size:8.5pt;color:var(--text-sub);font-style:italic;">Source: ' + i.src + '</div></div></div></a>';
     });
     html += '</div>';
     document.getElementById("live-news-container").innerHTML = html; isNewsFetched = true;
@@ -972,7 +974,6 @@ function loadData() {
       extractDynamicData(mergedData); 
       render(mergedData, isInitialLoad); 
       
-      // FIX #1: Chain the fetchMyPortfolio here so it strictly runs AFTER LIVE_PRICES is populated
       if(currentUser) {
           fetchMyPortfolio();
       }
@@ -991,7 +992,6 @@ function extractDynamicData(data) {
   KEY_RATES = []; FOREX_RATES = [];
   CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
   
-  // FIX #1: AGGRESSIVE PRICE EXTRACTOR
   var tickersData = data.tickers || [];
   tickersData.forEach(function(t) { 
       if(t.symbol) {
@@ -1266,7 +1266,6 @@ function showGlobalCountry(key, fromMap) {
     var sel = document.getElementById("globalSearch"); 
     if(sel && sel.value !== key) sel.value = key; 
     
-    // FIX #1: Decouple redraw from map click loop
     if (!fromMap && isGeoChartLoaded) drawRegionsMap(); 
 }
 
