@@ -619,8 +619,23 @@ function openAuthModal() {
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; document.getElementById('auth-feedback').style.display = 'none'; }
 function openTradeModal() { document.getElementById('trade-modal').style.display = 'flex'; }
 function closeTradeModal() { document.getElementById('trade-modal').style.display = 'none'; document.getElementById('trade-feedback').style.display = 'none'; }
+
 function logoutUser() {
-    currentUser = null; localStorage.removeItem("pf_username"); localStorage.removeItem("pf_time");
+    currentUser = null; 
+    localStorage.removeItem("pf_username"); 
+    localStorage.removeItem("pf_time");
+    
+    // Deep wipe previous user's session data
+    GLOBAL_HISTORY = [];
+    if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
+    document.getElementById('port-sum-invested').innerText = "KES 0.00";
+    document.getElementById('port-sum-current').innerText = "KES 0.00";
+    document.getElementById('port-sum-pnl').innerText = "KES 0.00";
+    document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
+    document.getElementById('my-portfolio-tbody').innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">Please log in.</td></tr>';
+    document.getElementById('my-purchases-tbody').innerHTML = '';
+    document.getElementById('my-sales-tbody').innerHTML = '';
+    
     document.getElementById('btn-portfolio-auth').innerText = "👤 My Portfolio";
     document.getElementById('tab-portfolio').style.display = 'none';
     if(currentTab === 'portfolio') switchTab('kenya', {currentTarget: document.getElementById('tab-kenya')});
@@ -665,7 +680,10 @@ function enablePortfolioMode(autoSwitch) {
     btn.innerText = "🔒 " + currentUser.toUpperCase();
     document.getElementById('tab-portfolio').style.display = 'inline-block';
     
-    if (autoSwitch) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); }
+    if (autoSwitch) { 
+        switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); 
+        fetchMyPortfolio(); // Force data fetch for manual logins/signups 
+    }
 }
 
 async function fetchMyPortfolio() {
@@ -695,13 +713,11 @@ function renderFilteredPortfolio() {
         if(filterBroker !== "ALL" && row.broker !== filterBroker) return;
         
         var dt = new Date(row.date).toLocaleDateString();
-        var fee = row.fee || 0; // True fee computed by backend
+        var fee = row.fee || 0; 
         
-        // Dynamically build History tables with fee breakdown
         var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(fee) + '</td><td>' + fmtKsh(row.total) + '</td><td>' + (row.broker||"—") + '</td></tr>';
         if(row.type === "BOUGHT") htmlP += tr; else htmlS += tr;
         
-        // Advanced Portfolio Mathematics
         if(!holdingsMap[row.ticker]) holdingsMap[row.ticker] = { shares: 0, total_cost: 0, total_base: 0 };
         var baseExecutionVal = row.shares * row.price;
         
@@ -754,7 +770,6 @@ function renderFilteredPortfolio() {
             
             if(curVal > 0) { pieLabels.push(row.ticker); pieData.push(curVal); }
             
-            // Note: Added VWAP to the visual output matrix
             htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.vwap) + '</td><td>' + fmtKsh(row.avg_cost) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td></tr>';
         });
         tbH.innerHTML = htmlH;
@@ -804,7 +819,6 @@ async function submitTrade() {
         if (currentHeld < cleanShare) { fb.innerText = "Stock not available in your portfolio."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
     }
     
-    // Package fee override logic for backend via JSON object transmission
     var cleanFee = "";
     if (tFeeOverride && tFeeOverride.trim() !== "") {
         cleanFee = parseFloat(tFeeOverride.replace(/,/g, ""));
@@ -820,7 +834,6 @@ async function submitTrade() {
         
         if (res.status === "success") {
             fb.innerText = res.message; fb.style.color = "var(--neon-up)"; fb.style.display = "block";
-            // Force pure portfolio reload to perfectly sync with backend calculations
             fetchMyPortfolio();
             setTimeout(function() { closeTradeModal(); document.getElementById('trade-fees').value = ''; }, 1500);
         } else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
@@ -874,7 +887,7 @@ async function loadLiveNews() {
     var html = '<div class="news-grid">';
     all.slice(0, 12).forEach(function(i) {
       var dt = new Date(i.pubDate);
-      html += '<a href="' + i.link + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="news-item"><img src="' + i.img + '" class="news-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + FB + '\';"><div class="news-title">' + i.title + '</div><div class="news-desc">' + i.desc + '</div><div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><div class="news-date">' + (isNaN(dt) ? 'Recent' :toLocaleString()) + '</div><div style="font-size:8.5pt;color:var(--text-sub);font-style:italic;">Source: ' + i.src + '</div></div></div></a>';
+      html += '<a href="' + i.link + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><div class="news-item"><img src="' + i.img + '" class="news-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + FB + '\';"><div class="news-title">' + i.title + '</div><div class="news-desc">' + i.desc + '</div><div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><div class="news-date">' + (isNaN(dt) ? 'Recent' : dt.toLocaleString()) + '</div><div style="font-size:8.5pt;color:var(--text-sub);font-style:italic;">Source: ' + i.src + '</div></div></div></a>';
     });
     html += '</div>';
     document.getElementById("live-news-container").innerHTML = html; isNewsFetched = true;
