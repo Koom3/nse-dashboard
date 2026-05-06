@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOBLE TERMINAL V1.3</title>
+  <title>NOBLE TERMINAL V1.4</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -95,7 +95,7 @@
   <!-- THE COMMAND LINE -->
   <div id="command-bar">
     <span id="cli-prompt">NOBLE></span>
-    <!-- Password case preservation: CSS text-transform removed from class, handled in JS -->
+    <!-- JS handles exact string matching without forcing uppercase on inputs -->
     <input type="text" id="cli-input" placeholder="TYPE 'HELP' FOR COMMANDS" autocomplete="off" spellcheck="false">
     
     <div class="top-clock">
@@ -127,12 +127,14 @@
             <table><thead><tr><th>TICKER</th><th>LTP (KES)</th><th>CHG</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-market"><tr><td colspan="5" class="nt" style="text-align:center;">SYNCING...</td></tr></tbody></table>
         </div>
         
-        <!-- VIEW: GLOBAL -->
+        <!-- VIEW: GLOBAL (Now Exhaustive) -->
         <div id="view-global" class="data-view">
             <h3 class="section-title">World Indices</h3>
             <table><thead><tr><th>INDEX</th><th>PRICE (USD)</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-indices"></tbody></table>
-            <h3 class="section-title">US Most Active</h3>
-            <table><thead><tr><th>SYMBOL</th><th>COMPANY</th><th>PRICE</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-us"></tbody></table>
+            
+            <div id="global-countries-container">
+                <!-- Dynamically populated with USA, Canada, Japan, UK, etc. -->
+            </div>
         </div>
         
         <!-- VIEW: FOREX & MACRO -->
@@ -186,7 +188,7 @@
         <span id="user-badge" class="nt">NOT AUTHENTICATED</span>
       </div>
       
-      <!-- AUTHENTICATION SCREEN -->
+      <!-- AUTHENTICATION SCREEN (Reads exact values directly to backend) -->
       <div id="auth-screen">
           <div class="auth-box">
               <div class="auth-title">NOBLE SECURE LOGIN</div>
@@ -217,7 +219,7 @@
 
 <script>
 // =========================================================================
-// NOBLE TERMINAL ENGINE V1.3
+// NOBLE TERMINAL ENGINE V1.4 - GLOBAL EXHAUSTION
 // =========================================================================
 
 const API_LOCAL  = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
@@ -230,6 +232,8 @@ let PORTFOLIO_DATA = []; let SENTIMENT_DATA = {};
 let CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
 let nativeChartInstance = null;
 
+const countryMap = { "usa":"USA", "canada":"CANADA", "south_africa":"SOUTH AFRICA", "nigeria":"NIGERIA", "egypt":"EGYPT", "france":"FRANCE", "united_kingdom":"UNITED KINGDOM", "australia":"AUSTRALIA", "japan":"JAPAN", "mainland_china":"MAINLAND CHINA" };
+
 // --- 1. Clock & View Toggles ---
 setInterval(() => {
     let now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
@@ -240,7 +244,13 @@ function switchView(viewId) {
     document.querySelectorAll('.data-view').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.v-tab').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + viewId).classList.add('active');
-    event.target.classList.add('active');
+    
+    let tabs = document.querySelectorAll('.v-tab');
+    for(let i=0; i<tabs.length; i++) {
+        if(tabs[i].innerText.toLowerCase().includes(viewId.substring(0,3))) {
+            tabs[i].classList.add('active'); break;
+        }
+    }
 }
 
 // --- 2. Data Extraction & Render Logic ---
@@ -273,7 +283,7 @@ function processMarketData(data) {
     let sys = document.getElementById("sys-status");
     if(sys) { sys.innerText = "SYS: OK"; sys.style.color = "var(--term-up)"; }
     
-    // 1. Extract Macro for Chart
+    // 1. Extract Macro for Chart (Now includes KEPSS)
     let cd = data.chart_data || [];
     if (cd.length > 0) {
         CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
@@ -291,10 +301,15 @@ function processMarketData(data) {
                 let len = cleanNum(row.lending), ovr = cleanNum(row.overdraft), sav = cleanNum(row.savings), dep = cleanNum(row.deposit);
                 if (!isNaN(len)) { CHART_DATA.banks.labels.push(row.rates_date); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
             }
+            if (row.kepss_date && row.kepss_value !== undefined && row.kepss_value !== "") {
+                let kv = cleanNum(row.kepss_value);
+                if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(row.kepss_date); CHART_DATA.kepss.values.push(kv); }
+            }
         });
         if(tmpGdp.length>0){tmpGdp.sort((a,b) => a.year-b.year); tmpGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });}
         if(CHART_DATA.inflation.labels.length > 0) { CHART_DATA.inflation.labels.reverse(); CHART_DATA.inflation.m12.reverse(); }
         if(CHART_DATA.banks.labels.length > 0) { CHART_DATA.banks.labels.reverse(); CHART_DATA.banks.lending.reverse(); CHART_DATA.banks.overdraft.reverse(); CHART_DATA.banks.savings.reverse(); CHART_DATA.banks.deposit.reverse(); }
+        if(CHART_DATA.kepss.labels.length > 0) { CHART_DATA.kepss.labels.reverse(); CHART_DATA.kepss.values.reverse(); }
         if(!nativeChartInstance) renderNativeChart('GDP');
     }
 
@@ -327,11 +342,39 @@ function processMarketData(data) {
     document.getElementById('tb-fbuy').innerHTML = fbuys.map(r => `<tr><td class="sym">${r.symbol}</td><td class="up">${fmtNum(r.foreign_buy,0)}</td></tr>`).join("");
     document.getElementById('tb-fsell').innerHTML = fsells.map(r => `<tr><td class="sym">${r.symbol}</td><td class="dn">${fmtNum(r.foreign_sell,0)}</td></tr>`).join("");
 
-    // Global
+    // Global Indices
     let indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.price !== "N/A");
-    let active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price);
     document.getElementById('tb-indices').innerHTML = indices.map(r => `<tr><td class="sym">${r.name}</td><td>${fmtNum(r.price)}</td><td class="${cleanNum(r["%_change"]||r.percent_change)>0?'up':'dn'}">${r["%_change"]||r.percent_change||"—"}</td><td>${r.volume||"—"}</td></tr>`).join("");
-    document.getElementById('tb-us').innerHTML = active.map(r => `<tr><td class="sym">${r.symbol}</td><td>${r.name||"—"}</td><td>$${fmtNum(r.price)}</td><td class="${cleanNum(r["%_change"]||r.percent_change)>0?'up':'dn'}">${r["%_change"]||r.percent_change||"—"}</td><td>${fmtNum(r.volume,0)}</td></tr>`).join("");
+    
+    // Exhaustive International Matrix Loop
+    let globalHtml = "";
+    Object.keys(countryMap).forEach(key => {
+        let cData = data[key];
+        if(cData && cData.length > 0) {
+            let keys = Object.keys(cData[0]).filter(k => !k.match(/_\d+$/) && !["index_symbol", "%_change"].includes(k) && k !== "");
+            let headers = keys.map(k => k.replace(/_/g, ' ').toUpperCase());
+            
+            globalHtml += `<h3 class="section-title">${countryMap[key]} EQUITIES</h3><table><thead><tr>`;
+            headers.forEach(h => globalHtml += `<th>${h}</th>`);
+            globalHtml += `</tr></thead><tbody>`;
+            
+            cData.forEach(rowObj => {
+                globalHtml += '<tr>';
+                keys.forEach(k => {
+                    let val = rowObj[k] !== null && rowObj[k] !== undefined ? rowObj[k] : "—";
+                    let vStr = String(val);
+                    if (k.toLowerCase().includes("change")) {
+                        if (vStr.includes("▲")) val = `<span class="up">${vStr}</span>`;
+                        else if (vStr.includes("▼") || vStr.includes("(")) val = `<span class="dn">${vStr}</span>`;
+                    }
+                    globalHtml += `<td>${val}</td>`;
+                });
+                globalHtml += '</tr>';
+            });
+            globalHtml += `</tbody></table>`;
+        }
+    });
+    document.getElementById('global-countries-container').innerHTML = globalHtml;
 
     // Stats & FX
     let stats = (data.stats || []).filter(r=>r&&r.name);
@@ -350,7 +393,7 @@ function processMarketData(data) {
     }
 }
 
-// --- 3. Chart.js Macro Engine ---
+// --- 3. Chart.js Macro Engine (Now Includes KEPSS) ---
 function renderNativeChart(type) {
     const ctx = document.getElementById('terminal-chart');
     if(nativeChartInstance) nativeChartInstance.destroy();
@@ -370,6 +413,10 @@ function renderNativeChart(type) {
     else if(type === 'RATES' && CHART_DATA.banks.labels.length > 0) {
         document.getElementById('chart-title').innerText = "02 MACRO ENGINE | BANK RATES (%)";
         nativeChartInstance = new Chart(ctx, { type: 'line', data: { labels: CHART_DATA.banks.labels, datasets: [ { label: "Lending", data: CHART_DATA.banks.lending, borderColor: "#ff0000", borderWidth: 2, pointRadius: 0 }, { label: "Deposit", data: CHART_DATA.banks.deposit, borderColor: "#00ff00", borderWidth: 2, pointRadius: 0 } ]}, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } } });
+    }
+    else if(type === 'KEPSS' && CHART_DATA.kepss.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 MACRO ENGINE | KEPSS SETTLEMENT (Trillions KES)";
+        nativeChartInstance = new Chart(ctx, { type: 'line', data: { labels: CHART_DATA.kepss.labels, datasets: [{ label: "Settlement Value (Tn)", data: CHART_DATA.kepss.values.map(v => v/1000000), borderColor: "#00ff00", backgroundColor: "rgba(0, 255, 0, 0.1)", borderWidth: 2, pointRadius: 0, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } } });
     }
 }
 
@@ -484,12 +531,11 @@ cli.addEventListener("keypress", async function(e) {
         cli.value = ""; 
         
         let parts = rawCmd.split(" ");
-        let action = parts[0].toUpperCase(); // Only uppercase the command keyword
+        let action = parts[0].toUpperCase(); 
         
-        if (action === "HELP") { alert("NOBLE TERMINAL COMMANDS:\n\nLOGIN\nLOGOUT\nVIEW [NSE|GLOBAL|FX|MOVERS|MKW|NEWS]\nCHART [GDP|INF|RATES]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]"); }
+        if (action === "HELP") { alert("NOBLE TERMINAL COMMANDS:\n\nLOGIN\nLOGOUT\nVIEW [NSE|GLOBAL|FX|MOVERS|MKW|NEWS]\nCHART [GDP|INF|RATES|KEPSS]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]"); }
         else if (action === "LOGIN") {
             if(parts.length >= 3) {
-                // Legacy CLI login support (preserves case for password in parts[2])
                 document.getElementById('auth-user').value = parts[1];
                 document.getElementById('auth-pass').value = parts.slice(2).join(" "); 
                 terminalLogin();
@@ -504,7 +550,7 @@ cli.addEventListener("keypress", async function(e) {
         }
         else if (action === "CHART" && parts.length === 2) {
             let v = parts[1].toUpperCase();
-            if(['GDP', 'INF', 'RATES'].includes(v)) renderNativeChart(v);
+            if(['GDP', 'INF', 'RATES', 'KEPSS'].includes(v)) renderNativeChart(v);
         }
         else if ((action === "BUY" || action === "SELL") && parts.length >= 5) {
             if(!currentUser) { alert("ERROR: NOT AUTHENTICATED"); return; }
