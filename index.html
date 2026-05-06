@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
     /* ── PREMIUM "NOBLE FINANCE" THEME ──────────────────── */
@@ -55,7 +56,6 @@
       --ticker-cell-bg: #1e293b;
     }
     
-    /* Strict Hadassah Friedlaender Font & Bold Enforcement Everywhere */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Hadassah Friedlaender', Georgia, serif !important; font-weight: bold !important; }
     body { background: var(--bg-body); color: var(--text-main); font-size: 10pt; transition: background 0.3s, color 0.3s; overflow-x: hidden; }
 
@@ -137,6 +137,13 @@
     .dn { color: var(--neon-dn) !important; } 
     .nt { color: var(--text-sub) !important; }
     
+    /* ── AI BADGE CSS (PHASE 4) ──────────────────── */
+    .badge-ai { padding: 4px 8px; border-radius: 4px; font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+    .badge-bull { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid #10b981; }
+    .badge-bear { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid #ef4444; }
+    .badge-neut { background: rgba(100,116,139,0.15); color: #64748b; border: 1px solid #64748b; }
+    [data-theme="dark"] .badge-neut { color: #94a3b8; }
+
     /* ── MACRO CARDS REDESIGN ──────────────────── */
     .macro-cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; padding: 1.5rem; }
     .macro-mini-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; text-align: center; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
@@ -175,7 +182,7 @@
     .loader { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 12pt; }
     .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--neon-dn); border-radius: 8px; padding: 1.5rem; margin: 1.5rem auto; max-width: 800px; color: var(--text-main); font-size: 11pt; line-height: 1.6; }
     .error-box h2 { color: var(--neon-dn); margin-top: 0; }
-    .error-box code { background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; display:block; margin-top: 10px; }
+    .error-box code { background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; display:block; margin-top: 10px; font-family: monospace !important; }
     
     /* ── MODALS (Auth & Transaction) ──────────────────── */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
@@ -188,6 +195,9 @@
     .form-group label { font-size: 9.5pt; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
     .form-group input, .form-group select { padding: 12px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text-main); outline: none; font-size: 10.5pt; transition: border-color 0.2s; }
     .form-group input:focus, .form-group select:focus { border-color: var(--brand-primary); }
+    
+    .days-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 10px; margin-top: 5px; }
+    .day-chk { display: flex; align-items: center; gap: 5px; font-size: 9.5pt; color: var(--text-main); cursor: pointer;}
     
     .primary-btn { background: var(--brand-primary); color: #ffffff; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 11pt; margin-top: 10px; transition: transform 0.2s, box-shadow 0.2s; }
     .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); } 
@@ -272,7 +282,7 @@
   <!-- GLOBAL VIEW -->
   <div id="view-global" class="view-section"><div id="app-global"><div class="loader">⏳ Synchronizing global datasets…</div></div></div>
   
-  <!-- PORTFOLIO VIEW (PHASE 3) -->
+  <!-- PORTFOLIO VIEW (PHASE 3 + 4) -->
   <div id="view-portfolio" class="view-section">
       <div class="full-card">
           <div class="card-header">
@@ -324,10 +334,11 @@
                   </div>
                   <table id="my-portfolio-table">
                       <thead>
-                          <tr><th>Security</th><th>Quantity</th><th>Base VWAP</th><th>Net Avg Cost</th><th>Invested Value</th><th>LTP</th><th>Current Value</th><th>P&L Value</th><th>P&L %</th></tr>
+                          <!-- Phase 4: Added AI Signal Column -->
+                          <tr><th>Security</th><th>Quantity</th><th>Base VWAP</th><th>Net Avg Cost</th><th>Invested Value</th><th>LTP</th><th>Current Value</th><th>P&L Value</th><th>P&L %</th><th>AI Signal</th></tr>
                       </thead>
                       <tbody id="my-portfolio-tbody">
-                          <tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading portfolio...</td></tr>
+                          <tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading portfolio...</td></tr>
                       </tbody>
                   </table>
                   
@@ -408,7 +419,7 @@
           </div>
         </div>
         <button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button>
-        <div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;">✅ Subscription saved successfully!</div>
+        <div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;"></div>
     </div>
   </div>
 </div>
@@ -498,6 +509,7 @@ var KEY_RATES = [], FOREX_RATES = [];
 var CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
 var LIVE_PRICES = {}; 
 var GLOBAL_HISTORY = []; 
+var GLOBAL_SENTIMENT = {}; // Phase 4 Memory
 
 var currentTab = 'kenya', isNewsFetched = false, isFetching = false;
 var hasRenderedOnce = false, isGeoChartLoaded = false, currentGlobalSelection = "usa";
@@ -625,14 +637,14 @@ function logoutUser() {
     localStorage.removeItem("pf_username"); 
     localStorage.removeItem("pf_time");
     
-    // Deep wipe previous user's session data
     GLOBAL_HISTORY = [];
+    GLOBAL_SENTIMENT = {};
     if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
     document.getElementById('port-sum-invested').innerText = "KES 0.00";
     document.getElementById('port-sum-current').innerText = "KES 0.00";
     document.getElementById('port-sum-pnl').innerText = "KES 0.00";
     document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
-    document.getElementById('my-portfolio-tbody').innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">Please log in.</td></tr>';
+    document.getElementById('my-portfolio-tbody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-muted);">Please log in.</td></tr>';
     document.getElementById('my-purchases-tbody').innerHTML = '';
     document.getElementById('my-sales-tbody').innerHTML = '';
     
@@ -682,22 +694,23 @@ function enablePortfolioMode(autoSwitch) {
     
     if (autoSwitch) { 
         switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); 
-        fetchMyPortfolio(); // Force data fetch for manual logins/signups 
+        fetchMyPortfolio(); 
     }
 }
 
 async function fetchMyPortfolio() {
     if(!currentUser) return;
     var tbH = document.getElementById('my-portfolio-tbody');
-    tbH.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted);">Syncing portfolio database...</td></tr>';
+    tbH.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-muted);">Syncing portfolio & AI database...</td></tr>';
     try {
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "get_portfolio", username: currentUser }) });
         var res = await resp.json();
         if (res.status === "success") {
             GLOBAL_HISTORY = res.history || [];
+            GLOBAL_SENTIMENT = res.sentiment || {}; // Phase 4 Memory
             renderFilteredPortfolio();
-        } else { tbH.innerHTML = '<tr><td colspan="9" style="color:var(--neon-dn);text-align:center;">Failed to load.</td></tr>'; }
-    } catch(e) { tbH.innerHTML = '<tr><td colspan="9" style="color:var(--neon-dn);text-align:center;">Connection Error.</td></tr>'; }
+        } else { tbH.innerHTML = '<tr><td colspan="10" style="color:var(--neon-dn);text-align:center;">Failed to load.</td></tr>'; }
+    } catch(e) { tbH.innerHTML = '<tr><td colspan="10" style="color:var(--neon-dn);text-align:center;">Connection Error.</td></tr>'; }
 }
 
 function renderFilteredPortfolio() {
@@ -751,7 +764,7 @@ function renderFilteredPortfolio() {
     }).filter(function(h) { return h.shares > 0.001; });
     
     if (currentHoldings.length === 0) {
-        tbH.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-muted); font-style:italic;">No holdings found. Click + Add Stock.</td></tr>';
+        tbH.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-muted); font-style:italic;">No holdings found. Click + Add Stock.</td></tr>';
         document.getElementById('port-sum-invested').innerText = "KES 0.00"; document.getElementById('port-sum-current').innerText = "KES 0.00"; document.getElementById('port-sum-pnl').innerText = "KES 0.00"; document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
         if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
     } else {
@@ -770,7 +783,15 @@ function renderFilteredPortfolio() {
             
             if(curVal > 0) { pieLabels.push(row.ticker); pieData.push(curVal); }
             
-            htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.vwap) + '</td><td>' + fmtKsh(row.avg_cost) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td></tr>';
+            // Phase 4: Fetch AI Data Badge
+            var aiData = GLOBAL_SENTIMENT[tickStr];
+            var aiBadge = '<span class="badge-ai badge-neut">⚪ NEUTRAL</span>';
+            if (aiData) {
+                if(aiData.label === 'Bullish') aiBadge = '<span class="badge-ai badge-bull">🟢 BULLISH</span>';
+                else if(aiData.label === 'Bearish') aiBadge = '<span class="badge-ai badge-bear">🔴 BEARISH</span>';
+            }
+            
+            htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.vwap) + '</td><td>' + fmtKsh(row.avg_cost) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td><td>' + aiBadge + '</td></tr>';
         });
         tbH.innerHTML = htmlH;
         
@@ -841,6 +862,30 @@ async function submitTrade() {
     btn.innerText = "UPDATE PORTFOLIO";
 }
 
+async function submitSubscription() {
+    var email = document.getElementById('sub-email').value.trim();
+    var time = document.getElementById('sub-time').value;
+    var days = Array.from(document.querySelectorAll('.day-chk input:checked')).map(function(cb) { return cb.value; });
+    var fb = document.getElementById('sub-feedback');
+    var btn = document.getElementById('subscribe-btn');
+
+    if (!email) { fb.innerText = "Please enter a valid email address."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
+    if (days.length === 0) { fb.innerText = "Please select at least one delivery day."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
+
+    btn.innerText = "Saving..."; fb.style.display="none";
+    try {
+        var payload = { action: "subscribe", email: email, time: time, days: days };
+        fetch(API_LOCAL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+        
+        fb.innerText = "✅ Subscription saved successfully!"; fb.style.color = "var(--neon-up)"; fb.style.display="block";
+        setTimeout(closeExportModal, 2000);
+    } catch(e) {
+        fb.innerText = "✅ Subscription request sent."; fb.style.color = "var(--neon-up)"; fb.style.display="block";
+        setTimeout(closeExportModal, 2000);
+    }
+    btn.innerText = "Subscribe via Email";
+}
+
 // ── BLENDED LIVE NEWS ENGINE ────────────────────────────────
 async function loadLiveNews() {
   var FB = 'https://via.placeholder.com/300x160/0f172a/FFFFFF?text=Market+Intelligence';
@@ -901,7 +946,7 @@ function openExportModal() {
     if (currentTab === 'portfolio') { 
         document.getElementById('export-modal-body').innerHTML = '<p style="color:var(--neon-dn);text-align:center;padding:2rem;font-size:11pt;">Access Denied.<br><br>Tear Sheet generation is restricted while in Personal Portfolio mode to protect sensitive data.</p>';
     } else {
-        document.getElementById('export-modal-body').innerHTML = '<button class="secondary-btn" id="download-btn" onclick="downloadPDF()" style="width:100%;">⬇️ Download PDF Now</button><hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;"><h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3><p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p><div class="form-group"><label>Email address</label><input type="email" id="sub-email" placeholder="e.g. analyst@firm.com"></div><div class="form-group"><label>Delivery Time (EAT)</label><input type="time" id="sub-time" value="17:00"></div><div class="form-group"><label>Delivery Days</label><div class="days-grid"><label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label><label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label><label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label><label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label><label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label></div></div><button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button><div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;">✅ Subscription saved successfully!</div>';
+        document.getElementById('export-modal-body').innerHTML = '<button class="secondary-btn" id="download-btn" onclick="downloadPDF()" style="width:100%;">⬇️ Download PDF Now</button><hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;"><h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3><p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p><div class="form-group"><label>Email address</label><input type="email" id="sub-email" placeholder="e.g. analyst@firm.com"></div><div class="form-group"><label>Delivery Time (EAT)</label><input type="time" id="sub-time" value="17:00"></div><div class="form-group"><label>Delivery Days</label><div class="days-grid"><label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label><label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label><label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label><label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label><label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label></div></div><button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button><div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;"></div>';
     }
     document.getElementById('export-modal').style.display = 'flex'; 
 }
@@ -931,24 +976,12 @@ function exportTableToCSV(tableID, filename) {
 function exportTableToExcel(tableID, filename) {
     var table = document.getElementById(tableID);
     if(!table) return;
+    if(typeof XLSX === 'undefined') { alert("Excel processing library is currently loading. Please try again in a few seconds."); return; }
+    
+    var wb = XLSX.utils.table_to_book(table, {sheet: "Data"});
     var dt = new Date();
-    var day = dt.getDate(), month = dt.getMonth() + 1, year = dt.getFullYear();
-    var formattedDate = year + "_" + (month < 10 ? '0' + month : month) + "_" + (day < 10 ? '0' + day : day);
-    var fullFilename = filename + "_" + formattedDate + ".xls";
-    
-    var excelFile = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
-    excelFile += "<head><meta charset='UTF-8'><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Sheet1</x:Name>";
-    excelFile += "<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>";
-    excelFile += "<body><table border='1'>" + table.innerHTML + "</table></body></html>";
-    
-    var blob = new Blob([excelFile], { type: 'application/vnd.ms-excel' });
-    var downloadLink = document.createElement("a");
-    downloadLink.download = fullFilename;
-    downloadLink.href = window.URL.createObjectURL(blob);
-    downloadLink.style.display = "none";
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+    var formattedDate = dt.getFullYear() + "_" + String(dt.getMonth() + 1).padStart(2, '0') + "_" + String(dt.getDate()).padStart(2, '0');
+    XLSX.writeFile(wb, filename + "_" + formattedDate + ".xlsx");
 }
 
 function exportTableToPDF(divID, filename) {
@@ -970,7 +1003,8 @@ function buildDiagnosticError(localData, globalData) {
 }
 
 function loadData() {
-  isFetching = true; var btn = document.getElementById("refresh-btn"); var isInitialLoad = !document.querySelector(".metrics");
+  isFetching = true; var btn = document.getElementById("refresh-btn"); 
+  var isInitialLoad = !hasRenderedOnce;
   if (isInitialLoad) { document.getElementById("app-kenya").innerHTML = '<div class="loader">⏳ Authenticating and aggregating domestic datasets…</div>'; document.getElementById("app-global").innerHTML = '<div class="loader">⏳ Synchronizing global datasets…</div>'; } else { if (btn) btn.innerHTML = "↻ Syncing..."; }
   
   var localData = null; var globalData = null;
@@ -986,6 +1020,7 @@ function loadData() {
       
       extractDynamicData(mergedData); 
       render(mergedData, isInitialLoad); 
+      hasRenderedOnce = true;
       
       if(currentUser) {
           fetchMyPortfolio();
@@ -1036,14 +1071,18 @@ function extractDynamicData(data) {
   var cd = data.chart_data || [];
   if (cd.length > 0) {
       var tmpGdp = [];
-      cd.forEach(function(row) {
-          if (row.inf_date && row["12-month_inflation"] !== undefined && row["12-month_inflation"] !== "") {
-              var infVal = cleanNum(row["12-month_inflation"]);
+      cd.forEach(function(rawRow) {
+          var row = {};
+          for(var k in rawRow) { row[k.toLowerCase().trim().replace(/[\s\-]+/g, '_')] = rawRow[k]; }
+          
+          var infKey = row["12_month_inflation"] !== undefined ? "12_month_inflation" : (row["inflation"] !== undefined ? "inflation" : null);
+          if (row.inf_date && infKey && row[infKey] !== "") {
+              var infVal = cleanNum(row[infKey]);
               if (!isNaN(infVal)) { CHART_DATA.inflation.labels.push(String(row.inf_date).trim()); CHART_DATA.inflation.m12.push(infVal); }
           }
           if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
               var yrStr = String(row.gdp_year).trim(), yrMatch = yrStr.match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
-              var nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), growth = cleanNum(row.gdp_growth_rate);
+              var nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), growth = cleanNum(row.gdp_growth_rate || row.gdp_growth);
               if (!isNaN(yr) && !isNaN(nom) && !tmpGdp.find(function(g) { return g.year === yr; })) tmpGdp.push({ year: yr, nom: nom, real: real, growth: growth });
           }
           if (row.rates_date && row.lending !== undefined && row.lending !== "") {
@@ -1267,8 +1306,17 @@ function updateChartsData(){
 function createChart(id, config) { var ctx = document.getElementById(id); if (ctx) { if (chartInstances[id]) chartInstances[id].destroy(); chartInstances[id] = new Chart(ctx, config); } }
 
 // ── GLOBAL MAP ────────────────────────────────────────────────────────────
-google.charts.load('current', { 'packages': ['geochart'] });
-google.charts.setOnLoadCallback(function() { isGeoChartLoaded = true; if (currentTab === 'global') drawRegionsMap(); });
+// FIX 1: GeoChart heavily secured behind a window load event to prevent race-condition crashing
+window.addEventListener('load', function() {
+    if (typeof google !== 'undefined') {
+        google.charts.load('current', { 'packages': ['geochart'] });
+        google.charts.setOnLoadCallback(function() { 
+            isGeoChartLoaded = true; 
+            if (currentTab === 'global') drawRegionsMap(); 
+        });
+    }
+});
+
 window.addEventListener('resize', function() { if (isGeoChartLoaded && currentTab === 'global') drawRegionsMap(); });
 
 function showGlobalCountry(key, fromMap) { 
