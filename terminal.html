@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOBLE TERMINAL V1.0</title>
+  <title>NOBLE TERMINAL V1.2</title>
   
-  <!-- Core Libraries -->
+  <!-- Core Libraries: Only Chart.js and SheetJS are permitted -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
     /* ── TRUE TERMINAL STYLING ── */
@@ -31,7 +31,6 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* Lock scrolling, force 100vh viewport */
     body { 
       background: var(--bg-base); 
       color: var(--text-main); 
@@ -76,7 +75,7 @@
       height: calc(100vh - 35px);
       width: 100%;
       gap: 2px;
-      background: var(--border-main); /* Acts as grid lines */
+      background: var(--border-main);
     }
 
     .pane {
@@ -105,7 +104,6 @@
       padding: 5px;
     }
     
-    /* Custom Scrollbar for Panes */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-base); }
     ::-webkit-scrollbar-thumb { background: var(--border-focus); }
@@ -123,17 +121,16 @@
     .nt { color: var(--text-muted); }
     .sym { color: #fff; font-weight: bold; }
     
-    /* Tick Flash Animation */
     .flash-update { animation: flashYellow 1s ease-out; }
     @keyframes flashYellow { 0% { background-color: #ffd700; color: #000; } 100% { background-color: transparent; } }
 
     /* ── SPECIFIC PANES ── */
-    #pane-left { grid-row: 1 / 3; grid-column: 1 / 2; } /* Market Monitor spanning full left */
-    #pane-chart { grid-row: 1 / 2; grid-column: 2 / 3; position: relative;} /* Chart top right */
-    #pane-portfolio { grid-row: 2 / 3; grid-column: 2 / 3; } /* Portfolio bottom right */
+    #pane-left { grid-row: 1 / 3; grid-column: 1 / 2; }
+    #pane-chart { grid-row: 1 / 2; grid-column: 2 / 3; position: relative; display: flex; flex-direction: column;}
+    #pane-portfolio { grid-row: 2 / 3; grid-column: 2 / 3; }
 
-    /* Chart Container */
-    #tv-chart { width: 100%; height: 100%; position: absolute; top:0; left:0;}
+    /* Chart Container (Chart.js Native) */
+    .chart-wrapper { position: relative; height: 100%; width: 100%; flex: 1; padding: 10px; }
     
     /* Portfolio Layout */
     .port-metrics { display: flex; gap: 20px; padding: 10px; background: #000; border-bottom: 1px solid #222; font-family: var(--font-mono);}
@@ -177,14 +174,14 @@
       </div>
     </div>
 
-    <!-- TOP RIGHT PANE: CHARTING TERMINAL -->
+    <!-- TOP RIGHT PANE: NATIVE CHARTING -->
     <div class="pane" id="pane-chart">
       <div class="pane-header">
-        <span id="chart-title">02 Interactive Chart | KCB GROUP</span>
-        <span class="nt">TradingView Engine</span>
+        <span id="chart-title">02 Macro Engine | AWAITING DATA</span>
+        <span class="nt">Chart.js NATIVE</span>
       </div>
-      <div class="pane-content" style="padding: 0; position:relative;">
-        <div id="tv-chart"></div>
+      <div class="chart-wrapper">
+        <canvas id="terminal-chart"></canvas>
       </div>
     </div>
 
@@ -205,7 +202,7 @@
             <tr><th>POS</th><th>QTY</th><th>VWAP</th><th>LTP</th><th>MKT VAL</th><th>UNRL P&L</th><th>AI SIGNAL</th></tr>
           </thead>
           <tbody id="tb-port">
-            <tr><td colspan="7" class="nt" style="text-align:center;">TYPE 'LOGIN username' TO ACCESS PORTFOLIO</td></tr>
+            <tr><td colspan="7" class="nt" style="text-align:center;">TYPE 'LOGIN username password' TO ACCESS PORTFOLIO</td></tr>
           </tbody>
         </table>
       </div>
@@ -215,91 +212,151 @@
 
 <script>
 // =========================================================================
-// NOBLE TERMINAL ENGINE V1.0
+// NOBLE TERMINAL ENGINE V1.2 (Strict Native Google Sheets Architecture)
 // =========================================================================
 
 // --- Configuration & State ---
 const API_LOCAL  = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
+const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec";
 const API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
 
 let currentUser = localStorage.getItem("pf_username") || null;
 let LIVE_PRICES = {};
-let PREV_PRICES = {}; // Used for tick flashing
+let PREV_PRICES = {}; 
 let PORTFOLIO_DATA = [];
 let SENTIMENT_DATA = {};
 
-let chart, areaSeries; // TradingView Instances
+// Native Macro Chart Data
+let CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
+let nativeChartInstance = null;
 
-// --- 1. Clock & Sync Subsystem ---
+// --- 1. Clock Subsystem ---
 setInterval(() => {
     let now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
     document.getElementById("term-clock").innerText = now.toTimeString().split(' ')[0] + " EAT";
 }, 1000);
 
-// --- 2. TradingView Chart Initialization ---
-function initChart() {
-    const chartContainer = document.getElementById('tv-chart');
-    chart = LightweightCharts.createChart(chartContainer, {
-        layout: { background: { type: 'solid', color: '#0a0a0a' }, textColor: '#64748b' },
-        grid: { vertLines: { color: '#1a1a1a' }, horzLines: { color: '#1a1a1a' } },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-        rightPriceScale: { borderColor: '#1a1a1a' },
-        timeScale: { borderColor: '#1a1a1a' }
-    });
+// --- 2. Data Extraction (Cleaned Keys for Resiliency) ---
+var cleanNum = function(str) { if (!str) return NaN; var s = String(str).replace(/,/g, '').replace(/%/g, '').trim().replace(/^KES\s*/i, '').replace(/\s*Mn$/i, '').trim(); if (s === "-" || s.toLowerCase() === "n/a" || s.toLowerCase() === "null") return NaN; return parseFloat(s); };
 
-    areaSeries = chart.addAreaSeries({
-        lineColor: '#ff9900',
-        topColor: 'rgba(255, 153, 0, 0.4)',
-        bottomColor: 'rgba(255, 153, 0, 0.0)',
-        lineWidth: 2,
-    });
-    
-    // Resize handler
-    new ResizeObserver(entries => {
-        if (entries.length === 0 || entries[0].target !== chartContainer) return;
-        const newRect = entries[0].contentRect;
-        chart.applyOptions({ height: newRect.height, width: newRect.width });
-    }).observe(chartContainer);
+function extractMacroData(data) {
+  let cd = data.chart_data || [];
+  if (cd.length > 0) {
+      let tmpGdp = [];
+      CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
+
+      cd.forEach(function(rawRow) {
+          let row = {};
+          for(let k in rawRow) { row[k.toLowerCase().trim().replace(/[\s\-]+/g, '_')] = rawRow[k]; }
+          
+          let infKey = row["12_month_inflation"] !== undefined ? "12_month_inflation" : (row["inflation"] !== undefined ? "inflation" : null);
+          if (row.inf_date && infKey && row[infKey] !== "") {
+              let infVal = cleanNum(row[infKey]);
+              if (!isNaN(infVal)) { CHART_DATA.inflation.labels.push(String(row.inf_date).trim()); CHART_DATA.inflation.m12.push(infVal); }
+          }
+          if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
+              let yrStr = String(row.gdp_year).trim(), yrMatch = yrStr.match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
+              let nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), growth = cleanNum(row.gdp_growth_rate || row.gdp_growth);
+              if (!isNaN(yr) && !isNaN(nom) && !tmpGdp.find(g => g.year === yr)) tmpGdp.push({ year: yr, nom: nom, real: real, growth: growth });
+          }
+          if (row.rates_date && row.lending !== undefined && row.lending !== "") {
+              let len = cleanNum(row.lending), ovr = cleanNum(row.overdraft), sav = cleanNum(row.savings), dep = cleanNum(row.deposit);
+              if (!isNaN(len)) { CHART_DATA.banks.labels.push(String(row.rates_date).trim()); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
+          }
+          if (row.kepss_date && row.kepss_value !== undefined && row.kepss_value !== "") {
+              let kv = cleanNum(row.kepss_value);
+              if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(String(row.kepss_date).trim()); CHART_DATA.kepss.values.push(kv); }
+          }
+      });
+      if(tmpGdp.length>0){tmpGdp.sort((a,b) => a.year-b.year); tmpGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); if(!isNaN(d.growth)) CHART_DATA.gdp.growth.push(d.growth); });}
+      if(CHART_DATA.inflation.labels.length > 0) { CHART_DATA.inflation.labels.reverse(); CHART_DATA.inflation.m12.reverse(); }
+      if(CHART_DATA.kepss.labels.length > 0) { CHART_DATA.kepss.labels.reverse(); CHART_DATA.kepss.values.reverse(); }
+      if(CHART_DATA.banks.labels.length > 0) { CHART_DATA.banks.labels.reverse(); CHART_DATA.banks.lending.reverse(); CHART_DATA.banks.overdraft.reverse(); CHART_DATA.banks.savings.reverse(); CHART_DATA.banks.deposit.reverse(); }
+  }
 }
 
-// Generate dummy historical data for the chart (Since API doesn't provide historical timeseries yet)
-function loadChartData(ticker) {
-    document.getElementById('chart-title').innerText = `02 Interactive Chart | ${ticker}`;
-    let ltp = LIVE_PRICES[ticker] || 50.00;
-    let data = [];
-    let time = new Date();
-    time.setDate(time.getDate() - 30); // 30 days back
+// --- 3. Native Charting Engine (Chart.js) ---
+function renderNativeChart(type) {
+    const ctx = document.getElementById('terminal-chart');
+    if(nativeChartInstance) nativeChartInstance.destroy();
     
-    let walk = ltp * 0.8; // Start 20% lower
-    for(let i=0; i<30; i++) {
-        walk = walk + (Math.random() - 0.5) * (walk * 0.05);
-        data.push({ time: time.toISOString().split('T')[0], value: walk });
-        time.setDate(time.getDate() + 1);
+    // Terminal Styling for Charts
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.font.family = "'Consolas', 'Courier New', monospace";
+    let gridConfig = { color: '#1a1a1a', drawBorder: false };
+
+    if(type === 'INF' && CHART_DATA.inflation.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 Macro Engine | 12-MONTH INFLATION (%)";
+        nativeChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: CHART_DATA.inflation.labels, datasets: [{ label: "Inflation (%)", data: CHART_DATA.inflation.m12, borderColor: "#0044cc", backgroundColor: "rgba(0, 68, 204, 0.2)", borderWidth: 2, pointRadius: 2, fill: true }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
+        });
     }
-    data.push({ time: new Date().toISOString().split('T')[0], value: ltp }); // Today's exact price
-    areaSeries.setData(data);
+    else if(type === 'GDP' && CHART_DATA.gdp.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 Macro Engine | GDP (Trillions KES)";
+        let nomTn = CHART_DATA.gdp.nominal.map(v => isNaN(v) ? null : v / 1e12);
+        let realTn = CHART_DATA.gdp.real.map(v => isNaN(v) ? null : v / 1e12);
+        nativeChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: CHART_DATA.gdp.labels, datasets: [{ label: "Nominal GDP", data: nomTn, backgroundColor: "#ff9900" }, { label: "Real GDP", data: realTn, backgroundColor: "#0044cc" }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
+        });
+    }
+    else if(type === 'RATES' && CHART_DATA.banks.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 Macro Engine | COMMERCIAL BANK RATES (%)";
+        nativeChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: CHART_DATA.banks.labels, datasets: [
+                { label: "Lending", data: CHART_DATA.banks.lending, borderColor: "#ff0000", borderWidth: 2, pointRadius: 0 },
+                { label: "Deposit", data: CHART_DATA.banks.deposit, borderColor: "#00ff00", borderWidth: 2, pointRadius: 0 }
+            ]},
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
+        });
+    }
+    else if(type === 'KEPSS' && CHART_DATA.kepss.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 Macro Engine | KEPSS SETTLEMENT (Trillions KES)";
+        nativeChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: CHART_DATA.kepss.labels, datasets: [{ label: "Settlement Value (Tn)", data: CHART_DATA.kepss.values.map(v => v/1000000), borderColor: "#00ff00", backgroundColor: "rgba(0, 255, 0, 0.1)", borderWidth: 2, pointRadius: 0, fill: true }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
+        });
+    }
 }
 
-// --- 3. Data Fetching (The Main Engine) ---
+// --- 4. Data Fetching (Dual JSONP Engine) ---
 function triggerSync() {
-    document.getElementById("sys-status").innerText = "SYS: POLLING...";
-    document.getElementById("sys-status").style.color = "var(--term-gold)";
+    let sys = document.getElementById("sys-status");
+    if(sys) { sys.innerText = "SYS: POLLING..."; sys.style.color = "var(--term-gold)"; }
     
-    // Copy current prices to previous before fetching new ones
     PREV_PRICES = { ...LIVE_PRICES };
 
-    // Fetch Market Data via JSONP
-    let s1 = document.createElement("script");
-    s1.src = API_LOCAL + "?callback=processMarketData&sheet=all&_t=" + Date.now();
-    document.head.appendChild(s1);
+    let localData = null; 
+    let globalData = null;
+    let isProcessed = false;
+
+    window.localCallback = function(d) { localData = d; checkMerge(); };
+    window.globalCallback = function(d) { globalData = d; checkMerge(); };
+
+    function checkMerge() {
+        if (localData && globalData && !isProcessed) {
+            isProcessed = true;
+            let mergedData = Object.assign({}, localData, globalData);
+            processMarketData(mergedData);
+        }
+    }
+
+    let s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); document.head.appendChild(s1);
+    let s2 = document.createElement("script"); s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now(); document.head.appendChild(s2);
     
-    // Fetch Portfolio Data if logged in
     if(currentUser) fetchPortfolioData();
 }
 
-window.processMarketData = function(data) {
-    document.getElementById("sys-status").innerText = "SYS: OK";
-    document.getElementById("sys-status").style.color = "var(--term-up)";
+function processMarketData(data) {
+    let sys = document.getElementById("sys-status");
+    if(sys) { sys.innerText = "SYS: OK"; sys.style.color = "var(--term-up)"; }
+    
+    extractMacroData(data); // Process the historical Google Sheet data
     
     let tickers = (data.tickers || []).filter(t => t && t.symbol);
     let html = "";
@@ -307,19 +364,18 @@ window.processMarketData = function(data) {
     tickers.forEach(t => {
         let sym = String(t.symbol).trim().toUpperCase();
         let price = parseFloat(String(t.last_price || t["last_price_(kshs)"]).replace(/[^0-9.\-]/g, ''));
-        let chgPct = parseFloat(String(t["%_change"] || "0").replace(/[^0-9.\-]/g, ''));
+        let chgPct = parseFloat(String(t["%_change"] || t["percent_change"] || "0").replace(/[^0-9.\-]/g, ''));
         let vol = t.volume || "—";
         
         LIVE_PRICES[sym] = isNaN(price) ? 0 : price;
         
-        // Flash logic: Check if price changed since last tick
         let flashClass = "";
         if (PREV_PRICES[sym] !== undefined && PREV_PRICES[sym] !== LIVE_PRICES[sym]) {
             flashClass = "flash-update";
         }
         
         let colorCls = chgPct > 0 ? "up" : chgPct < 0 ? "dn" : "nt";
-        html += `<tr onclick="loadChartData('${sym}')" class="${flashClass}">
+        html += `<tr class="${flashClass}">
                     <td class="sym">${sym}</td>
                     <td>${LIVE_PRICES[sym].toFixed(2)}</td>
                     <td class="${colorCls}">${chgPct > 0 ? '+' : ''}${(chgPct * (LIVE_PRICES[sym]/100)).toFixed(2)}</td>
@@ -330,16 +386,13 @@ window.processMarketData = function(data) {
     
     document.getElementById('tb-market').innerHTML = html;
     
-    // If chart is empty, load Safaricom by default
-    if(!document.getElementById('chart-title').innerText.includes("|")) {
-        loadChartData("SCOM");
-    }
+    // Load default macro chart if empty
+    if(!nativeChartInstance) renderNativeChart('GDP');
     
-    // Re-render portfolio to update live valuations
     if(currentUser) renderPortfolio();
 }
 
-// --- 4. Portfolio & AI Engine ---
+// --- 5. Portfolio & AI Engine ---
 async function fetchPortfolioData() {
     try {
         let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "get_portfolio", username: currentUser }) });
@@ -381,7 +434,6 @@ function renderPortfolio() {
         let ltp = LIVE_PRICES[sym] || 0;
         let curVal = pos.sh * ltp;
         let pnl = curVal - pos.cost;
-        let pnlPct = (pnl / pos.cost) * 100;
         let vwap = pos.base / pos.sh;
         
         totVal += curVal;
@@ -389,15 +441,15 @@ function renderPortfolio() {
         
         let colClass = pnl >= 0 ? "up" : "dn";
         
-        // AI Sentinel Logic
+        // Terminal Style AI Sentinel Logic
         let ai = SENTIMENT_DATA[sym];
-        let aiTag = "<span class='nt'>NEUTRAL</span>";
+        let aiTag = "<span class='nt'>[ NEUTRAL ]</span>";
         if(ai) {
-            if(ai.label === "Bullish") aiTag = "<span class='up'>BULLISH</span>";
-            if(ai.label === "Bearish") aiTag = "<span class='dn'>BEARISH</span>";
+            if(ai.label === "Bullish") aiTag = "<span class='up'>[ BULLISH ]</span>";
+            if(ai.label === "Bearish") aiTag = "<span class='dn'>[ BEARISH ]</span>";
         }
 
-        html += `<tr onclick="loadChartData('${sym}')">
+        html += `<tr>
                     <td class="sym">${sym}</td>
                     <td>${pos.sh.toLocaleString()}</td>
                     <td>${vwap.toFixed(2)}</td>
@@ -416,18 +468,18 @@ function renderPortfolio() {
     document.getElementById('met-pnl').className = "p-met-val " + (dayPnl >= 0 ? "up" : "dn");
 }
 
-// --- 5. Command Line Interface (CLI) Engine ---
+// --- 6. Command Line Interface (CLI) Engine ---
 const cli = document.getElementById("cli-input");
 cli.addEventListener("keypress", async function(e) {
     if (e.key === "Enter") {
         let cmd = cli.value.trim().toUpperCase();
-        cli.value = ""; // Clear input
+        cli.value = ""; 
         
         let parts = cmd.split(" ");
         let action = parts[0];
         
         if (action === "HELP") {
-            alert("COMMANDS:\nLOGIN [username] [password]\nLOGOUT\nCHART [ticker]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]");
+            alert("NOBLE TERMINAL COMMANDS:\n\nLOGIN [username] [password]\nLOGOUT\nCHART [GDP | INF | RATES | KEPSS]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]");
         }
         else if (action === "LOGIN" && parts.length === 3) {
             let u = parts[1].toLowerCase();
@@ -447,10 +499,11 @@ cli.addEventListener("keypress", async function(e) {
             document.getElementById('met-liq').innerText = "0.00"; document.getElementById('met-pnl').innerText = "0.00"; document.getElementById('met-pnl').className = "p-met-val";
         }
         else if (action === "CHART" && parts.length === 2) {
-            if(LIVE_PRICES[parts[1]]) loadChartData(parts[1]);
+            let validCharts = ['GDP', 'INF', 'RATES', 'KEPSS'];
+            if(validCharts.includes(parts[1])) renderNativeChart(parts[1]);
+            else alert("UNKNOWN CHART. TRY: CHART GDP, CHART INF, CHART RATES, CHART KEPSS");
         }
         else if ((action === "BUY" || action === "SELL") && parts.length >= 5) {
-            // Expected: BUY 100 KCB @ 35.50
             if(!currentUser) { alert("ERROR: YOU MUST BE LOGGED IN TO EXECUTE TRADES"); return; }
             let qty = parseFloat(parts[1]);
             let tkr = parts[2];
@@ -460,7 +513,7 @@ cli.addEventListener("keypress", async function(e) {
             document.getElementById("tb-port").innerHTML = '<tr><td colspan="7" class="term-gold" style="text-align:center;">TRANSMITTING ORDER...</td></tr>';
             
             let dt = new Date().toISOString().split('T')[0];
-            let payload = { action: "update_portfolio", username: currentUser, date: dt, type: action === "BUY" ? "BOUGHT" : "SOLD", ticker: tkr, shares: qty, price: price, broker: "Standard Investment Bank Ltd" };
+            let payload = { action: "update_portfolio", username: currentUser, date: dt, type: action === "BUY" ? "BOUGHT" : "SOLD", ticker: tkr, shares: qty, price: price, broker: "Terminal Node Execution" };
             
             try {
                 let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
@@ -469,20 +522,16 @@ cli.addEventListener("keypress", async function(e) {
                 else alert("ORDER REJECTED: " + res.message);
             } catch(e) {}
         }
-        else {
-            // If they just typed a ticker symbol, pull up the chart
-            if(LIVE_PRICES[action]) loadChartData(action);
-        }
     }
 });
 
-// Force focus on CLI when anywhere is clicked
 document.addEventListener("click", () => { document.getElementById("cli-input").focus(); });
 
-// --- Boot Sequence ---
-initChart();
-triggerSync();
-setInterval(triggerSync, 60000); // Pulse check every 60 seconds
+// --- Safe Boot Sequence ---
+window.addEventListener('load', () => {
+    triggerSync();
+    setInterval(triggerSync, 60000); // Pulse check every 60 seconds
+});
 
 </script>
 </body>
