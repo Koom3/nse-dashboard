@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOBLE TERMINAL V1.0</title>
+  
+  <!-- Core Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  
+  <style>
+    /* ── TRUE TERMINAL STYLING ── */
+    :root {
+      --bg-base: #000000;
+      --bg-pane: #0a0a0a;
+      --border-main: #1a1a1a;
+      --border-focus: #334155;
+      
+      --text-main: #e2e8f0;
+      --text-muted: #64748b;
+      
+      --term-blue: #0044cc;
+      --term-gold: #ff9900;
+      --term-up: #00ff00;
+      --term-dn: #ff0000;
+      
+      --font-mono: 'Consolas', 'Courier New', monospace;
+      --font-sans: 'Arial', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Lock scrolling, force 100vh viewport */
+    body { 
+      background: var(--bg-base); 
+      color: var(--text-main); 
+      font-family: var(--font-sans); 
+      height: 100vh; 
+      width: 100vw; 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+    }
+
+    /* ── COMMAND LINE (TOP BAR) ── */
+    #command-bar {
+      height: 35px;
+      background: var(--term-blue);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      border-bottom: 2px solid var(--term-gold);
+    }
+    #cli-prompt { color: #fff; font-weight: bold; font-family: var(--font-mono); margin-right: 10px; font-size: 14px;}
+    #cli-input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: bold;
+      width: 400px;
+      outline: none;
+      text-transform: uppercase;
+    }
+    .top-clock { margin-left: auto; font-family: var(--font-mono); color: #fff; font-size: 12px; font-weight: bold; display: flex; gap: 15px;}
+    .blink { animation: blinker 1s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0; } }
+
+    /* ── TERMINAL WORKSPACE GRID ── */
+    #workspace {
+      display: grid;
+      grid-template-columns: 35% 65%;
+      grid-template-rows: 60% 40%;
+      height: calc(100vh - 35px);
+      width: 100%;
+      gap: 2px;
+      background: var(--border-main); /* Acts as grid lines */
+    }
+
+    .pane {
+      background: var(--bg-pane);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .pane-header {
+      background: #111111;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--term-gold);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-focus);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .pane-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+      padding: 5px;
+    }
+    
+    /* Custom Scrollbar for Panes */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
+    ::-webkit-scrollbar-thumb { background: var(--border-focus); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ── TERMINAL TABLES ── */
+    table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
+    th { text-align: right; padding: 4px 6px; color: var(--text-muted); font-weight: normal; border-bottom: 1px solid #222; position: sticky; top: 0; background: var(--bg-pane); z-index: 10;}
+    th:first-child, td:first-child { text-align: left; }
+    td { padding: 4px 6px; text-align: right; border-bottom: 1px dotted #1a1a1a; transition: background-color 0.5s ease; }
+    tr:hover td { background: #111111; cursor: pointer; }
+    
+    .up { color: var(--term-up); }
+    .dn { color: var(--term-dn); }
+    .nt { color: var(--text-muted); }
+    .sym { color: #fff; font-weight: bold; }
+    
+    /* Tick Flash Animation */
+    .flash-update { animation: flashYellow 1s ease-out; }
+    @keyframes flashYellow { 0% { background-color: #ffd700; color: #000; } 100% { background-color: transparent; } }
+
+    /* ── SPECIFIC PANES ── */
+    #pane-left { grid-row: 1 / 3; grid-column: 1 / 2; } /* Market Monitor spanning full left */
+    #pane-chart { grid-row: 1 / 2; grid-column: 2 / 3; position: relative;} /* Chart top right */
+    #pane-portfolio { grid-row: 2 / 3; grid-column: 2 / 3; } /* Portfolio bottom right */
+
+    /* Chart Container */
+    #tv-chart { width: 100%; height: 100%; position: absolute; top:0; left:0;}
+    
+    /* Portfolio Layout */
+    .port-metrics { display: flex; gap: 20px; padding: 10px; background: #000; border-bottom: 1px solid #222; font-family: var(--font-mono);}
+    .p-met { display: flex; flex-direction: column; }
+    .p-met-lbl { color: var(--text-muted); font-size: 10px; }
+    .p-met-val { color: #fff; font-size: 14px; font-weight: bold; }
+
+  </style>
+</head>
+<body>
+
+  <!-- THE COMMAND LINE -->
+  <div id="command-bar">
+    <span id="cli-prompt">NOBLE></span>
+    <input type="text" id="cli-input" placeholder="TYPE 'HELP' FOR COMMANDS" autocomplete="off" spellcheck="false">
+    
+    <div class="top-clock">
+      <span id="sys-status" class="nt">SYS: SYNCING...</span>
+      <span id="term-clock">00:00:00</span>
+    </div>
+  </div>
+
+  <!-- THE WORKSPACE MATRIX -->
+  <div id="workspace">
+    
+    <!-- LEFT PANE: MARKET MONITOR -->
+    <div class="pane" id="pane-left">
+      <div class="pane-header">
+        <span>01 Market Monitor (NSE)</span>
+        <span id="market-state">CLOSED</span>
+      </div>
+      <div class="pane-content" style="padding: 0;">
+        <table id="tbl-market">
+          <thead>
+            <tr><th>TICKER</th><th>LTP</th><th>CHG</th><th>% CHG</th><th>VOL</th></tr>
+          </thead>
+          <tbody id="tb-market">
+            <tr><td colspan="5" class="nt" style="text-align:center;">INITIALIZING DATA STREAM...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TOP RIGHT PANE: CHARTING TERMINAL -->
+    <div class="pane" id="pane-chart">
+      <div class="pane-header">
+        <span id="chart-title">02 Interactive Chart | KCB GROUP</span>
+        <span class="nt">TradingView Engine</span>
+      </div>
+      <div class="pane-content" style="padding: 0; position:relative;">
+        <div id="tv-chart"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM RIGHT PANE: PORTFOLIO & AI -->
+    <div class="pane" id="pane-portfolio">
+      <div class="pane-header">
+        <span>03 Live Portfolio & AI Sentinel</span>
+        <span id="user-badge" class="nt">NOT AUTHENTICATED</span>
+      </div>
+      <div class="port-metrics">
+        <div class="p-met"><span class="p-met-lbl">NET LIQ (KES)</span><span class="p-met-val" id="met-liq">0.00</span></div>
+        <div class="p-met"><span class="p-met-lbl">DAY P&L</span><span class="p-met-val" id="met-pnl">0.00</span></div>
+        <div class="p-met"><span class="p-met-lbl">AI SIGNALS</span><span class="p-met-val" style="color:var(--term-gold);">ACTIVE</span></div>
+      </div>
+      <div class="pane-content" style="padding: 0;">
+         <table id="tbl-port">
+          <thead>
+            <tr><th>POS</th><th>QTY</th><th>VWAP</th><th>LTP</th><th>MKT VAL</th><th>UNRL P&L</th><th>AI SIGNAL</th></tr>
+          </thead>
+          <tbody id="tb-port">
+            <tr><td colspan="7" class="nt" style="text-align:center;">TYPE 'LOGIN username' TO ACCESS PORTFOLIO</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+// =========================================================================
+// NOBLE TERMINAL ENGINE V1.0
+// =========================================================================
+
+// --- Configuration & State ---
+const API_LOCAL  = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
+const API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
+
+let currentUser = localStorage.getItem("pf_username") || null;
+let LIVE_PRICES = {};
+let PREV_PRICES = {}; // Used for tick flashing
+let PORTFOLIO_DATA = [];
+let SENTIMENT_DATA = {};
+
+let chart, areaSeries; // TradingView Instances
+
+// --- 1. Clock & Sync Subsystem ---
+setInterval(() => {
+    let now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
+    document.getElementById("term-clock").innerText = now.toTimeString().split(' ')[0] + " EAT";
+}, 1000);
+
+// --- 2. TradingView Chart Initialization ---
+function initChart() {
+    const chartContainer = document.getElementById('tv-chart');
+    chart = LightweightCharts.createChart(chartContainer, {
+        layout: { background: { type: 'solid', color: '#0a0a0a' }, textColor: '#64748b' },
+        grid: { vertLines: { color: '#1a1a1a' }, horzLines: { color: '#1a1a1a' } },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        rightPriceScale: { borderColor: '#1a1a1a' },
+        timeScale: { borderColor: '#1a1a1a' }
+    });
+
+    areaSeries = chart.addAreaSeries({
+        lineColor: '#ff9900',
+        topColor: 'rgba(255, 153, 0, 0.4)',
+        bottomColor: 'rgba(255, 153, 0, 0.0)',
+        lineWidth: 2,
+    });
+    
+    // Resize handler
+    new ResizeObserver(entries => {
+        if (entries.length === 0 || entries[0].target !== chartContainer) return;
+        const newRect = entries[0].contentRect;
+        chart.applyOptions({ height: newRect.height, width: newRect.width });
+    }).observe(chartContainer);
+}
+
+// Generate dummy historical data for the chart (Since API doesn't provide historical timeseries yet)
+function loadChartData(ticker) {
+    document.getElementById('chart-title').innerText = `02 Interactive Chart | ${ticker}`;
+    let ltp = LIVE_PRICES[ticker] || 50.00;
+    let data = [];
+    let time = new Date();
+    time.setDate(time.getDate() - 30); // 30 days back
+    
+    let walk = ltp * 0.8; // Start 20% lower
+    for(let i=0; i<30; i++) {
+        walk = walk + (Math.random() - 0.5) * (walk * 0.05);
+        data.push({ time: time.toISOString().split('T')[0], value: walk });
+        time.setDate(time.getDate() + 1);
+    }
+    data.push({ time: new Date().toISOString().split('T')[0], value: ltp }); // Today's exact price
+    areaSeries.setData(data);
+}
+
+// --- 3. Data Fetching (The Main Engine) ---
+function triggerSync() {
+    document.getElementById("sys-status").innerText = "SYS: POLLING...";
+    document.getElementById("sys-status").style.color = "var(--term-gold)";
+    
+    // Copy current prices to previous before fetching new ones
+    PREV_PRICES = { ...LIVE_PRICES };
+
+    // Fetch Market Data via JSONP
+    let s1 = document.createElement("script");
+    s1.src = API_LOCAL + "?callback=processMarketData&sheet=all&_t=" + Date.now();
+    document.head.appendChild(s1);
+    
+    // Fetch Portfolio Data if logged in
+    if(currentUser) fetchPortfolioData();
+}
+
+window.processMarketData = function(data) {
+    document.getElementById("sys-status").innerText = "SYS: OK";
+    document.getElementById("sys-status").style.color = "var(--term-up)";
+    
+    let tickers = (data.tickers || []).filter(t => t && t.symbol);
+    let html = "";
+    
+    tickers.forEach(t => {
+        let sym = String(t.symbol).trim().toUpperCase();
+        let price = parseFloat(String(t.last_price || t["last_price_(kshs)"]).replace(/[^0-9.\-]/g, ''));
+        let chgPct = parseFloat(String(t["%_change"] || "0").replace(/[^0-9.\-]/g, ''));
+        let vol = t.volume || "—";
+        
+        LIVE_PRICES[sym] = isNaN(price) ? 0 : price;
+        
+        // Flash logic: Check if price changed since last tick
+        let flashClass = "";
+        if (PREV_PRICES[sym] !== undefined && PREV_PRICES[sym] !== LIVE_PRICES[sym]) {
+            flashClass = "flash-update";
+        }
+        
+        let colorCls = chgPct > 0 ? "up" : chgPct < 0 ? "dn" : "nt";
+        html += `<tr onclick="loadChartData('${sym}')" class="${flashClass}">
+                    <td class="sym">${sym}</td>
+                    <td>${LIVE_PRICES[sym].toFixed(2)}</td>
+                    <td class="${colorCls}">${chgPct > 0 ? '+' : ''}${(chgPct * (LIVE_PRICES[sym]/100)).toFixed(2)}</td>
+                    <td class="${colorCls}">${chgPct.toFixed(2)}%</td>
+                    <td class="nt">${vol}</td>
+                 </tr>`;
+    });
+    
+    document.getElementById('tb-market').innerHTML = html;
+    
+    // If chart is empty, load Safaricom by default
+    if(!document.getElementById('chart-title').innerText.includes("|")) {
+        loadChartData("SCOM");
+    }
+    
+    // Re-render portfolio to update live valuations
+    if(currentUser) renderPortfolio();
+}
+
+// --- 4. Portfolio & AI Engine ---
+async function fetchPortfolioData() {
+    try {
+        let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "get_portfolio", username: currentUser }) });
+        let res = await resp.json();
+        if (res.status === "success") {
+            PORTFOLIO_DATA = res.history || [];
+            SENTIMENT_DATA = res.sentiment || {};
+            document.getElementById("user-badge").innerText = `AUTH: ${currentUser.toUpperCase()}`;
+            document.getElementById("user-badge").className = "up";
+            renderPortfolio();
+        }
+    } catch(e) { console.log("Port Sync Error"); }
+}
+
+function renderPortfolio() {
+    let map = {};
+    PORTFOLIO_DATA.forEach(r => {
+        if(!map[r.ticker]) map[r.ticker] = { sh: 0, cost: 0, base: 0 };
+        if(r.type === "BOUGHT") {
+            map[r.ticker].sh += r.shares;
+            map[r.ticker].cost += r.total;
+            map[r.ticker].base += (r.shares * r.price);
+        } else if(r.type === "SOLD" && map[r.ticker].sh > 0) {
+            let avgC = map[r.ticker].cost / map[r.ticker].sh;
+            let avgB = map[r.ticker].base / map[r.ticker].sh;
+            map[r.ticker].sh -= r.shares;
+            map[r.ticker].cost = map[r.ticker].sh * avgC;
+            map[r.ticker].base = map[r.ticker].sh * avgB;
+        }
+    });
+    
+    let html = "";
+    let totVal = 0, totCost = 0;
+    
+    Object.keys(map).forEach(sym => {
+        let pos = map[sym];
+        if(pos.sh <= 0.001) return;
+        
+        let ltp = LIVE_PRICES[sym] || 0;
+        let curVal = pos.sh * ltp;
+        let pnl = curVal - pos.cost;
+        let pnlPct = (pnl / pos.cost) * 100;
+        let vwap = pos.base / pos.sh;
+        
+        totVal += curVal;
+        totCost += pos.cost;
+        
+        let colClass = pnl >= 0 ? "up" : "dn";
+        
+        // AI Sentinel Logic
+        let ai = SENTIMENT_DATA[sym];
+        let aiTag = "<span class='nt'>NEUTRAL</span>";
+        if(ai) {
+            if(ai.label === "Bullish") aiTag = "<span class='up'>BULLISH</span>";
+            if(ai.label === "Bearish") aiTag = "<span class='dn'>BEARISH</span>";
+        }
+
+        html += `<tr onclick="loadChartData('${sym}')">
+                    <td class="sym">${sym}</td>
+                    <td>${pos.sh.toLocaleString()}</td>
+                    <td>${vwap.toFixed(2)}</td>
+                    <td>${ltp.toFixed(2)}</td>
+                    <td>${curVal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td class="${colClass}">${pnl > 0 ? '+' : ''}${pnl.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td>${aiTag}</td>
+                 </tr>`;
+    });
+    
+    document.getElementById('tb-port').innerHTML = html || '<tr><td colspan="7" class="nt" style="text-align:center;">NO HOLDINGS DETECTED</td></tr>';
+    
+    let dayPnl = totVal - totCost;
+    document.getElementById('met-liq').innerText = totVal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('met-pnl').innerText = (dayPnl > 0 ? '+' : '') + dayPnl.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('met-pnl').className = "p-met-val " + (dayPnl >= 0 ? "up" : "dn");
+}
+
+// --- 5. Command Line Interface (CLI) Engine ---
+const cli = document.getElementById("cli-input");
+cli.addEventListener("keypress", async function(e) {
+    if (e.key === "Enter") {
+        let cmd = cli.value.trim().toUpperCase();
+        cli.value = ""; // Clear input
+        
+        let parts = cmd.split(" ");
+        let action = parts[0];
+        
+        if (action === "HELP") {
+            alert("COMMANDS:\nLOGIN [username] [password]\nLOGOUT\nCHART [ticker]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]");
+        }
+        else if (action === "LOGIN" && parts.length === 3) {
+            let u = parts[1].toLowerCase();
+            let p = parts[2];
+            document.getElementById("tb-port").innerHTML = '<tr><td colspan="7" class="nt" style="text-align:center;">AUTHENTICATING...</td></tr>';
+            try {
+                let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "login", username: u, password: p }) });
+                let res = await resp.json();
+                if(res.status === "success") { currentUser = u; localStorage.setItem("pf_username", u); fetchPortfolioData(); }
+                else { document.getElementById("tb-port").innerHTML = `<tr><td colspan="7" class="dn" style="text-align:center;">AUTH FAILED: ${res.message}</td></tr>`; }
+            } catch(e) {}
+        }
+        else if (action === "LOGOUT") {
+            currentUser = null; localStorage.removeItem("pf_username");
+            document.getElementById("user-badge").innerText = "NOT AUTHENTICATED"; document.getElementById("user-badge").className = "nt";
+            document.getElementById("tb-port").innerHTML = '<tr><td colspan="7" class="nt" style="text-align:center;">TYPE \'LOGIN username password\' TO ACCESS</td></tr>';
+            document.getElementById('met-liq').innerText = "0.00"; document.getElementById('met-pnl').innerText = "0.00"; document.getElementById('met-pnl').className = "p-met-val";
+        }
+        else if (action === "CHART" && parts.length === 2) {
+            if(LIVE_PRICES[parts[1]]) loadChartData(parts[1]);
+        }
+        else if ((action === "BUY" || action === "SELL") && parts.length >= 5) {
+            // Expected: BUY 100 KCB @ 35.50
+            if(!currentUser) { alert("ERROR: YOU MUST BE LOGGED IN TO EXECUTE TRADES"); return; }
+            let qty = parseFloat(parts[1]);
+            let tkr = parts[2];
+            let price = parseFloat(parts[4]);
+            if(isNaN(qty) || isNaN(price) || !tkr) { alert("SYNTAX ERROR. USE: BUY 100 KCB @ 35.50"); return; }
+            
+            document.getElementById("tb-port").innerHTML = '<tr><td colspan="7" class="term-gold" style="text-align:center;">TRANSMITTING ORDER...</td></tr>';
+            
+            let dt = new Date().toISOString().split('T')[0];
+            let payload = { action: "update_portfolio", username: currentUser, date: dt, type: action === "BUY" ? "BOUGHT" : "SOLD", ticker: tkr, shares: qty, price: price, broker: "Standard Investment Bank Ltd" };
+            
+            try {
+                let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+                let res = await resp.json();
+                if(res.status === "success") fetchPortfolioData();
+                else alert("ORDER REJECTED: " + res.message);
+            } catch(e) {}
+        }
+        else {
+            // If they just typed a ticker symbol, pull up the chart
+            if(LIVE_PRICES[action]) loadChartData(action);
+        }
+    }
+});
+
+// Force focus on CLI when anywhere is clicked
+document.addEventListener("click", () => { document.getElementById("cli-input").focus(); });
+
+// --- Boot Sequence ---
+initChart();
+triggerSync();
+setInterval(triggerSync, 60000); // Pulse check every 60 seconds
+
+</script>
+</body>
+</html>
