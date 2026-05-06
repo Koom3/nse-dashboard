@@ -3,106 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOBLE TERMINAL V1.2</title>
+  <title>NOBLE TERMINAL V1.3</title>
   
-  <!-- Core Libraries: Only Chart.js and SheetJS are permitted -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
-    /* ── TRUE TERMINAL STYLING ── */
     :root {
-      --bg-base: #000000;
-      --bg-pane: #0a0a0a;
-      --border-main: #1a1a1a;
-      --border-focus: #334155;
-      
-      --text-main: #e2e8f0;
-      --text-muted: #64748b;
-      
-      --term-blue: #0044cc;
-      --term-gold: #ff9900;
-      --term-up: #00ff00;
-      --term-dn: #ff0000;
-      
-      --font-mono: 'Consolas', 'Courier New', monospace;
-      --font-sans: 'Arial', sans-serif;
+      --bg-base: #000000; --bg-pane: #0a0a0a; --border-main: #1a1a1a; --border-focus: #334155;
+      --text-main: #e2e8f0; --text-muted: #64748b;
+      --term-blue: #0044cc; --term-gold: #ff9900; --term-up: #00ff00; --term-dn: #ff0000;
+      --font-mono: 'Consolas', 'Courier New', monospace; --font-sans: 'Arial', sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body { 
-      background: var(--bg-base); 
-      color: var(--text-main); 
-      font-family: var(--font-sans); 
-      height: 100vh; 
-      width: 100vw; 
-      overflow: hidden; 
-      display: flex; 
-      flex-direction: column; 
-    }
+    body { background: var(--bg-base); color: var(--text-main); font-family: var(--font-sans); height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
 
     /* ── COMMAND LINE (TOP BAR) ── */
-    #command-bar {
-      height: 35px;
-      background: var(--term-blue);
-      display: flex;
-      align-items: center;
-      padding: 0 10px;
-      border-bottom: 2px solid var(--term-gold);
-    }
+    #command-bar { height: 35px; background: var(--term-blue); display: flex; align-items: center; padding: 0 15px; border-bottom: 2px solid var(--term-gold); }
     #cli-prompt { color: #fff; font-weight: bold; font-family: var(--font-mono); margin-right: 10px; font-size: 14px;}
-    #cli-input {
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: bold;
-      width: 400px;
-      outline: none;
-      text-transform: uppercase;
-    }
+    #cli-input { background: transparent; border: none; color: #fff; font-family: var(--font-mono); font-size: 14px; font-weight: bold; width: 500px; outline: none; }
     .top-clock { margin-left: auto; font-family: var(--font-mono); color: #fff; font-size: 12px; font-weight: bold; display: flex; gap: 15px;}
-    .blink { animation: blinker 1s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0; } }
-
-    /* ── TERMINAL WORKSPACE GRID ── */
-    #workspace {
-      display: grid;
-      grid-template-columns: 35% 65%;
-      grid-template-rows: 60% 40%;
-      height: calc(100vh - 35px);
-      width: 100%;
-      gap: 2px;
-      background: var(--border-main);
-    }
-
-    .pane {
-      background: var(--bg-pane);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
     
-    .pane-header {
-      background: #111111;
-      padding: 4px 8px;
-      font-size: 11px;
-      font-weight: bold;
-      color: var(--term-gold);
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--border-focus);
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .pane-content {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: auto;
-      padding: 5px;
-    }
+    /* ── TERMINAL WORKSPACE GRID ── */
+    #workspace { display: grid; grid-template-columns: 55% 45%; grid-template-rows: 50% 50%; height: calc(100vh - 35px); width: 100%; gap: 2px; background: var(--border-main); }
+    .pane { background: var(--bg-pane); display: flex; flex-direction: column; overflow: hidden; }
+    .pane-header { background: #111111; padding: 4px 10px; font-size: 11px; font-weight: bold; color: var(--term-gold); text-transform: uppercase; border-bottom: 1px solid var(--border-focus); display: flex; justify-content: space-between; align-items: center;}
+    .pane-content { flex: 1; overflow-y: auto; overflow-x: auto; padding: 10px; position: relative;}
     
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-base); }
@@ -110,34 +37,57 @@
     ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
     /* ── TERMINAL TABLES ── */
-    table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
+    table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; margin-bottom: 15px;}
     th { text-align: right; padding: 4px 6px; color: var(--text-muted); font-weight: normal; border-bottom: 1px solid #222; position: sticky; top: 0; background: var(--bg-pane); z-index: 10;}
     th:first-child, td:first-child { text-align: left; }
-    td { padding: 4px 6px; text-align: right; border-bottom: 1px dotted #1a1a1a; transition: background-color 0.5s ease; }
+    td { padding: 4px 6px; text-align: right; border-bottom: 1px dotted #1a1a1a; transition: background-color 0.2s ease; white-space: nowrap;}
     tr:hover td { background: #111111; cursor: pointer; }
     
-    .up { color: var(--term-up); }
-    .dn { color: var(--term-dn); }
-    .nt { color: var(--text-muted); }
+    .up { color: var(--term-up) !important; }
+    .dn { color: var(--term-dn) !important; }
+    .nt { color: var(--text-muted) !important; }
     .sym { color: #fff; font-weight: bold; }
-    
     .flash-update { animation: flashYellow 1s ease-out; }
     @keyframes flashYellow { 0% { background-color: #ffd700; color: #000; } 100% { background-color: transparent; } }
 
-    /* ── SPECIFIC PANES ── */
+    /* ── PANES & TABS ── */
     #pane-left { grid-row: 1 / 3; grid-column: 1 / 2; }
-    #pane-chart { grid-row: 1 / 2; grid-column: 2 / 3; position: relative; display: flex; flex-direction: column;}
+    #pane-chart { grid-row: 1 / 2; grid-column: 2 / 3; display: flex; flex-direction: column;}
     #pane-portfolio { grid-row: 2 / 3; grid-column: 2 / 3; }
 
-    /* Chart Container (Chart.js Native) */
-    .chart-wrapper { position: relative; height: 100%; width: 100%; flex: 1; padding: 10px; }
+    .view-tabs { display: flex; gap: 10px; font-family: var(--font-mono); font-size: 10px;}
+    .v-tab { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
+    .v-tab:hover { color: #fff; }
+    .v-tab.active { color: var(--term-gold); font-weight: bold; text-decoration: underline;}
+    .data-view { display: none; }
+    .data-view.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
     
-    /* Portfolio Layout */
+    .chart-wrapper { position: relative; height: 100%; width: 100%; flex: 1; padding: 10px; }
+    .section-title { font-family: var(--font-mono); color: var(--term-gold); font-size: 11px; margin: 10px 0 5px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 3px;}
+    .flex-row { display: flex; gap: 15px; } .flex-col { flex: 1; }
+
+    /* ── PORTFOLIO & AUTH UI ── */
     .port-metrics { display: flex; gap: 20px; padding: 10px; background: #000; border-bottom: 1px solid #222; font-family: var(--font-mono);}
     .p-met { display: flex; flex-direction: column; }
     .p-met-lbl { color: var(--text-muted); font-size: 10px; }
     .p-met-val { color: #fff; font-size: 14px; font-weight: bold; }
-
+    
+    #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; font-family: var(--font-mono); }
+    .auth-box { border: 1px solid var(--border-focus); padding: 20px; background: #000; width: 300px;}
+    .auth-title { color: var(--term-gold); font-weight: bold; text-align: center; margin-bottom: 15px; font-size: 12px; }
+    .auth-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;}
+    .auth-row label { color: var(--text-muted); font-size: 11px; }
+    .auth-row input { background: transparent; border: 1px dotted var(--text-muted); color: #fff; font-family: var(--font-mono); padding: 4px; width: 150px; outline: none; font-size: 11px;}
+    .auth-row input:focus { border-bottom: 1px solid var(--term-gold); }
+    .auth-btn { background: var(--border-focus); color: #fff; border: none; padding: 6px; width: 100%; font-family: var(--font-mono); cursor: pointer; margin-top: 10px; font-size: 11px; font-weight: bold;}
+    .auth-btn:hover { background: var(--term-blue); }
+    
+    /* ── NEWS UI ── */
+    .news-item { padding: 8px 0; border-bottom: 1px dotted #1a1a1a; font-family: var(--font-mono); }
+    .n-title { color: #fff; font-size: 11px; font-weight: bold; margin-bottom: 4px; text-decoration: none;}
+    .n-title:hover { color: var(--term-gold); }
+    .n-desc { color: var(--text-muted); font-size: 10px; line-height: 1.3;}
   </style>
 </head>
 <body>
@@ -145,6 +95,7 @@
   <!-- THE COMMAND LINE -->
   <div id="command-bar">
     <span id="cli-prompt">NOBLE></span>
+    <!-- Password case preservation: CSS text-transform removed from class, handled in JS -->
     <input type="text" id="cli-input" placeholder="TYPE 'HELP' FOR COMMANDS" autocomplete="off" spellcheck="false">
     
     <div class="top-clock">
@@ -156,55 +107,109 @@
   <!-- THE WORKSPACE MATRIX -->
   <div id="workspace">
     
-    <!-- LEFT PANE: MARKET MONITOR -->
+    <!-- LEFT PANE: MULTI-VIEW DATA TERMINAL -->
     <div class="pane" id="pane-left">
       <div class="pane-header">
-        <span>01 Market Monitor (NSE)</span>
-        <span id="market-state">CLOSED</span>
+        <span>01 DATA TERMINAL</span>
+        <div class="view-tabs">
+            <span class="v-tab active" onclick="switchView('nse')">[NSE]</span>
+            <span class="v-tab" onclick="switchView('global')">[GLOBAL]</span>
+            <span class="v-tab" onclick="switchView('forex')">[FX/MACRO]</span>
+            <span class="v-tab" onclick="switchView('movers')">[MOVERS]</span>
+            <span class="v-tab" onclick="switchView('mkw')">[MKT WATCH]</span>
+            <span class="v-tab" onclick="switchView('news')">[NEWS]</span>
+        </div>
       </div>
-      <div class="pane-content" style="padding: 0;">
-        <table id="tbl-market">
-          <thead>
-            <tr><th>TICKER</th><th>LTP</th><th>CHG</th><th>% CHG</th><th>VOL</th></tr>
-          </thead>
-          <tbody id="tb-market">
-            <tr><td colspan="5" class="nt" style="text-align:center;">INITIALIZING DATA STREAM...</td></tr>
-          </tbody>
-        </table>
+      <div class="pane-content">
+          
+        <!-- VIEW: NSE -->
+        <div id="view-nse" class="data-view active">
+            <table><thead><tr><th>TICKER</th><th>LTP (KES)</th><th>CHG</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-market"><tr><td colspan="5" class="nt" style="text-align:center;">SYNCING...</td></tr></tbody></table>
+        </div>
+        
+        <!-- VIEW: GLOBAL -->
+        <div id="view-global" class="data-view">
+            <h3 class="section-title">World Indices</h3>
+            <table><thead><tr><th>INDEX</th><th>PRICE (USD)</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-indices"></tbody></table>
+            <h3 class="section-title">US Most Active</h3>
+            <table><thead><tr><th>SYMBOL</th><th>COMPANY</th><th>PRICE</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-us"></tbody></table>
+        </div>
+        
+        <!-- VIEW: FOREX & MACRO -->
+        <div id="view-forex" class="data-view">
+            <div class="flex-row">
+                <div class="flex-col"><h3 class="section-title">NSE Statistics</h3><table><thead><tr><th>METRIC</th><th>VALUE</th><th>CHG</th></tr></thead><tbody id="tb-stats"></tbody></table></div>
+                <div class="flex-col"><h3 class="section-title">CBK Forex Rates</h3><table><thead><tr><th>CCY</th><th>BUY (KES)</th><th>SELL (KES)</th></tr></thead><tbody id="tb-fx"></tbody></table></div>
+            </div>
+        </div>
+        
+        <!-- VIEW: MOVERS -->
+        <div id="view-movers" class="data-view">
+            <div class="flex-row">
+                <div class="flex-col"><h3 class="section-title">Top Gainers</h3><table><thead><tr><th>TICKER</th><th>PRICE</th><th>% CHG</th></tr></thead><tbody id="tb-gain"></tbody></table></div>
+                <div class="flex-col"><h3 class="section-title">Top Losers</h3><table><thead><tr><th>TICKER</th><th>PRICE</th><th>% CHG</th></tr></thead><tbody id="tb-lose"></tbody></table></div>
+            </div>
+            <div class="flex-row">
+                <div class="flex-col"><h3 class="section-title">Top Net Foreign Buys</h3><table><thead><tr><th>TICKER</th><th>NET F. BUY</th></tr></thead><tbody id="tb-fbuy"></tbody></table></div>
+                <div class="flex-col"><h3 class="section-title">Top Net Foreign Sells</h3><table><thead><tr><th>TICKER</th><th>NET F. SELL</th></tr></thead><tbody id="tb-fsell"></tbody></table></div>
+            </div>
+        </div>
+        
+        <!-- VIEW: MKT WATCH -->
+        <div id="view-mkw" class="data-view">
+            <h3 class="section-title">Full Order Book & Turnover</h3>
+            <table><thead><tr><th>SYMBOL</th><th>LTP</th><th>PREV CLOSE</th><th>VOLUME</th><th>TRADES</th><th>TURNOVER (KES)</th></tr></thead><tbody id="tb-mkw"></tbody></table>
+        </div>
+        
+        <!-- VIEW: NEWS -->
+        <div id="view-news" class="data-view">
+            <div id="live-news-container"><span class="nt">FETCHING GLOBAL FEEDS...</span></div>
+        </div>
       </div>
     </div>
 
     <!-- TOP RIGHT PANE: NATIVE CHARTING -->
     <div class="pane" id="pane-chart">
       <div class="pane-header">
-        <span id="chart-title">02 Macro Engine | AWAITING DATA</span>
-        <span class="nt">Chart.js NATIVE</span>
+        <span id="chart-title">02 MACRO ENGINE | AWAITING DATA</span>
+        <span class="nt">NATIVE CHART.JS</span>
       </div>
       <div class="chart-wrapper">
         <canvas id="terminal-chart"></canvas>
       </div>
     </div>
 
-    <!-- BOTTOM RIGHT PANE: PORTFOLIO & AI -->
+    <!-- BOTTOM RIGHT PANE: PORTFOLIO & AUTH -->
     <div class="pane" id="pane-portfolio">
       <div class="pane-header">
-        <span>03 Live Portfolio & AI Sentinel</span>
+        <span>03 LIVE PORTFOLIO & AI SENTINEL</span>
         <span id="user-badge" class="nt">NOT AUTHENTICATED</span>
       </div>
-      <div class="port-metrics">
-        <div class="p-met"><span class="p-met-lbl">NET LIQ (KES)</span><span class="p-met-val" id="met-liq">0.00</span></div>
-        <div class="p-met"><span class="p-met-lbl">DAY P&L</span><span class="p-met-val" id="met-pnl">0.00</span></div>
-        <div class="p-met"><span class="p-met-lbl">AI SIGNALS</span><span class="p-met-val" style="color:var(--term-gold);">ACTIVE</span></div>
+      
+      <!-- AUTHENTICATION SCREEN -->
+      <div id="auth-screen">
+          <div class="auth-box">
+              <div class="auth-title">NOBLE SECURE LOGIN</div>
+              <div class="auth-row"><label>USERNAME</label><input type="text" id="auth-user" autocomplete="off"></div>
+              <div class="auth-row"><label>PASSWORD</label><input type="password" id="auth-pass" autocomplete="off"></div>
+              <button class="auth-btn" onclick="terminalLogin()">AUTHENTICATE</button>
+              <div id="auth-feedback" class="nt" style="margin-top:10px;text-align:center;font-size:10px;"></div>
+          </div>
       </div>
-      <div class="pane-content" style="padding: 0;">
-         <table id="tbl-port">
-          <thead>
-            <tr><th>POS</th><th>QTY</th><th>VWAP</th><th>LTP</th><th>MKT VAL</th><th>UNRL P&L</th><th>AI SIGNAL</th></tr>
-          </thead>
-          <tbody id="tb-port">
-            <tr><td colspan="7" class="nt" style="text-align:center;">TYPE 'LOGIN username password' TO ACCESS PORTFOLIO</td></tr>
-          </tbody>
-        </table>
+
+      <!-- PORTFOLIO SCREEN -->
+      <div id="port-screen" style="display:none; display:flex; flex-direction:column; height:100%;">
+          <div class="port-metrics">
+            <div class="p-met"><span class="p-met-lbl">NET LIQ (KES)</span><span class="p-met-val" id="met-liq">0.00</span></div>
+            <div class="p-met"><span class="p-met-lbl">DAY P&L</span><span class="p-met-val" id="met-pnl">0.00</span></div>
+            <div class="p-met"><span class="p-met-lbl">AI SIGNALS</span><span class="p-met-val" style="color:var(--term-gold);">ACTIVE</span></div>
+          </div>
+          <div class="pane-content" style="padding: 0;">
+             <table id="tbl-port">
+              <thead><tr><th>POS</th><th>QTY</th><th>VWAP</th><th>LTP</th><th>MKT VAL</th><th>UNRL P&L</th><th>AI SIGNAL</th></tr></thead>
+              <tbody id="tb-port"></tbody>
+            </table>
+          </div>
       </div>
     </div>
 
@@ -212,140 +217,52 @@
 
 <script>
 // =========================================================================
-// NOBLE TERMINAL ENGINE V1.2 (Strict Native Google Sheets Architecture)
+// NOBLE TERMINAL ENGINE V1.3
 // =========================================================================
 
-// --- Configuration & State ---
 const API_LOCAL  = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
 const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec";
 const API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
 
 let currentUser = localStorage.getItem("pf_username") || null;
-let LIVE_PRICES = {};
-let PREV_PRICES = {}; 
-let PORTFOLIO_DATA = [];
-let SENTIMENT_DATA = {};
-
-// Native Macro Chart Data
+let LIVE_PRICES = {}; let PREV_PRICES = {}; 
+let PORTFOLIO_DATA = []; let SENTIMENT_DATA = {};
 let CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
 let nativeChartInstance = null;
 
-// --- 1. Clock Subsystem ---
+// --- 1. Clock & View Toggles ---
 setInterval(() => {
     let now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
     document.getElementById("term-clock").innerText = now.toTimeString().split(' ')[0] + " EAT";
 }, 1000);
 
-// --- 2. Data Extraction (Cleaned Keys for Resiliency) ---
+function switchView(viewId) {
+    document.querySelectorAll('.data-view').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.v-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-' + viewId).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// --- 2. Data Extraction & Render Logic ---
 var cleanNum = function(str) { if (!str) return NaN; var s = String(str).replace(/,/g, '').replace(/%/g, '').trim().replace(/^KES\s*/i, '').replace(/\s*Mn$/i, '').trim(); if (s === "-" || s.toLowerCase() === "n/a" || s.toLowerCase() === "null") return NaN; return parseFloat(s); };
+function fmtNum(v, dec=2) { let n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); return isNaN(n) ? "—" : n.toLocaleString("en-KE", {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+function getPctNumForSort(t, key) { var raw = String(t[key] || "").trim(); if (!raw || raw === "N/A" || raw === "—") return 0; var isNeg = raw.startsWith("-") || raw.startsWith("(") || raw.includes("▼"), n = parseFloat(raw.replace(/[^0-9.]/g, "")); if (isNaN(n)) return 0; var scaled = (!raw.includes("%") && n > 0 && n < 1) ? n * 100 : n; return isNeg ? -scaled : scaled; }
 
-function extractMacroData(data) {
-  let cd = data.chart_data || [];
-  if (cd.length > 0) {
-      let tmpGdp = [];
-      CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
-
-      cd.forEach(function(rawRow) {
-          let row = {};
-          for(let k in rawRow) { row[k.toLowerCase().trim().replace(/[\s\-]+/g, '_')] = rawRow[k]; }
-          
-          let infKey = row["12_month_inflation"] !== undefined ? "12_month_inflation" : (row["inflation"] !== undefined ? "inflation" : null);
-          if (row.inf_date && infKey && row[infKey] !== "") {
-              let infVal = cleanNum(row[infKey]);
-              if (!isNaN(infVal)) { CHART_DATA.inflation.labels.push(String(row.inf_date).trim()); CHART_DATA.inflation.m12.push(infVal); }
-          }
-          if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
-              let yrStr = String(row.gdp_year).trim(), yrMatch = yrStr.match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
-              let nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), growth = cleanNum(row.gdp_growth_rate || row.gdp_growth);
-              if (!isNaN(yr) && !isNaN(nom) && !tmpGdp.find(g => g.year === yr)) tmpGdp.push({ year: yr, nom: nom, real: real, growth: growth });
-          }
-          if (row.rates_date && row.lending !== undefined && row.lending !== "") {
-              let len = cleanNum(row.lending), ovr = cleanNum(row.overdraft), sav = cleanNum(row.savings), dep = cleanNum(row.deposit);
-              if (!isNaN(len)) { CHART_DATA.banks.labels.push(String(row.rates_date).trim()); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
-          }
-          if (row.kepss_date && row.kepss_value !== undefined && row.kepss_value !== "") {
-              let kv = cleanNum(row.kepss_value);
-              if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(String(row.kepss_date).trim()); CHART_DATA.kepss.values.push(kv); }
-          }
-      });
-      if(tmpGdp.length>0){tmpGdp.sort((a,b) => a.year-b.year); tmpGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); if(!isNaN(d.growth)) CHART_DATA.gdp.growth.push(d.growth); });}
-      if(CHART_DATA.inflation.labels.length > 0) { CHART_DATA.inflation.labels.reverse(); CHART_DATA.inflation.m12.reverse(); }
-      if(CHART_DATA.kepss.labels.length > 0) { CHART_DATA.kepss.labels.reverse(); CHART_DATA.kepss.values.reverse(); }
-      if(CHART_DATA.banks.labels.length > 0) { CHART_DATA.banks.labels.reverse(); CHART_DATA.banks.lending.reverse(); CHART_DATA.banks.overdraft.reverse(); CHART_DATA.banks.savings.reverse(); CHART_DATA.banks.deposit.reverse(); }
-  }
-}
-
-// --- 3. Native Charting Engine (Chart.js) ---
-function renderNativeChart(type) {
-    const ctx = document.getElementById('terminal-chart');
-    if(nativeChartInstance) nativeChartInstance.destroy();
-    
-    // Terminal Styling for Charts
-    Chart.defaults.color = '#64748b';
-    Chart.defaults.font.family = "'Consolas', 'Courier New', monospace";
-    let gridConfig = { color: '#1a1a1a', drawBorder: false };
-
-    if(type === 'INF' && CHART_DATA.inflation.labels.length > 0) {
-        document.getElementById('chart-title').innerText = "02 Macro Engine | 12-MONTH INFLATION (%)";
-        nativeChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels: CHART_DATA.inflation.labels, datasets: [{ label: "Inflation (%)", data: CHART_DATA.inflation.m12, borderColor: "#0044cc", backgroundColor: "rgba(0, 68, 204, 0.2)", borderWidth: 2, pointRadius: 2, fill: true }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
-        });
-    }
-    else if(type === 'GDP' && CHART_DATA.gdp.labels.length > 0) {
-        document.getElementById('chart-title').innerText = "02 Macro Engine | GDP (Trillions KES)";
-        let nomTn = CHART_DATA.gdp.nominal.map(v => isNaN(v) ? null : v / 1e12);
-        let realTn = CHART_DATA.gdp.real.map(v => isNaN(v) ? null : v / 1e12);
-        nativeChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: CHART_DATA.gdp.labels, datasets: [{ label: "Nominal GDP", data: nomTn, backgroundColor: "#ff9900" }, { label: "Real GDP", data: realTn, backgroundColor: "#0044cc" }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
-        });
-    }
-    else if(type === 'RATES' && CHART_DATA.banks.labels.length > 0) {
-        document.getElementById('chart-title').innerText = "02 Macro Engine | COMMERCIAL BANK RATES (%)";
-        nativeChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels: CHART_DATA.banks.labels, datasets: [
-                { label: "Lending", data: CHART_DATA.banks.lending, borderColor: "#ff0000", borderWidth: 2, pointRadius: 0 },
-                { label: "Deposit", data: CHART_DATA.banks.deposit, borderColor: "#00ff00", borderWidth: 2, pointRadius: 0 }
-            ]},
-            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
-        });
-    }
-    else if(type === 'KEPSS' && CHART_DATA.kepss.labels.length > 0) {
-        document.getElementById('chart-title').innerText = "02 Macro Engine | KEPSS SETTLEMENT (Trillions KES)";
-        nativeChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels: CHART_DATA.kepss.labels, datasets: [{ label: "Settlement Value (Tn)", data: CHART_DATA.kepss.values.map(v => v/1000000), borderColor: "#00ff00", backgroundColor: "rgba(0, 255, 0, 0.1)", borderWidth: 2, pointRadius: 0, fill: true }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } }
-        });
-    }
-}
-
-// --- 4. Data Fetching (Dual JSONP Engine) ---
 function triggerSync() {
     let sys = document.getElementById("sys-status");
     if(sys) { sys.innerText = "SYS: POLLING..."; sys.style.color = "var(--term-gold)"; }
-    
     PREV_PRICES = { ...LIVE_PRICES };
 
-    let localData = null; 
-    let globalData = null;
-    let isProcessed = false;
-
+    let localData = null; let globalData = null; let isProcessed = false;
     window.localCallback = function(d) { localData = d; checkMerge(); };
     window.globalCallback = function(d) { globalData = d; checkMerge(); };
 
     function checkMerge() {
         if (localData && globalData && !isProcessed) {
             isProcessed = true;
-            let mergedData = Object.assign({}, localData, globalData);
-            processMarketData(mergedData);
+            processMarketData(Object.assign({}, localData, globalData));
         }
     }
-
     let s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); document.head.appendChild(s1);
     let s2 = document.createElement("script"); s2.src = API_GLOBAL + "?callback=globalCallback&sheet=all&_t=" + Date.now(); document.head.appendChild(s2);
     
@@ -356,183 +273,262 @@ function processMarketData(data) {
     let sys = document.getElementById("sys-status");
     if(sys) { sys.innerText = "SYS: OK"; sys.style.color = "var(--term-up)"; }
     
-    extractMacroData(data); // Process the historical Google Sheet data
-    
+    // 1. Extract Macro for Chart
+    let cd = data.chart_data || [];
+    if (cd.length > 0) {
+        CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
+        let tmpGdp = [];
+        cd.forEach(function(rawRow) {
+            let row = {}; for(let k in rawRow) { row[k.toLowerCase().trim().replace(/[\s\-]+/g, '_')] = rawRow[k]; }
+            let infKey = row["12_month_inflation"] !== undefined ? "12_month_inflation" : (row["inflation"] !== undefined ? "inflation" : null);
+            if (row.inf_date && infKey && row[infKey] !== "") { let v = cleanNum(row[infKey]); if (!isNaN(v)) { CHART_DATA.inflation.labels.push(row.inf_date); CHART_DATA.inflation.m12.push(v); } }
+            if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
+                let yrMatch = String(row.gdp_year).match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(row.gdp_year);
+                let nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), grw = cleanNum(row.gdp_growth_rate || row.gdp_growth);
+                if (!isNaN(yr) && !isNaN(nom) && !tmpGdp.find(g => g.year === yr)) tmpGdp.push({ year: yr, nom: nom, real: real, growth: grw });
+            }
+            if (row.rates_date && row.lending !== undefined && row.lending !== "") {
+                let len = cleanNum(row.lending), ovr = cleanNum(row.overdraft), sav = cleanNum(row.savings), dep = cleanNum(row.deposit);
+                if (!isNaN(len)) { CHART_DATA.banks.labels.push(row.rates_date); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
+            }
+        });
+        if(tmpGdp.length>0){tmpGdp.sort((a,b) => a.year-b.year); tmpGdp.forEach(d => { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); });}
+        if(CHART_DATA.inflation.labels.length > 0) { CHART_DATA.inflation.labels.reverse(); CHART_DATA.inflation.m12.reverse(); }
+        if(CHART_DATA.banks.labels.length > 0) { CHART_DATA.banks.labels.reverse(); CHART_DATA.banks.lending.reverse(); CHART_DATA.banks.overdraft.reverse(); CHART_DATA.banks.savings.reverse(); CHART_DATA.banks.deposit.reverse(); }
+        if(!nativeChartInstance) renderNativeChart('GDP');
+    }
+
+    // 2. Tickers & Movers
     let tickers = (data.tickers || []).filter(t => t && t.symbol);
-    let html = "";
-    
+    let htmlNSE = "";
     tickers.forEach(t => {
         let sym = String(t.symbol).trim().toUpperCase();
         let price = parseFloat(String(t.last_price || t["last_price_(kshs)"]).replace(/[^0-9.\-]/g, ''));
         let chgPct = parseFloat(String(t["%_change"] || t["percent_change"] || "0").replace(/[^0-9.\-]/g, ''));
-        let vol = t.volume || "—";
-        
         LIVE_PRICES[sym] = isNaN(price) ? 0 : price;
         
-        let flashClass = "";
-        if (PREV_PRICES[sym] !== undefined && PREV_PRICES[sym] !== LIVE_PRICES[sym]) {
-            flashClass = "flash-update";
-        }
-        
+        let flashClass = (PREV_PRICES[sym] !== undefined && PREV_PRICES[sym] !== LIVE_PRICES[sym]) ? "flash-update" : "";
         let colorCls = chgPct > 0 ? "up" : chgPct < 0 ? "dn" : "nt";
-        html += `<tr class="${flashClass}">
-                    <td class="sym">${sym}</td>
-                    <td>${LIVE_PRICES[sym].toFixed(2)}</td>
-                    <td class="${colorCls}">${chgPct > 0 ? '+' : ''}${(chgPct * (LIVE_PRICES[sym]/100)).toFixed(2)}</td>
-                    <td class="${colorCls}">${chgPct.toFixed(2)}%</td>
-                    <td class="nt">${vol}</td>
-                 </tr>`;
+        htmlNSE += `<tr class="${flashClass}"><td class="sym">${sym}</td><td>${fmtNum(LIVE_PRICES[sym])}</td><td class="${colorCls}">${chgPct > 0 ? '+' : ''}${(chgPct * (LIVE_PRICES[sym]/100)).toFixed(2)}</td><td class="${colorCls}">${chgPct.toFixed(2)}%</td><td class="nt">${t.volume || "—"}</td></tr>`;
     });
-    
-    document.getElementById('tb-market').innerHTML = html;
-    
-    // Load default macro chart if empty
-    if(!nativeChartInstance) renderNativeChart('GDP');
-    
-    if(currentUser) renderPortfolio();
+    document.getElementById('tb-market').innerHTML = htmlNSE;
+
+    // Gainers & Losers
+    let gainers = tickers.slice().filter(t => getPctNumForSort(t, "%_change") > 0).sort((a,b) => getPctNumForSort(b, "%_change") - getPctNumForSort(a, "%_change")).slice(0,10);
+    let losers = tickers.slice().filter(t => getPctNumForSort(t, "%_change") < 0).sort((a,b) => getPctNumForSort(a, "%_change") - getPctNumForSort(b, "%_change")).slice(0,10);
+    document.getElementById('tb-gain').innerHTML = gainers.map(t => `<tr><td class="sym">${t.symbol}</td><td>${fmtNum(t["last_price_(kshs)"] || t.last_price)}</td><td class="up">+${getPctNumForSort(t, "%_change").toFixed(2)}%</td></tr>`).join("");
+    document.getElementById('tb-lose').innerHTML = losers.map(t => `<tr><td class="sym">${t.symbol}</td><td>${fmtNum(t["last_price_(kshs)"] || t.last_price)}</td><td class="dn">${getPctNumForSort(t, "%_change").toFixed(2)}%</td></tr>`).join("");
+
+    // Market Watch & Foreign
+    let mw = (data.marketwatch || []).filter(t => t && t.symbol);
+    document.getElementById('tb-mkw').innerHTML = mw.slice(0,25).map(r => `<tr><td class="sym">${r.symbol}</td><td>${fmtNum(r["ltp_(kshs)"])}</td><td>${fmtNum(r["prev_close"])}</td><td>${fmtNum(r.volume, 0)}</td><td>${r.trades||"—"}</td><td>${fmtNum(r["turnover_(kshs)"])}</td></tr>`).join("");
+    let fbuys = mw.slice().sort((a,b) => cleanNum(b.foreign_buy) - cleanNum(a.foreign_buy)).filter(r=>cleanNum(r.foreign_buy)>0).slice(0,5);
+    let fsells = mw.slice().sort((a,b) => cleanNum(b.foreign_sell) - cleanNum(a.foreign_sell)).filter(r=>cleanNum(r.foreign_sell)>0).slice(0,5);
+    document.getElementById('tb-fbuy').innerHTML = fbuys.map(r => `<tr><td class="sym">${r.symbol}</td><td class="up">${fmtNum(r.foreign_buy,0)}</td></tr>`).join("");
+    document.getElementById('tb-fsell').innerHTML = fsells.map(r => `<tr><td class="sym">${r.symbol}</td><td class="dn">${fmtNum(r.foreign_sell,0)}</td></tr>`).join("");
+
+    // Global
+    let indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.price !== "N/A");
+    let active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price);
+    document.getElementById('tb-indices').innerHTML = indices.map(r => `<tr><td class="sym">${r.name}</td><td>${fmtNum(r.price)}</td><td class="${cleanNum(r["%_change"]||r.percent_change)>0?'up':'dn'}">${r["%_change"]||r.percent_change||"—"}</td><td>${r.volume||"—"}</td></tr>`).join("");
+    document.getElementById('tb-us').innerHTML = active.map(r => `<tr><td class="sym">${r.symbol}</td><td>${r.name||"—"}</td><td>$${fmtNum(r.price)}</td><td class="${cleanNum(r["%_change"]||r.percent_change)>0?'up':'dn'}">${r["%_change"]||r.percent_change||"—"}</td><td>${fmtNum(r.volume,0)}</td></tr>`).join("");
+
+    // Stats & FX
+    let stats = (data.stats || []).filter(r=>r&&r.name);
+    document.getElementById('tb-stats').innerHTML = stats.map(r => `<tr><td class="sym">${r.name}</td><td>${fmtNum(r.value)}</td><td class="${String(r.change).includes('▼')?'dn':'up'}">${r.change||"—"}</td></tr>`).join("");
+    if (data.cbk && data.cbk.length >= 29) {
+        let fxHtml = "";
+        for (let r = 19; r <= 29; r++) {
+            if (data.cbk[r]) {
+                let vals = Object.values(data.cbk[r]); let ccy = String(vals[1]||"").trim();
+                if (ccy && ccy !== "—" && ccy.toLowerCase() !== "currency" && ccy.toLowerCase() !== "mean") {
+                    fxHtml += `<tr><td class="sym">${ccy}</td><td>${vals[2]||"—"}</td><td>${vals[3]||"—"}</td><td>${vals[4]||"—"}</td><td>${vals[5]||"—"}</td></tr>`;
+                }
+            }
+        }
+        document.getElementById('tb-fx').innerHTML = fxHtml;
+    }
 }
 
-// --- 5. Portfolio & AI Engine ---
+// --- 3. Chart.js Macro Engine ---
+function renderNativeChart(type) {
+    const ctx = document.getElementById('terminal-chart');
+    if(nativeChartInstance) nativeChartInstance.destroy();
+    
+    Chart.defaults.color = '#64748b'; Chart.defaults.font.family = "'Consolas', 'Courier New', monospace";
+    let gridConfig = { color: '#1a1a1a', drawBorder: false };
+
+    if(type === 'INF' && CHART_DATA.inflation.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 MACRO ENGINE | 12-MONTH INFLATION (%)";
+        nativeChartInstance = new Chart(ctx, { type: 'line', data: { labels: CHART_DATA.inflation.labels, datasets: [{ label: "Inflation (%)", data: CHART_DATA.inflation.m12, borderColor: "#0044cc", backgroundColor: "rgba(0, 68, 204, 0.2)", borderWidth: 2, pointRadius: 2, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } } });
+    }
+    else if(type === 'GDP' && CHART_DATA.gdp.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 MACRO ENGINE | GDP (Trillions KES)";
+        let nomTn = CHART_DATA.gdp.nominal.map(v => isNaN(v) ? null : v / 1e12); let realTn = CHART_DATA.gdp.real.map(v => isNaN(v) ? null : v / 1e12);
+        nativeChartInstance = new Chart(ctx, { type: 'bar', data: { labels: CHART_DATA.gdp.labels, datasets: [{ label: "Nominal GDP", data: nomTn, backgroundColor: "#ff9900" }, { label: "Real GDP", data: realTn, backgroundColor: "#0044cc" }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } } });
+    }
+    else if(type === 'RATES' && CHART_DATA.banks.labels.length > 0) {
+        document.getElementById('chart-title').innerText = "02 MACRO ENGINE | BANK RATES (%)";
+        nativeChartInstance = new Chart(ctx, { type: 'line', data: { labels: CHART_DATA.banks.labels, datasets: [ { label: "Lending", data: CHART_DATA.banks.lending, borderColor: "#ff0000", borderWidth: 2, pointRadius: 0 }, { label: "Deposit", data: CHART_DATA.banks.deposit, borderColor: "#00ff00", borderWidth: 2, pointRadius: 0 } ]}, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: gridConfig } } } });
+    }
+}
+
+// --- 4. Portfolio & Auth Engine ---
+function checkAuthUI() {
+    if(currentUser) {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('port-screen').style.display = 'flex';
+        document.getElementById("user-badge").innerText = `AUTH: ${currentUser.toUpperCase()}`;
+        document.getElementById("user-badge").className = "up";
+        fetchPortfolioData();
+    } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('port-screen').style.display = 'none';
+        document.getElementById("user-badge").innerText = "NOT AUTHENTICATED";
+        document.getElementById("user-badge").className = "nt";
+    }
+}
+
+async function terminalLogin() {
+    let u = document.getElementById('auth-user').value.trim();
+    let p = document.getElementById('auth-pass').value; // EXACT CASE, NO TRIM OR TOUPPERCASE
+    let fb = document.getElementById('auth-feedback');
+    
+    if(!u || !p) { fb.innerText = "CREDENTIALS REQUIRED"; fb.className="dn"; return; }
+    
+    fb.innerText = "AUTHENTICATING VIA SECURE NODE..."; fb.className="term-gold";
+    try {
+        let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "login", username: u, password: p }) });
+        let res = await resp.json();
+        if(res.status === "success") { 
+            currentUser = u; localStorage.setItem("pf_username", u); 
+            fb.innerText = ""; document.getElementById('auth-pass').value = "";
+            checkAuthUI(); 
+        } else { fb.innerText = "AUTH FAILED: " + res.message.toUpperCase(); fb.className="dn"; }
+    } catch(e) { fb.innerText = "NETWORK CONNECTION FAILED"; fb.className="dn"; }
+}
+
 async function fetchPortfolioData() {
     try {
         let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "get_portfolio", username: currentUser }) });
         let res = await resp.json();
         if (res.status === "success") {
-            PORTFOLIO_DATA = res.history || [];
-            SENTIMENT_DATA = res.sentiment || {};
-            document.getElementById("user-badge").innerText = `AUTH: ${currentUser.toUpperCase()}`;
-            document.getElementById("user-badge").className = "up";
+            PORTFOLIO_DATA = res.history || []; SENTIMENT_DATA = res.sentiment || {};
             renderPortfolio();
         }
-    } catch(e) { console.log("Port Sync Error"); }
+    } catch(e) {}
 }
 
 function renderPortfolio() {
     let map = {};
     PORTFOLIO_DATA.forEach(r => {
         if(!map[r.ticker]) map[r.ticker] = { sh: 0, cost: 0, base: 0 };
-        if(r.type === "BOUGHT") {
-            map[r.ticker].sh += r.shares;
-            map[r.ticker].cost += r.total;
-            map[r.ticker].base += (r.shares * r.price);
-        } else if(r.type === "SOLD" && map[r.ticker].sh > 0) {
-            let avgC = map[r.ticker].cost / map[r.ticker].sh;
-            let avgB = map[r.ticker].base / map[r.ticker].sh;
-            map[r.ticker].sh -= r.shares;
-            map[r.ticker].cost = map[r.ticker].sh * avgC;
-            map[r.ticker].base = map[r.ticker].sh * avgB;
+        if(r.type === "BOUGHT") { map[r.ticker].sh += r.shares; map[r.ticker].cost += r.total; map[r.ticker].base += (r.shares * r.price); } 
+        else if(r.type === "SOLD" && map[r.ticker].sh > 0) {
+            let avgC = map[r.ticker].cost / map[r.ticker].sh; let avgB = map[r.ticker].base / map[r.ticker].sh;
+            map[r.ticker].sh -= r.shares; map[r.ticker].cost = map[r.ticker].sh * avgC; map[r.ticker].base = map[r.ticker].sh * avgB;
         }
     });
     
-    let html = "";
-    let totVal = 0, totCost = 0;
-    
+    let html = ""; let totVal = 0, totCost = 0;
     Object.keys(map).forEach(sym => {
-        let pos = map[sym];
-        if(pos.sh <= 0.001) return;
+        let pos = map[sym]; if(pos.sh <= 0.001) return;
+        let ltp = LIVE_PRICES[sym] || 0; let curVal = pos.sh * ltp; let pnl = curVal - pos.cost; let vwap = pos.base / pos.sh;
+        totVal += curVal; totCost += pos.cost;
         
-        let ltp = LIVE_PRICES[sym] || 0;
-        let curVal = pos.sh * ltp;
-        let pnl = curVal - pos.cost;
-        let vwap = pos.base / pos.sh;
-        
-        totVal += curVal;
-        totCost += pos.cost;
-        
-        let colClass = pnl >= 0 ? "up" : "dn";
-        
-        // Terminal Style AI Sentinel Logic
-        let ai = SENTIMENT_DATA[sym];
-        let aiTag = "<span class='nt'>[ NEUTRAL ]</span>";
-        if(ai) {
-            if(ai.label === "Bullish") aiTag = "<span class='up'>[ BULLISH ]</span>";
-            if(ai.label === "Bearish") aiTag = "<span class='dn'>[ BEARISH ]</span>";
-        }
+        let ai = SENTIMENT_DATA[sym]; let aiTag = "<span class='nt'>[ NEU ]</span>";
+        if(ai) { if(ai.label === "Bullish") aiTag = "<span class='up'>[ BULL ]</span>"; else if(ai.label === "Bearish") aiTag = "<span class='dn'>[ BEAR ]</span>"; }
 
-        html += `<tr>
-                    <td class="sym">${sym}</td>
-                    <td>${pos.sh.toLocaleString()}</td>
-                    <td>${vwap.toFixed(2)}</td>
-                    <td>${ltp.toFixed(2)}</td>
-                    <td>${curVal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td class="${colClass}">${pnl > 0 ? '+' : ''}${pnl.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td>${aiTag}</td>
-                 </tr>`;
+        html += `<tr><td class="sym">${sym}</td><td>${fmtNum(pos.sh,0)}</td><td>${fmtNum(vwap)}</td><td>${fmtNum(ltp)}</td><td>${fmtNum(curVal)}</td><td class="${pnl >= 0 ? 'up' : 'dn'}">${pnl > 0 ? '+' : ''}${fmtNum(pnl)}</td><td>${aiTag}</td></tr>`;
     });
     
     document.getElementById('tb-port').innerHTML = html || '<tr><td colspan="7" class="nt" style="text-align:center;">NO HOLDINGS DETECTED</td></tr>';
-    
     let dayPnl = totVal - totCost;
-    document.getElementById('met-liq').innerText = totVal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-    document.getElementById('met-pnl').innerText = (dayPnl > 0 ? '+' : '') + dayPnl.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('met-liq').innerText = fmtNum(totVal);
+    document.getElementById('met-pnl').innerText = (dayPnl > 0 ? '+' : '') + fmtNum(dayPnl);
     document.getElementById('met-pnl').className = "p-met-val " + (dayPnl >= 0 ? "up" : "dn");
 }
 
-// --- 6. Command Line Interface (CLI) Engine ---
+function terminalLogout() {
+    currentUser = null; localStorage.removeItem("pf_username");
+    checkAuthUI();
+}
+
+// --- 5. Background News Scraper ---
+async function loadLiveNews() {
+  try {
+    let feedUrls = ["https://finance.yahoo.com/news/rss", "https://www.economist.com/finance-and-economics/rss.xml"];
+    let promises = feedUrls.map(f => fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(f)).then(r => r.json()).then(d => {
+        if (d.status !== 'ok') return [];
+        return d.items.slice(0, 5).map(i => ({ title: i.title, link: i.link, desc: i.description ? i.description.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : '', src: f.includes('yahoo') ? 'Yahoo Finance' : 'The Economist' }));
+    }).catch(() => []));
+    
+    promises.push(fetch("https://api.allorigins.win/get?url=" + encodeURIComponent("https://kenyanwallstreet.com/feed/")).then(r => r.json()).then(d => {
+        let xml = new DOMParser().parseFromString(d.contents, "application/xml");
+        let items = Array.from(xml.querySelectorAll("item")).slice(0, 5);
+        return items.map(n => ({ title: n.querySelector("title")?.textContent||"", link: n.querySelector("link")?.textContent||"", desc: (n.querySelector("description")?.textContent||"").replace(/<[^>]*>?/gm, '').substring(0, 100) + '...', src: "Kenyan Wall Street" }));
+    }).catch(() => []));
+    
+    let results = await Promise.all(promises); let all = []; results.forEach(r => all = all.concat(r));
+    if(all.length > 0) {
+        document.getElementById("live-news-container").innerHTML = all.map(i => `<div class="news-item"><a href="${i.link}" target="_blank" class="n-title">${i.title.toUpperCase()}</a><div class="n-desc">${i.desc} [SRC: ${i.src.toUpperCase()}]</div></div>`).join("");
+    }
+  } catch(e) {}
+}
+
+// --- 6. Command Line Interface (CLI) Parsing ---
 const cli = document.getElementById("cli-input");
 cli.addEventListener("keypress", async function(e) {
     if (e.key === "Enter") {
-        let cmd = cli.value.trim().toUpperCase();
+        let rawCmd = cli.value.trim();
         cli.value = ""; 
         
-        let parts = cmd.split(" ");
-        let action = parts[0];
+        let parts = rawCmd.split(" ");
+        let action = parts[0].toUpperCase(); // Only uppercase the command keyword
         
-        if (action === "HELP") {
-            alert("NOBLE TERMINAL COMMANDS:\n\nLOGIN [username] [password]\nLOGOUT\nCHART [GDP | INF | RATES | KEPSS]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]");
+        if (action === "HELP") { alert("NOBLE TERMINAL COMMANDS:\n\nLOGIN\nLOGOUT\nVIEW [NSE|GLOBAL|FX|MOVERS|MKW|NEWS]\nCHART [GDP|INF|RATES]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]"); }
+        else if (action === "LOGIN") {
+            if(parts.length >= 3) {
+                // Legacy CLI login support (preserves case for password in parts[2])
+                document.getElementById('auth-user').value = parts[1];
+                document.getElementById('auth-pass').value = parts.slice(2).join(" "); 
+                terminalLogin();
+            } else {
+                document.getElementById('auth-user').focus();
+            }
         }
-        else if (action === "LOGIN" && parts.length === 3) {
-            let u = parts[1].toLowerCase();
-            let p = parts[2];
-            document.getElementById("tb-port").innerHTML = '<tr><td colspan="7" class="nt" style="text-align:center;">AUTHENTICATING...</td></tr>';
-            try {
-                let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "login", username: u, password: p }) });
-                let res = await resp.json();
-                if(res.status === "success") { currentUser = u; localStorage.setItem("pf_username", u); fetchPortfolioData(); }
-                else { document.getElementById("tb-port").innerHTML = `<tr><td colspan="7" class="dn" style="text-align:center;">AUTH FAILED: ${res.message}</td></tr>`; }
-            } catch(e) {}
-        }
-        else if (action === "LOGOUT") {
-            currentUser = null; localStorage.removeItem("pf_username");
-            document.getElementById("user-badge").innerText = "NOT AUTHENTICATED"; document.getElementById("user-badge").className = "nt";
-            document.getElementById("tb-port").innerHTML = '<tr><td colspan="7" class="nt" style="text-align:center;">TYPE \'LOGIN username password\' TO ACCESS</td></tr>';
-            document.getElementById('met-liq').innerText = "0.00"; document.getElementById('met-pnl').innerText = "0.00"; document.getElementById('met-pnl').className = "p-met-val";
+        else if (action === "LOGOUT") { terminalLogout(); }
+        else if (action === "VIEW" && parts.length === 2) {
+            let v = parts[1].toUpperCase();
+            if(v==='NSE') switchView('nse'); else if(v==='GLOBAL') switchView('global'); else if(v==='FX') switchView('forex'); else if(v==='MOVERS') switchView('movers'); else if(v==='MKW') switchView('mkw'); else if(v==='NEWS') switchView('news');
         }
         else if (action === "CHART" && parts.length === 2) {
-            let validCharts = ['GDP', 'INF', 'RATES', 'KEPSS'];
-            if(validCharts.includes(parts[1])) renderNativeChart(parts[1]);
-            else alert("UNKNOWN CHART. TRY: CHART GDP, CHART INF, CHART RATES, CHART KEPSS");
+            let v = parts[1].toUpperCase();
+            if(['GDP', 'INF', 'RATES'].includes(v)) renderNativeChart(v);
         }
         else if ((action === "BUY" || action === "SELL") && parts.length >= 5) {
-            if(!currentUser) { alert("ERROR: YOU MUST BE LOGGED IN TO EXECUTE TRADES"); return; }
-            let qty = parseFloat(parts[1]);
-            let tkr = parts[2];
-            let price = parseFloat(parts[4]);
+            if(!currentUser) { alert("ERROR: NOT AUTHENTICATED"); return; }
+            let qty = parseFloat(parts[1]); let tkr = parts[2].toUpperCase(); let price = parseFloat(parts[4]);
             if(isNaN(qty) || isNaN(price) || !tkr) { alert("SYNTAX ERROR. USE: BUY 100 KCB @ 35.50"); return; }
-            
-            document.getElementById("tb-port").innerHTML = '<tr><td colspan="7" class="term-gold" style="text-align:center;">TRANSMITTING ORDER...</td></tr>';
             
             let dt = new Date().toISOString().split('T')[0];
             let payload = { action: "update_portfolio", username: currentUser, date: dt, type: action === "BUY" ? "BOUGHT" : "SOLD", ticker: tkr, shares: qty, price: price, broker: "Terminal Node Execution" };
             
-            try {
-                let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-                let res = await resp.json();
-                if(res.status === "success") fetchPortfolioData();
-                else alert("ORDER REJECTED: " + res.message);
-            } catch(e) {}
+            try { fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) }).then(() => fetchPortfolioData()); } catch(e) {}
         }
     }
 });
 
-document.addEventListener("click", () => { document.getElementById("cli-input").focus(); });
+document.addEventListener("click", (e) => { if(e.target.tagName !== "INPUT" && e.target.tagName !== "SPAN") document.getElementById("cli-input").focus(); });
 
-// --- Safe Boot Sequence ---
+// --- Boot Sequence ---
 window.addEventListener('load', () => {
+    checkAuthUI();
     triggerSync();
-    setInterval(triggerSync, 60000); // Pulse check every 60 seconds
+    loadLiveNews();
+    setInterval(triggerSync, 60000); 
+    setInterval(loadLiveNews, 3600000);
 });
-
 </script>
 </body>
 </html>
