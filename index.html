@@ -13,46 +13,19 @@
   <style>
     /* ── PREMIUM "NOBLE FINANCE" THEME ──────────────────── */
     :root { 
-      --bg-body: #f4f6f9; 
-      --bg-card: #ffffff; 
-      --text-main: #2c3e50; 
-      --text-muted: #666666; 
-      --text-sub: #999999; 
-      --border-color: #e2e8f0; 
-      --table-header-bg: #f8fafc; 
-      --table-border: #f1f5f9; 
-      --table-hover: #fafbfd; 
-      --input-border: #d1d5db; 
-      --input-bg: #ffffff; 
-      --card-shadow: 0 2px 6px rgba(0,0,0,0.07); 
-      --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.11);
-      --ticker-bg: #001030;
-      --brand-primary: #002060;
-      --brand-gold: #D4AF37;
-      --neon-up: #00b050;
-      --neon-dn: #ff5252;
-      --ticker-cell-bg: #ffffff;
+      --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2c3e50; --text-muted: #666666; --text-sub: #999999; 
+      --border-color: #e2e8f0; --table-header-bg: #f8fafc; --table-border: #f1f5f9; --table-hover: #fafbfd; 
+      --input-border: #d1d5db; --input-bg: #ffffff; --card-shadow: 0 2px 6px rgba(0,0,0,0.07); 
+      --card-shadow-hover: 0 6px 14px rgba(0,0,0,0.11); --ticker-bg: #001030; --brand-primary: #002060;
+      --brand-gold: #D4AF37; --neon-up: #00b050; --neon-dn: #ff5252; --ticker-cell-bg: #ffffff;
     }
     
     [data-theme="dark"] { 
-      --bg-body: #0b1120; 
-      --bg-card: #151e32; 
-      --text-main: #f8fafc; 
-      --text-muted: #94a3b8; 
-      --text-sub: #64748b; 
-      --border-color: rgba(255,255,255,0.08); 
-      --table-header-bg: #0f172a; 
-      --table-border: rgba(255,255,255,0.04); 
-      --table-hover: #1e293b; 
-      --input-border: #334155; 
-      --input-bg: #0f172a; 
-      --card-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); 
-      --card-shadow-hover: 0 20px 25px -5px rgba(0,0,0,0.5);
-      --ticker-bg: #070b14;
-      --brand-primary: #66a3ff;
-      --brand-gold: #D4AF37;
-      --neon-up: #10b981;
-      --neon-dn: #ef4444;
+      --bg-body: #0b1120; --bg-card: #151e32; --text-main: #f8fafc; --text-muted: #94a3b8; --text-sub: #64748b; 
+      --border-color: rgba(255,255,255,0.08); --table-header-bg: #0f172a; --table-border: rgba(255,255,255,0.04); 
+      --table-hover: #1e293b; --input-border: #334155; --input-bg: #0f172a; 
+      --card-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); --card-shadow-hover: 0 20px 25px -5px rgba(0,0,0,0.5);
+      --ticker-bg: #070b14; --brand-primary: #66a3ff; --brand-gold: #D4AF37; --neon-up: #10b981; --neon-dn: #ef4444;
       --ticker-cell-bg: #1e293b;
     }
     
@@ -61,7 +34,6 @@
 
     header { background: var(--ticker-bg); color: #fff; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 3px solid var(--brand-gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
     header h1 { font-size: 15pt; letter-spacing: 0.03em; color: #fff; margin: 0; }
-    
     .header-right { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; justify-content: flex-end; flex: 1; }
     
     #market-status { font-size: 11pt; padding: 6px 16px; border-radius: 30px; border: 1.5px solid rgba(255,255,255,0.3); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px; }
@@ -74,7 +46,6 @@
     .header-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 10pt; transition: all 0.2s ease; backdrop-filter: blur(4px); white-space: nowrap; }
     .header-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); border-color: rgba(255,255,255,0.4); }
     
-    /* ── SCROLLING TICKER ──────────────────── */
     .ticker-wrap { width: 100%; background: var(--ticker-bg); color: #fff; overflow: hidden; height: 38px; display: flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
     .ticker { display: flex; width: max-content; animation: ticker-scroll 120s linear infinite; }
     .ticker:hover { animation-play-state: paused; }
@@ -83,7 +54,6 @@
     .ti-sym { color: var(--brand-gold); } .ti-prc { color: #e2e8f0; } 
     .ti-up { color: var(--neon-up); } .ti-dn { color: var(--neon-dn); } .ti-nt { color: #64748b; }
     
-    /* ── TABS ──────────────────── */
     .tab-container { display: flex; justify-content: center; margin: 2rem 0 1.5rem; gap: 1rem; flex-wrap: wrap; }
     .tab-btn { padding: 10px 28px; font-size: 11pt; background: transparent; color: var(--text-muted); border: 2px solid transparent; border-radius: 30px; cursor: pointer; transition: all 0.3s ease; }
     .tab-btn:hover { color: var(--text-main); }
@@ -93,7 +63,6 @@
     .view-section { display: none; animation: fadeIn 0.4s ease; } .view-section.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── GRID & CARDS ──────────────────── */
     .container { max-width: 1440px; margin: 0 auto; padding: 0 2rem 2rem; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
@@ -124,7 +93,6 @@
     .expand-hint:hover { background: var(--border-color); }
     .table-collapsed .expand-hint::after { content: "▼ VIEW FULL TABLE ▼"; } .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲ COLLAPSE TABLE ▲"; color: var(--text-muted); }
     
-    /* ── TABLES ──────────────────── */
     .table-responsive { width: 100%; overflow-x: auto; } 
     table { width: 100%; border-collapse: collapse; white-space: nowrap; } 
     th { text-align: left; padding: 10px 14px; color: var(--brand-primary); border-bottom: 2px solid var(--border-color); font-size: 10pt; text-transform: uppercase; letter-spacing: 0.5px; background: var(--table-header-bg); cursor: pointer; user-select: none; }
@@ -137,14 +105,12 @@
     .dn { color: var(--neon-dn) !important; } 
     .nt { color: var(--text-sub) !important; }
     
-    /* ── AI BADGE CSS (PHASE 4) ──────────────────── */
     .badge-ai { padding: 4px 8px; border-radius: 4px; font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
     .badge-bull { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid #10b981; }
     .badge-bear { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid #ef4444; }
     .badge-neut { background: rgba(100,116,139,0.15); color: #64748b; border: 1px solid #64748b; }
     [data-theme="dark"] .badge-neut { color: #94a3b8; }
 
-    /* ── MACRO CARDS REDESIGN ──────────────────── */
     .macro-cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; padding: 1.5rem; }
     .macro-mini-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; text-align: center; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
     .macro-mini-card:hover { transform: translateY(-2px); border-color: var(--brand-gold); box-shadow: var(--card-shadow); }
@@ -152,7 +118,6 @@
     .macro-mc-val { font-size: 14pt; color: var(--brand-primary); } 
     [data-theme="dark"] .macro-mc-val { color: var(--brand-primary); }
 
-    /* ── GLOBAL EXPLORER ──────────────────── */
     .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1.5rem; padding: 1.5rem; }
     .country-filter { display: flex; justify-content: center; padding-bottom: 1.5rem; border-bottom: 1px dashed var(--border-color); }
     .country-filter select { padding: 10px 20px; font-size: 10.5pt; border: 2px solid var(--brand-primary); border-radius: 8px; color: var(--brand-primary); background: var(--input-bg); cursor: pointer; outline: none; transition: all 0.2s; width: 100%; max-width: 400px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
@@ -171,7 +136,6 @@
     [data-theme="dark"] .tc-sym { color: var(--brand-primary); } 
     .tc-price { font-size: 10pt; color: var(--text-main); margin: 4px 0; } .tc-chg { font-size: 9pt; }
     
-    /* ── CHART.JS GRAPHS ──────────────────── */
     .graphs-section { background: var(--bg-card); border-radius: 12px; box-shadow: var(--card-shadow); margin-bottom: 2rem; border: 1px solid var(--border-color); overflow: hidden; }
     .graphs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem; } @media (max-width: 800px) { .graphs-grid { grid-template-columns: 1fr; } }
     .graph-card { background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; }
@@ -184,7 +148,6 @@
     .error-box h2 { color: var(--neon-dn); margin-top: 0; }
     .error-box code { background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; display:block; margin-top: 10px; font-family: monospace !important; }
     
-    /* ── MODALS (Auth & Transaction) ──────────────────── */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .modal-box { background: var(--bg-card); padding: 2.5rem; border-radius: 16px; width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1.25rem; position: relative; max-height: 90vh; overflow-y: auto;}
     .modal-box h3 { color: var(--brand-primary); font-size: 14.5pt; margin-bottom: 0.5rem; text-align: center; } 
@@ -207,7 +170,6 @@
     .auth-toggle { text-align: center; font-size: 9.5pt; color: var(--text-muted); cursor: pointer; margin-top: -5px; }
     .auth-toggle span { color: var(--brand-primary); text-decoration: underline; }
     
-    /* ── NEWS ──────────────────── */
     .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; padding: 1.5rem; }
     .news-item { display: flex; flex-direction: column; gap: 0.85rem; background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; height: 100%; transition: all 0.3s ease; }
     .news-item:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); border-color: var(--brand-gold); }
@@ -223,7 +185,6 @@
     .signout-btn { background: transparent; color: var(--neon-dn); border: 1px solid var(--neon-dn); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 10pt; transition: all 0.2s; white-space: nowrap;}
     .signout-btn:hover { background: rgba(239, 68, 68, 0.1); transform: translateY(-1px); }
 
-    /* ── PORTFOLIO UI ──────────────────── */
     .port-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .port-summary-card { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: var(--card-shadow); transition: transform 0.2s; }
     .port-summary-card:hover { transform: translateY(-3px); border-color: var(--brand-gold); }
@@ -238,7 +199,6 @@
     [data-theme="dark"] .port-tab-btn.active { color: var(--brand-gold); border-bottom-color: var(--brand-gold); }
     
     .port-view { display: none; animation: fadeIn 0.4s ease; } .port-view.active { display: block; }
-    
     .chart-container-pie { position: relative; height: 350px; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 2rem; border-top: 1px dashed var(--border-color); padding-top: 2rem;}
     
     .export-icon-btn { background: var(--table-header-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 9pt; margin-left: 5px; transition: all 0.2s;}
@@ -276,13 +236,10 @@
 </div>
 
 <div class="container" id="pdf-container">
-  <!-- KENYA VIEW -->
   <div id="view-kenya" class="view-section active"><div id="app-kenya"><div class="loader">⏳ Authenticating and aggregating domestic datasets…</div></div></div>
   
-  <!-- GLOBAL VIEW -->
   <div id="view-global" class="view-section"><div id="app-global"><div class="loader">⏳ Synchronizing global datasets…</div></div></div>
   
-  <!-- PORTFOLIO VIEW (PHASE 3 + 4) -->
   <div id="view-portfolio" class="view-section">
       <div class="full-card">
           <div class="card-header">
@@ -294,7 +251,6 @@
           </div>
           <div class="card-body padded">
               
-              <!-- Summary Cards -->
               <div class="port-summary-grid">
                   <div class="port-summary-card">
                       <div class="port-summary-lbl">Total Invested Value</div>
@@ -311,7 +267,6 @@
                   </div>
               </div>
 
-              <!-- Sub Tabs -->
               <div class="port-tabs">
                   <button class="port-tab-btn active" onclick="switchPortTab('holdings', event)">Portfolio Holdings</button>
                   <button class="port-tab-btn" onclick="switchPortTab('purchases', event)">Purchase History</button>
@@ -325,7 +280,6 @@
                   </div>
               </div>
 
-              <!-- Holdings Table -->
               <div id="port-view-holdings" class="port-view active table-responsive">
                   <div style="margin-bottom: 15px; text-align:right;">
                       <button class="export-icon-btn" onclick="exportTableToCSV('my-portfolio-table', 'Portfolio_Holdings')">CSV</button>
@@ -334,21 +288,15 @@
                   </div>
                   <table id="my-portfolio-table">
                       <thead>
-                          <!-- Phase 4: Added AI Signal Column -->
                           <tr><th>Security</th><th>Quantity</th><th>Base VWAP</th><th>Net Avg Cost</th><th>Invested Value</th><th>LTP</th><th>Current Value</th><th>P&L Value</th><th>P&L %</th><th>AI Signal</th></tr>
                       </thead>
                       <tbody id="my-portfolio-tbody">
                           <tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading portfolio...</td></tr>
                       </tbody>
                   </table>
-                  
-                  <!-- Pie Chart for Holdings -->
-                  <div class="chart-container-pie">
-                      <canvas id="portfolio-pie-chart"></canvas>
-                  </div>
+                  <div class="chart-container-pie"><canvas id="portfolio-pie-chart"></canvas></div>
               </div>
 
-              <!-- Purchase History Table -->
               <div id="port-view-purchases" class="port-view table-responsive">
                   <div style="margin-bottom: 15px; text-align:right;">
                       <button class="export-icon-btn" onclick="exportTableToCSV('my-purchases-table', 'Purchase_History')">CSV</button>
@@ -361,7 +309,6 @@
                   </table>
               </div>
 
-              <!-- Sales History Table -->
               <div id="port-view-sales" class="port-view table-responsive">
                   <div style="margin-bottom: 15px; text-align:right;">
                       <button class="export-icon-btn" onclick="exportTableToCSV('my-sales-table', 'Sales_History')">CSV</button>
@@ -390,7 +337,6 @@
   </div>
 </div>
 
-<!-- EXPORT MODAL -->
 <div class="modal-overlay" id="export-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeExportModal()">✖</span>
@@ -424,7 +370,6 @@
   </div>
 </div>
 
-<!-- AUTHENTICATION MODAL -->
 <div class="modal-overlay" id="auth-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeAuthModal()">✖</span>
@@ -449,7 +394,6 @@
   </div>
 </div>
 
-<!-- TRADE MODAL -->
 <div class="modal-overlay" id="trade-modal" data-html2canvas-ignore="true">
   <div class="modal-box">
     <span class="modal-close" onclick="closeTradeModal()">✖</span>
@@ -461,10 +405,7 @@
     </div>
     <div class="form-group">
       <label>Action</label>
-      <select id="trade-type">
-          <option value="BOUGHT">BOUGHT</option>
-          <option value="SOLD">SOLD</option>
-      </select>
+      <select id="trade-type"><option value="BOUGHT">BOUGHT</option><option value="SOLD">SOLD</option></select>
     </div>
     <div class="form-group">
       <label>Ticker Symbol</label>
@@ -493,33 +434,28 @@
 </div>
 
 <script>
-// 🛡️ ERROR CATCHER
 window.addEventListener('error', function(e) {
   var errStr = '<div class="error-box" style="margin-top:50px;"><h2>🚨 Fatal JavaScript Error</h2><p>The code encountered a syntax or reference error and halted.</p><code>' + e.message + ' (Line ' + e.lineno + ')</code></div>';
   var app = document.getElementById("app-kenya"); if(app) app.innerHTML = errStr;
 });
 
-// ── CONSTANTS ─────────────────────────────────────────────────────────────
-var API_LOCAL  = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
-var API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec";
-var API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
-var JSONP_TIMEOUT_MS = 15000;
+const API_LOCAL  = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
+const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec";
+const API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
+const JSONP_TIMEOUT_MS = 15000;
 
 var KEY_RATES = [], FOREX_RATES = [];
 var CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
-var LIVE_PRICES = {}; 
-var GLOBAL_HISTORY = []; 
-var GLOBAL_SENTIMENT = {}; // Phase 4 Memory
-
+var LIVE_PRICES = {}; var GLOBAL_HISTORY = []; var GLOBAL_SENTIMENT = {};
 var currentTab = 'kenya', isNewsFetched = false, isFetching = false;
 var hasRenderedOnce = false, isGeoChartLoaded = false, currentGlobalSelection = "usa";
 var chartInstances = {}, kenyaTickerHTML = "", globalTickerHTML = "";
 var currentUser = null, isSignupMode = false;
 
-var countryMap = { "usa":{"name":"USA","code":"US"}, "canada":{"name":"Canada","code":"CA"}, "south_africa":{"name":"South Africa","code":"ZA"}, "nigeria":{"name":"Nigeria","code":"NG"}, "egypt":{"name":"Egypt","code":"EG"}, "france":{"name":"France","code":"FR"}, "united_kingdom":{"name":"United Kingdom","code":"GB"}, "australia":{"name":"Australia","code":"AU"}, "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"} };
-var ALL_NSE_TICKERS = ["ABSA","ALP","AMAC","BAT","BKG","BOC","BRIT","CARB","CGEN","CIC","COOP","CRWN","CTUM","DTK","EABL","EGAD","EQTY","EVRD","FTGH","GLD","HAFR","HFCK","IMH","JUB","KAPC","KCB","KEGN","KNRE","KPLC","KQ","KUKZ","LBTY","LIMT","LKL","NBV","NCBA","NMG","NSE","OCH","PORT","SASN","SBIC","SCAN","SCBK","SCOM","SGL","SKL","SLAM","SMER","SMWF","TOTL","TPSE","UCHM","UMME","UNGA","WTK","XPRS","KPC"];
+const countryMap = { "usa":{"name":"USA","code":"US"}, "canada":{"name":"Canada","code":"CA"}, "south_africa":{"name":"South Africa","code":"ZA"}, "nigeria":{"name":"Nigeria","code":"NG"}, "egypt":{"name":"Egypt","code":"EG"}, "france":{"name":"France","code":"FR"}, "united_kingdom":{"name":"United Kingdom","code":"GB"}, "australia":{"name":"Australia","code":"AU"}, "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"} };
+const ALL_NSE_TICKERS = ["ABSA","ALP","AMAC","BAT","BKG","BOC","BRIT","CARB","CGEN","CIC","COOP","CRWN","CTUM","DTK","EABL","EGAD","EQTY","EVRD","FTGH","GLD","HAFR","HFCK","IMH","JUB","KAPC","KCB","KEGN","KNRE","KPLC","KQ","KUKZ","LBTY","LIMT","LKL","NBV","NCBA","NMG","NSE","OCH","PORT","SASN","SBIC","SCAN","SCBK","SCOM","SGL","SKL","SLAM","SMER","SMWF","TOTL","TPSE","UCHM","UMME","UNGA","WTK","XPRS","KPC"];
 
-var ALL_BROKERS = [
+const ALL_BROKERS = [
   "ABC Capital Ltd", "AIB-AXYS Africa", "Absa Securities Ltd", "Capital A Investment Bank", 
   "Dry Associates", "Dyer & Blair Investment Bank Ltd", "EFG Hermes Kenya Ltd", 
   "Equity Investment Bank Ltd", "Faida Investment Bank Ltd", "Francis Drummond & Company Ltd", 
@@ -530,7 +466,6 @@ var ALL_BROKERS = [
   "Ziidi Trader (Platform)"
 ];
 
-// ── CLOCK & 10-MIN SECURITY PROTOCOL ──────────────────────────────
 function padZero(n) { return n < 10 ? '0' + n : n; }
 setInterval(function() {
   var now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
@@ -567,7 +502,6 @@ setInterval(function() {
   }
 }, 1000);
 
-// ── UI CONTROLS ───────────────────────────────────────────────────────────
 function switchTab(tabId, evt) {
   document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
   document.querySelectorAll('.view-section').forEach(function(s) { s.classList.remove('active'); });
@@ -576,9 +510,7 @@ function switchTab(tabId, evt) {
   document.getElementById('view-'+tabId).classList.add('active'); currentTab = tabId;
   
   var tc = document.getElementById('ticker-content');
-  if (tc) {
-      tc.innerHTML = (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML) + (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML);
-  }
+  if (tc) { tc.innerHTML = (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML) + (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML); }
   if (tabId === 'global' && isGeoChartLoaded) setTimeout(drawRegionsMap, 150);
 }
 
@@ -598,34 +530,23 @@ function toggleTheme() {
 if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttribute("data-theme","dark"); document.addEventListener("DOMContentLoaded", function(){ var b=document.getElementById("theme-btn"); if(b) b.innerHTML="☀️ Light"; }); }
 function setMarketStatus(s) { var el=document.getElementById("market-status"); if(s==="OPEN"){el.textContent="OPEN";el.className="open";}else{el.textContent="CLOSED";el.className="closed";} }
 
-// ── AUTH & PORTFOLIO LOGIC (PHASE 3) ──────────────────────────────────────
 document.addEventListener("DOMContentLoaded", function() {
     var tickerSelect = document.getElementById('trade-ticker');
     ALL_NSE_TICKERS.sort().forEach(function(t) { tickerSelect.innerHTML += '<option value="'+t+'">'+t+'</option>'; });
     
     var brokerSelect = document.getElementById('trade-broker');
     var filterSelect = document.getElementById('portfolio-broker-filter');
-    ALL_BROKERS.forEach(function(b) { 
-        brokerSelect.innerHTML += '<option value="'+b+'">'+b+'</option>'; 
-        filterSelect.innerHTML += '<option value="'+b+'">'+b+'</option>';
-    });
+    ALL_BROKERS.forEach(function(b) { brokerSelect.innerHTML += '<option value="'+b+'">'+b+'</option>'; filterSelect.innerHTML += '<option value="'+b+'">'+b+'</option>'; });
     
-    var today = new Date().toISOString().split('T')[0];
-    document.getElementById('trade-date').value = today;
+    document.getElementById('trade-date').value = new Date().toISOString().split('T')[0];
     
     var savedUser = localStorage.getItem("pf_username");
-    if (savedUser) { 
-        currentUser = savedUser; 
-        localStorage.setItem("pf_time", Date.now()); 
-        enablePortfolioMode(false); 
-    }
+    if (savedUser) { currentUser = savedUser; localStorage.setItem("pf_time", Date.now()); enablePortfolioMode(false); }
 });
 
 function openAuthModal() { 
     if (currentUser) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); return; }
-    document.getElementById('auth-user').value = '';
-    document.getElementById('auth-pass').value = '';
-    document.getElementById('auth-name').value = '';
+    document.getElementById('auth-user').value = ''; document.getElementById('auth-pass').value = ''; document.getElementById('auth-name').value = '';
     document.getElementById('auth-modal').style.display = 'flex'; 
 }
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; document.getElementById('auth-feedback').style.display = 'none'; }
@@ -633,23 +554,13 @@ function openTradeModal() { document.getElementById('trade-modal').style.display
 function closeTradeModal() { document.getElementById('trade-modal').style.display = 'none'; document.getElementById('trade-feedback').style.display = 'none'; }
 
 function logoutUser() {
-    currentUser = null; 
-    localStorage.removeItem("pf_username"); 
-    localStorage.removeItem("pf_time");
-    
-    GLOBAL_HISTORY = [];
-    GLOBAL_SENTIMENT = {};
+    currentUser = null; localStorage.removeItem("pf_username"); localStorage.removeItem("pf_time");
+    GLOBAL_HISTORY = []; GLOBAL_SENTIMENT = {};
     if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
-    document.getElementById('port-sum-invested').innerText = "KES 0.00";
-    document.getElementById('port-sum-current').innerText = "KES 0.00";
-    document.getElementById('port-sum-pnl').innerText = "KES 0.00";
-    document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
+    document.getElementById('port-sum-invested').innerText = "KES 0.00"; document.getElementById('port-sum-current').innerText = "KES 0.00"; document.getElementById('port-sum-pnl').innerText = "KES 0.00"; document.getElementById('port-sum-pnl-pct').innerText = "0.00%";
     document.getElementById('my-portfolio-tbody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-muted);">Please log in.</td></tr>';
-    document.getElementById('my-purchases-tbody').innerHTML = '';
-    document.getElementById('my-sales-tbody').innerHTML = '';
-    
-    document.getElementById('btn-portfolio-auth').innerText = "👤 My Portfolio";
-    document.getElementById('tab-portfolio').style.display = 'none';
+    document.getElementById('my-purchases-tbody').innerHTML = ''; document.getElementById('my-sales-tbody').innerHTML = '';
+    document.getElementById('btn-portfolio-auth').innerText = "👤 My Portfolio"; document.getElementById('tab-portfolio').style.display = 'none';
     if(currentTab === 'portfolio') switchTab('kenya', {currentTarget: document.getElementById('tab-kenya')});
 }
 
@@ -664,7 +575,8 @@ function toggleAuthMode() {
 
 async function handleAuth() {
     var u = document.getElementById('auth-user').value.trim();
-    var p = document.getElementById('auth-pass').value.trim();
+    // EXACT case preservation for password matching
+    var p = document.getElementById('auth-pass').value; 
     var n = document.getElementById('auth-name').value.trim();
     var fb = document.getElementById('auth-feedback');
     var btn = document.getElementById('auth-submit-btn');
@@ -676,11 +588,8 @@ async function handleAuth() {
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: isSignupMode ? "signup" : "login", username: u, password: p, name: n }) });
         var res = await resp.json();
         if (res.status === "success") { 
-            currentUser = u; 
-            localStorage.setItem("pf_username", u); 
-            localStorage.setItem("pf_time", Date.now()); 
-            closeAuthModal(); 
-            enablePortfolioMode(true); 
+            currentUser = u; localStorage.setItem("pf_username", u); localStorage.setItem("pf_time", Date.now()); 
+            closeAuthModal(); enablePortfolioMode(true); 
         } 
         else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     } catch (e) { fb.innerText = "Connection error."; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
@@ -691,11 +600,7 @@ function enablePortfolioMode(autoSwitch) {
     var btn = document.getElementById('btn-portfolio-auth');
     btn.innerText = "🔒 " + currentUser.toUpperCase();
     document.getElementById('tab-portfolio').style.display = 'inline-block';
-    
-    if (autoSwitch) { 
-        switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); 
-        fetchMyPortfolio(); 
-    }
+    if (autoSwitch) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); fetchMyPortfolio(); }
 }
 
 async function fetchMyPortfolio() {
@@ -705,46 +610,29 @@ async function fetchMyPortfolio() {
     try {
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "get_portfolio", username: currentUser }) });
         var res = await resp.json();
-        if (res.status === "success") {
-            GLOBAL_HISTORY = res.history || [];
-            GLOBAL_SENTIMENT = res.sentiment || {}; // Phase 4 Memory
-            renderFilteredPortfolio();
-        } else { tbH.innerHTML = '<tr><td colspan="10" style="color:var(--neon-dn);text-align:center;">Failed to load.</td></tr>'; }
+        if (res.status === "success") { GLOBAL_HISTORY = res.history || []; GLOBAL_SENTIMENT = res.sentiment || {}; renderFilteredPortfolio(); } 
+        else { tbH.innerHTML = '<tr><td colspan="10" style="color:var(--neon-dn);text-align:center;">Failed to load.</td></tr>'; }
     } catch(e) { tbH.innerHTML = '<tr><td colspan="10" style="color:var(--neon-dn);text-align:center;">Connection Error.</td></tr>'; }
 }
 
 function renderFilteredPortfolio() {
     var filterBroker = document.getElementById('portfolio-broker-filter').value;
-    var tbH = document.getElementById('my-portfolio-tbody');
-    var tbP = document.getElementById('my-purchases-tbody');
-    var tbS = document.getElementById('my-sales-tbody');
-    
-    var htmlP = "", htmlS = "";
-    var holdingsMap = {};
+    var tbH = document.getElementById('my-portfolio-tbody'); var tbP = document.getElementById('my-purchases-tbody'); var tbS = document.getElementById('my-sales-tbody');
+    var htmlP = "", htmlS = ""; var holdingsMap = {};
     
     GLOBAL_HISTORY.forEach(function(row) {
         if(filterBroker !== "ALL" && row.broker !== filterBroker) return;
-        
-        var dt = new Date(row.date).toLocaleDateString();
-        var fee = row.fee || 0; 
-        
+        var dt = new Date(row.date).toLocaleDateString(); var fee = row.fee || 0; 
         var tr = '<tr><td>' + dt + '</td><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.price) + '</td><td>' + fmtKsh(fee) + '</td><td>' + fmtKsh(row.total) + '</td><td>' + (row.broker||"—") + '</td></tr>';
         if(row.type === "BOUGHT") htmlP += tr; else htmlS += tr;
         
         if(!holdingsMap[row.ticker]) holdingsMap[row.ticker] = { shares: 0, total_cost: 0, total_base: 0 };
         var baseExecutionVal = row.shares * row.price;
-        
-        if(row.type === "BOUGHT") {
-            holdingsMap[row.ticker].shares += row.shares;
-            holdingsMap[row.ticker].total_cost += row.total;
-            holdingsMap[row.ticker].total_base += baseExecutionVal;
-        } else if(row.type === "SOLD") {
+        if(row.type === "BOUGHT") { holdingsMap[row.ticker].shares += row.shares; holdingsMap[row.ticker].total_cost += row.total; holdingsMap[row.ticker].total_base += baseExecutionVal; } 
+        else if(row.type === "SOLD") {
             if(holdingsMap[row.ticker].shares > 0) {
-                var avgCost = holdingsMap[row.ticker].total_cost / holdingsMap[row.ticker].shares;
-                var avgBase = holdingsMap[row.ticker].total_base / holdingsMap[row.ticker].shares;
-                holdingsMap[row.ticker].shares -= row.shares;
-                holdingsMap[row.ticker].total_cost = holdingsMap[row.ticker].shares * avgCost;
-                holdingsMap[row.ticker].total_base = holdingsMap[row.ticker].shares * avgBase;
+                var avgCost = holdingsMap[row.ticker].total_cost / holdingsMap[row.ticker].shares; var avgBase = holdingsMap[row.ticker].total_base / holdingsMap[row.ticker].shares;
+                holdingsMap[row.ticker].shares -= row.shares; holdingsMap[row.ticker].total_cost = holdingsMap[row.ticker].shares * avgCost; holdingsMap[row.ticker].total_base = holdingsMap[row.ticker].shares * avgBase;
             }
         }
     });
@@ -752,16 +640,7 @@ function renderFilteredPortfolio() {
     tbP.innerHTML = htmlP || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No purchases logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
     tbS.innerHTML = htmlS || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No sales logged for ' + (filterBroker === "ALL" ? "any broker" : filterBroker) + '.</td></tr>';
     
-    var currentHoldings = Object.keys(holdingsMap).map(function(k) { 
-        var sh = holdingsMap[k].shares;
-        return { 
-            ticker: k, 
-            shares: sh, 
-            total_cost: holdingsMap[k].total_cost, 
-            avg_cost: sh > 0 ? holdingsMap[k].total_cost / sh : 0,
-            vwap: sh > 0 ? holdingsMap[k].total_base / sh : 0
-        }; 
-    }).filter(function(h) { return h.shares > 0.001; });
+    var currentHoldings = Object.keys(holdingsMap).map(function(k) { var sh = holdingsMap[k].shares; return { ticker: k, shares: sh, total_cost: holdingsMap[k].total_cost, avg_cost: sh > 0 ? holdingsMap[k].total_cost / sh : 0, vwap: sh > 0 ? holdingsMap[k].total_base / sh : 0 }; }).filter(function(h) { return h.shares > 0.001; });
     
     if (currentHoldings.length === 0) {
         tbH.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 2rem; color: var(--text-muted); font-style:italic;">No holdings found. Click + Add Stock.</td></tr>';
@@ -772,78 +651,46 @@ function renderFilteredPortfolio() {
         var pieLabels = [], pieData = [], pieColors = ['#002060', '#D4AF37', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b', '#14b8a6', '#6366f1', '#f43f5e', '#a855f7', '#ec4899', '#f97316', '#84cc16'];
         
         currentHoldings.forEach(function(row) {
-            var tickStr = String(row.ticker).trim().toUpperCase();
-            var ltp = LIVE_PRICES[tickStr]; 
-            if (ltp === undefined || isNaN(ltp)) ltp = 0.00; 
-            
-            var curVal = row.shares * ltp;
-            var pnl = curVal - row.total_cost;
-            var pnlPct = (pnl / row.total_cost) * 100;
+            var tickStr = String(row.ticker).trim().toUpperCase(); var ltp = LIVE_PRICES[tickStr]; if (ltp === undefined || isNaN(ltp)) ltp = 0.00; 
+            var curVal = row.shares * ltp; var pnl = curVal - row.total_cost; var pnlPct = (pnl / row.total_cost) * 100;
             totInv += row.total_cost; totCur += curVal;
-            
             if(curVal > 0) { pieLabels.push(row.ticker); pieData.push(curVal); }
             
-            // Phase 4: Fetch AI Data Badge
-            var aiData = GLOBAL_SENTIMENT[tickStr];
-            var aiBadge = '<span class="badge-ai badge-neut">⚪ NEUTRAL</span>';
-            if (aiData) {
-                if(aiData.label === 'Bullish') aiBadge = '<span class="badge-ai badge-bull">🟢 BULLISH</span>';
-                else if(aiData.label === 'Bearish') aiBadge = '<span class="badge-ai badge-bear">🔴 BEARISH</span>';
-            }
-            
+            var ai = GLOBAL_SENTIMENT[tickStr]; var aiBadge = '<span class="badge-ai badge-neut">⚪ NEUTRAL</span>';
+            if (ai) { if(ai.label === 'Bullish') aiBadge = '<span class="badge-ai badge-bull">🟢 BULLISH</span>'; else if(ai.label === 'Bearish') aiBadge = '<span class="badge-ai badge-bear">🔴 BEARISH</span>'; }
             htmlH += '<tr><td style="color:var(--brand-primary);">' + row.ticker + '</td><td>' + fmtNum(row.shares,0) + '</td><td>' + fmtKsh(row.vwap) + '</td><td>' + fmtKsh(row.avg_cost) + '</td><td>' + fmtKsh(row.total_cost) + '</td><td>' + fmtKsh(ltp) + '</td><td>' + fmtKsh(curVal) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + fmtKsh(pnl) + '</td><td class="' + (pnl >= 0 ? 'up' : 'dn') + '">' + (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</td><td>' + aiBadge + '</td></tr>';
         });
         tbH.innerHTML = htmlH;
         
         var netPnl = totCur - totInv; var netPnlPct = (totInv > 0) ? (netPnl / totInv) * 100 : 0;
-        document.getElementById('port-sum-invested').innerText = fmtKsh(totInv);
-        document.getElementById('port-sum-current').innerText = fmtKsh(totCur);
-        document.getElementById('port-sum-pnl').innerText = fmtKsh(netPnl);
-        document.getElementById('port-sum-pnl').className = "port-summary-val " + (netPnl >= 0 ? "up" : "dn");
-        document.getElementById('port-sum-pnl-pct').innerText = (netPnl >= 0 ? '+' : '') + netPnlPct.toFixed(2) + "%";
-        document.getElementById('port-sum-pnl-pct').className = "port-summary-sub " + (netPnl >= 0 ? "up" : "dn");
+        document.getElementById('port-sum-invested').innerText = fmtKsh(totInv); document.getElementById('port-sum-current').innerText = fmtKsh(totCur);
+        document.getElementById('port-sum-pnl').innerText = fmtKsh(netPnl); document.getElementById('port-sum-pnl').className = "port-summary-val " + (netPnl >= 0 ? "up" : "dn");
+        document.getElementById('port-sum-pnl-pct').innerText = (netPnl >= 0 ? '+' : '') + netPnlPct.toFixed(2) + "%"; document.getElementById('port-sum-pnl-pct').className = "port-summary-sub " + (netPnl >= 0 ? "up" : "dn");
         
         var ctxPie = document.getElementById('portfolio-pie-chart');
         if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
-        
         if(pieData.length > 0) {
-            chartInstances["portfolioPie"] = new Chart(ctxPie, {
-                type: 'doughnut',
-                data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors.slice(0, pieLabels.length), borderWidth: 2, borderColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#151e32" : "#ffffff" }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: "'Hadassah Friedlaender', Georgia, serif", size: 11, weight: 'bold'}, color: document.documentElement.getAttribute("data-theme") === "dark" ? "#f8fafc" : "#1e293b", padding: 20 } }, tooltip: { callbacks: { label: function(ctx) { var v = ctx.parsed; var tot = ctx.chart._metasets[ctx.datasetIndex].total; var pct = (v/tot*100).toFixed(1); return " " + ctx.label + ": KES " + v.toLocaleString() + " (" + pct + "%)"; } } } }, cutout: '65%' }
-            });
+            chartInstances["portfolioPie"] = new Chart(ctxPie, { type: 'doughnut', data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors.slice(0, pieLabels.length), borderWidth: 2, borderColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#151e32" : "#ffffff" }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: "'Hadassah Friedlaender', Georgia, serif", size: 11, weight: 'bold'}, color: document.documentElement.getAttribute("data-theme") === "dark" ? "#f8fafc" : "#1e293b", padding: 20 } }, tooltip: { callbacks: { label: function(ctx) { var v = ctx.parsed; var tot = ctx.chart._metasets[ctx.datasetIndex].total; var pct = (v/tot*100).toFixed(1); return " " + ctx.label + ": KES " + v.toLocaleString() + " (" + pct + "%)"; } } } }, cutout: '65%' } });
         }
     }
 }
 
 async function submitTrade() {
-    var tDate = document.getElementById('trade-date').value;
-    var tType = document.getElementById('trade-type').value;
-    var tTick = document.getElementById('trade-ticker').value;
-    var tShare = document.getElementById('trade-shares').value;
-    var tPrice = document.getElementById('trade-price').value;
-    var tBroker = document.getElementById('trade-broker').value;
-    var tFeeOverride = document.getElementById('trade-fees').value;
-    
-    var fb = document.getElementById('trade-feedback');
-    var btn = document.getElementById('trade-submit-btn');
+    var tDate = document.getElementById('trade-date').value; var tType = document.getElementById('trade-type').value; var tTick = document.getElementById('trade-ticker').value;
+    var tShare = document.getElementById('trade-shares').value; var tPrice = document.getElementById('trade-price').value; var tBroker = document.getElementById('trade-broker').value;
+    var tFeeOverride = document.getElementById('trade-fees').value; var fb = document.getElementById('trade-feedback'); var btn = document.getElementById('trade-submit-btn');
     
     if(!tDate || !tShare || !tPrice) { fb.innerText = "Fill in Date, Shares, and Price."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
     
-    var cleanShare = parseFloat(tShare.replace(/,/g, ""));
-    var cleanPrice = parseFloat(tPrice.replace(/,/g, ""));
+    var cleanShare = parseFloat(tShare.replace(/,/g, "")); var cleanPrice = parseFloat(tPrice.replace(/,/g, ""));
     if(isNaN(cleanShare) || isNaN(cleanPrice)) { fb.innerText = "Invalid number format."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
     
     if (tType === "SOLD") {
-        var currentHeld = 0;
-        GLOBAL_HISTORY.forEach(function(r) { if(r.ticker === tTick) { if(r.type==="BOUGHT") currentHeld+=r.shares; else if(r.type==="SOLD") currentHeld-=r.shares; } });
+        var currentHeld = 0; GLOBAL_HISTORY.forEach(function(r) { if(r.ticker === tTick) { if(r.type==="BOUGHT") currentHeld+=r.shares; else if(r.type==="SOLD") currentHeld-=r.shares; } });
         if (currentHeld < cleanShare) { fb.innerText = "Stock not available in your portfolio."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
     }
     
-    var cleanFee = "";
-    if (tFeeOverride && tFeeOverride.trim() !== "") {
-        cleanFee = parseFloat(tFeeOverride.replace(/,/g, ""));
-    }
+    var cleanFee = ""; if (tFeeOverride && tFeeOverride.trim() !== "") { cleanFee = parseFloat(tFeeOverride.replace(/,/g, "")); }
 
     btn.innerText = "Transmitting..."; fb.style.display="none";
     try {
@@ -852,38 +699,10 @@ async function submitTrade() {
         
         var resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(bodyPayload) });
         var res = await resp.json();
-        
-        if (res.status === "success") {
-            fb.innerText = res.message; fb.style.color = "var(--neon-up)"; fb.style.display = "block";
-            fetchMyPortfolio();
-            setTimeout(function() { closeTradeModal(); document.getElementById('trade-fees').value = ''; }, 1500);
-        } else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
+        if (res.status === "success") { fb.innerText = res.message; fb.style.color = "var(--neon-up)"; fb.style.display = "block"; fetchMyPortfolio(); setTimeout(function() { closeTradeModal(); document.getElementById('trade-fees').value = ''; }, 1500); } 
+        else { fb.innerText = res.message; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     } catch(e) { fb.innerText = "Network Error."; fb.style.color = "var(--neon-dn)"; fb.style.display = "block"; }
     btn.innerText = "UPDATE PORTFOLIO";
-}
-
-async function submitSubscription() {
-    var email = document.getElementById('sub-email').value.trim();
-    var time = document.getElementById('sub-time').value;
-    var days = Array.from(document.querySelectorAll('.day-chk input:checked')).map(function(cb) { return cb.value; });
-    var fb = document.getElementById('sub-feedback');
-    var btn = document.getElementById('subscribe-btn');
-
-    if (!email) { fb.innerText = "Please enter a valid email address."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
-    if (days.length === 0) { fb.innerText = "Please select at least one delivery day."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
-
-    btn.innerText = "Saving..."; fb.style.display="none";
-    try {
-        var payload = { action: "subscribe", email: email, time: time, days: days };
-        fetch(API_LOCAL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-        
-        fb.innerText = "✅ Subscription saved successfully!"; fb.style.color = "var(--neon-up)"; fb.style.display="block";
-        setTimeout(closeExportModal, 2000);
-    } catch(e) {
-        fb.innerText = "✅ Subscription request sent."; fb.style.color = "var(--neon-up)"; fb.style.display="block";
-        setTimeout(closeExportModal, 2000);
-    }
-    btn.innerText = "Subscribe via Email";
 }
 
 // ── BLENDED LIVE NEWS ENGINE ────────────────────────────────
@@ -895,8 +714,7 @@ async function loadLiveNews() {
     var fetchPromises = feeds.map(function(f) {
         return fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(f.url))
             .then(function(resp) { return resp.json(); }).then(function(data) {
-                if (data.status !== 'ok') return [];
-                var parsedItems = [];
+                if (data.status !== 'ok') return []; var parsedItems = [];
                 data.items.slice(0, 4).forEach(function(item) {
                    var imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || "";
                    if (!imgUrl && item.content) { var m = item.content.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) imgUrl = m[1]; }
@@ -910,22 +728,15 @@ async function loadLiveNews() {
         fetch("https://api.allorigins.win/get?url=" + encodeURIComponent("https://kenyanwallstreet.com/feed/"))
         .then(function(resp) { return resp.json(); })
         .then(function(data) {
-            var xml = new DOMParser().parseFromString(data.contents, "application/xml");
-            var items = Array.from(xml.querySelectorAll("item")).slice(0, 4);
-            var pItems = [];
+            var xml = new DOMParser().parseFromString(data.contents, "application/xml"); var items = Array.from(xml.querySelectorAll("item")).slice(0, 4); var pItems = [];
             items.forEach(function(node) {
-               var title = node.querySelector("title") ? node.querySelector("title").textContent : "";
-               var link = node.querySelector("link") ? node.querySelector("link").textContent : "";
-               var pubDate = node.querySelector("pubDate") ? node.querySelector("pubDate").textContent : "";
-               var desc = node.querySelector("description") ? node.querySelector("description").textContent : "";
+               var title = node.querySelector("title") ? node.querySelector("title").textContent : ""; var link = node.querySelector("link") ? node.querySelector("link").textContent : ""; var pubDate = node.querySelector("pubDate") ? node.querySelector("pubDate").textContent : ""; var desc = node.querySelector("description") ? node.querySelector("description").textContent : "";
                if(title && link) { pItems.push({ title: title, link: link, pubDate: pubDate, desc: desc.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...', img: FB, src: "Kenyan Wall Street" }); }
             }); return pItems;
         }).catch(function() { return []; })
     );
     
-    var results = await Promise.all(fetchPromises); var all = [];
-    results.forEach(function(resArray) { all = all.concat(resArray); });
-    
+    var results = await Promise.all(fetchPromises); var all = []; results.forEach(function(resArray) { all = all.concat(resArray); });
     if(all.length === 0) throw new Error("No news");
     
     all.sort(function(a,b) { return new Date(b.pubDate) - new Date(a.pubDate); });
@@ -938,55 +749,48 @@ async function loadLiveNews() {
     document.getElementById("live-news-container").innerHTML = html; isNewsFetched = true;
   } catch(e){ document.getElementById("live-news-container").innerHTML='<p style="color:var(--text-muted);padding:1.5rem;text-align:center;">Unable to stream live intelligence. Please verify network connection.</p>'; }
 }
-loadLiveNews();
-setInterval(loadLiveNews, 3600000); 
+loadLiveNews(); setInterval(loadLiveNews, 3600000); 
 
 // ── CORE DATA ENGINE ──────────────────────────────────────────────────────
 function openExportModal() { 
-    if (currentTab === 'portfolio') { 
-        document.getElementById('export-modal-body').innerHTML = '<p style="color:var(--neon-dn);text-align:center;padding:2rem;font-size:11pt;">Access Denied.<br><br>Tear Sheet generation is restricted while in Personal Portfolio mode to protect sensitive data.</p>';
-    } else {
-        document.getElementById('export-modal-body').innerHTML = '<button class="secondary-btn" id="download-btn" onclick="downloadPDF()" style="width:100%;">⬇️ Download PDF Now</button><hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;"><h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3><p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p><div class="form-group"><label>Email address</label><input type="email" id="sub-email" placeholder="e.g. analyst@firm.com"></div><div class="form-group"><label>Delivery Time (EAT)</label><input type="time" id="sub-time" value="17:00"></div><div class="form-group"><label>Delivery Days</label><div class="days-grid"><label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label><label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label><label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label><label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label><label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label></div></div><button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button><div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;"></div>';
-    }
+    if (currentTab === 'portfolio') { document.getElementById('export-modal-body').innerHTML = '<p style="color:var(--neon-dn);text-align:center;padding:2rem;font-size:11pt;">Access Denied.<br><br>Tear Sheet generation is restricted while in Personal Portfolio mode to protect sensitive data.</p>'; } 
+    else { document.getElementById('export-modal-body').innerHTML = '<button class="secondary-btn" id="download-btn" onclick="downloadPDF()" style="width:100%;">⬇️ Download PDF Now</button><hr style="border-top: 1px solid var(--border-color); border-bottom:none; margin: 15px 0;"><h3 style="font-size:12.5pt; margin-bottom: 0;">Automated Delivery</h3><p style="font-size:9.5pt; color:var(--text-muted); text-align:center; margin-top:5px; margin-bottom: 10px;">Subscribe to receive a daily HTML summary & dashboard link.</p><div class="form-group"><label>Email address</label><input type="email" id="sub-email" placeholder="e.g. analyst@firm.com"></div><div class="form-group"><label>Delivery Time (EAT)</label><input type="time" id="sub-time" value="17:00"></div><div class="form-group"><label>Delivery Days</label><div class="days-grid"><label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label><label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label><label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label><label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label><label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label></div></div><button class="primary-btn" id="subscribe-btn" onclick="submitSubscription()">Subscribe via Email</button><div id="sub-feedback" style="text-align:center; font-size:10pt; margin-top:10px; color:var(--neon-up); display:none;"></div>'; }
     document.getElementById('export-modal').style.display = 'flex'; 
 }
 function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
 function downloadPDF() { closeExportModal(); var el = document.getElementById('pdf-container'); el.classList.add('pdf-mode'); html2pdf().set({margin:0.2, filename:"Tear_Sheet_" + new Date().toISOString().split('T')[0] + ".pdf", image:{type:'jpeg',quality:1.0}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a3',orientation:'portrait'}}).from(el).save().then(function() { el.classList.remove('pdf-mode'); }); }
 
+async function submitSubscription() {
+    var email = document.getElementById('sub-email').value.trim(); var time = document.getElementById('sub-time').value; var days = Array.from(document.querySelectorAll('.day-chk input:checked')).map(function(cb) { return cb.value; });
+    var fb = document.getElementById('sub-feedback'); var btn = document.getElementById('subscribe-btn');
+    if (!email) { fb.innerText = "Please enter a valid email address."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
+    if (days.length === 0) { fb.innerText = "Please select at least one delivery day."; fb.style.color = "var(--neon-dn)"; fb.style.display="block"; return; }
+
+    btn.innerText = "Saving..."; fb.style.display="none";
+    try {
+        var payload = { action: "subscribe", email: email, time: time, days: days };
+        fetch(API_LOCAL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+        fb.innerText = "✅ Subscription saved successfully!"; fb.style.color = "var(--neon-up)"; fb.style.display="block";
+        setTimeout(closeExportModal, 2000);
+    } catch(e) { fb.innerText = "✅ Subscription request sent."; fb.style.color = "var(--neon-up)"; fb.style.display="block"; setTimeout(closeExportModal, 2000); }
+    btn.innerText = "Subscribe via Email";
+}
+
 function exportTableToCSV(tableID, filename) {
-    var table = document.getElementById(tableID);
-    if(!table) return;
-    var csv = [];
-    var rows = table.querySelectorAll("tr");
-    for (var i = 0; i < rows.length; i++) {
-        var row = [], cols = rows[i].querySelectorAll("td, th");
-        for (var j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
-        csv.push(row.join(","));
-    }
-    var csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
-    var downloadLink = document.createElement("a");
-    downloadLink.download = filename + "_" + new Date().toISOString().split('T')[0] + ".csv";
-    downloadLink.href = window.URL.createObjectURL(csvFile);
-    downloadLink.style.display = "none";
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+    var table = document.getElementById(tableID); if(!table) return; var csv = []; var rows = table.querySelectorAll("tr");
+    for (var i = 0; i < rows.length; i++) { var row = [], cols = rows[i].querySelectorAll("td, th"); for (var j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"'); csv.push(row.join(",")); }
+    var csvFile = new Blob([csv.join("\n")], {type: "text/csv"}); var downloadLink = document.createElement("a"); downloadLink.download = filename + "_" + new Date().toISOString().split('T')[0] + ".csv"; downloadLink.href = window.URL.createObjectURL(csvFile); downloadLink.style.display = "none"; document.body.appendChild(downloadLink); downloadLink.click(); document.body.removeChild(downloadLink);
 }
 
 function exportTableToExcel(tableID, filename) {
-    var table = document.getElementById(tableID);
-    if(!table) return;
+    var table = document.getElementById(tableID); if(!table) return;
     if(typeof XLSX === 'undefined') { alert("Excel processing library is currently loading. Please try again in a few seconds."); return; }
-    
-    var wb = XLSX.utils.table_to_book(table, {sheet: "Data"});
-    var dt = new Date();
-    var formattedDate = dt.getFullYear() + "_" + String(dt.getMonth() + 1).padStart(2, '0') + "_" + String(dt.getDate()).padStart(2, '0');
+    var wb = XLSX.utils.table_to_book(table, {sheet: "Data"}); var dt = new Date(); var formattedDate = dt.getFullYear() + "_" + String(dt.getMonth() + 1).padStart(2, '0') + "_" + String(dt.getDate()).padStart(2, '0');
     XLSX.writeFile(wb, filename + "_" + formattedDate + ".xlsx");
 }
 
 function exportTableToPDF(divID, filename) {
-    var el = document.getElementById(divID);
-    if(!el) return;
+    var el = document.getElementById(divID); if(!el) return;
     html2pdf().set({margin:0.5, filename: filename + "_" + new Date().toISOString().split('T')[0] + ".pdf", image:{type:'jpeg',quality:1.0}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4',orientation:'landscape'}}).from(el).save();
 }
 
@@ -998,9 +802,7 @@ function loadCorporateActions() {
 function getTableId(title) { return "tbl-" + title.replace(/\W+/g, '-').toLowerCase(); }
 function triggerRefresh() { if(isFetching) return; loadData(); }
 
-function buildDiagnosticError(localData, globalData) {
-    return '<div class="error-box"><h2>🚨 Terminal Connection Interrupted</h2><p>The dashboard failed to authenticate with the backend API endpoints.</p><br><code style="background:transparent;padding:0;"><b>Local Node:</b> ' + (localData ? "Connected ✅" : "Failed ❌") + '<br><b>Global Node:</b> ' + (globalData ? "Connected ✅" : "Failed ❌") + '</code></div>';
-}
+function buildDiagnosticError(localData, globalData) { return '<div class="error-box"><h2>🚨 Terminal Connection Interrupted</h2><p>The dashboard failed to authenticate with the backend API endpoints.</p><br><code style="background:transparent;padding:0;"><b>Local Node:</b> ' + (localData ? "Connected ✅" : "Failed ❌") + '<br><b>Global Node:</b> ' + (globalData ? "Connected ✅" : "Failed ❌") + '</code></div>'; }
 
 function loadData() {
   isFetching = true; var btn = document.getElementById("refresh-btn"); 
@@ -1008,8 +810,7 @@ function loadData() {
   if (isInitialLoad) { document.getElementById("app-kenya").innerHTML = '<div class="loader">⏳ Authenticating and aggregating domestic datasets…</div>'; document.getElementById("app-global").innerHTML = '<div class="loader">⏳ Synchronizing global datasets…</div>'; } else { if (btn) btn.innerHTML = "↻ Syncing..."; }
   
   var localData = null; var globalData = null;
-  window["localCallback"] = function(d) { if(d && typeof d === "object") localData = d; check(); };
-  window["globalCallback"] = function(d) { if(d && typeof d === "object") globalData = d; check(); };
+  window["localCallback"] = function(d) { if(d && typeof d === "object") localData = d; check(); }; window["globalCallback"] = function(d) { if(d && typeof d === "object") globalData = d; check(); };
   var tid = setTimeout(function() { isFetching = false; if (!localData || !globalData) { if (isInitialLoad) { document.getElementById("app-kenya").innerHTML = buildDiagnosticError(localData, globalData); } else { if (btn) btn.innerHTML = "↻ Sync Failed"; setTimeout(function() { if(btn) btn.innerHTML = "↻ Sync"; }, 3000); } } }, JSONP_TIMEOUT_MS);
 
   function check() {
@@ -1018,14 +819,8 @@ function loadData() {
       var mergedData = Object.assign({}, localData, globalData);
       if (isInitialLoad && (!localData.tickers || localData.tickers.length === 0)) { document.getElementById("app-kenya").innerHTML = '<div class="error-box"><h2>🚨 Empty Data Stream</h2></div>'; return; }
       
-      extractDynamicData(mergedData); 
-      render(mergedData, isInitialLoad); 
-      hasRenderedOnce = true;
-      
-      if(currentUser) {
-          fetchMyPortfolio();
-      }
-      
+      extractDynamicData(mergedData); render(mergedData, isInitialLoad); hasRenderedOnce = true;
+      if(currentUser) fetchMyPortfolio();
       document.getElementById("last-updated").textContent = "Updated: " + (mergedData.timestamp || new Date().toLocaleTimeString("en-KE", { hour12: false }));
     }
   }
@@ -1042,10 +837,7 @@ function extractDynamicData(data) {
   
   var tickersData = data.tickers || [];
   tickersData.forEach(function(t) { 
-      if(t.symbol) {
-          var rawPrice = t["last_price_(kshs)"] !== undefined ? t["last_price_(kshs)"] : (t.last_price !== undefined ? t.last_price : (t.price || "0"));
-          LIVE_PRICES[String(t.symbol).trim().toUpperCase()] = parseFloat(String(rawPrice).replace(/[^0-9.\-]/g, ''));
-      }
+      if(t.symbol) { var rawPrice = t["last_price_(kshs)"] !== undefined ? t["last_price_(kshs)"] : (t.last_price !== undefined ? t.last_price : (t.price || "0")); LIVE_PRICES[String(t.symbol).trim().toUpperCase()] = parseFloat(String(rawPrice).replace(/[^0-9.\-]/g, '')); }
   });
 
   var targetRates = ["Central Bank Rate", "KESONIA", "CBK Discount Window", "91-Day T-Bill", "REPO", "Inflation Rate", "Lending Rate", "Savings Rate", "Deposit Rate"];
@@ -1061,8 +853,7 @@ function extractDynamicData(data) {
   if (data.cbk && data.cbk.length >= 29) {
       for (var r = 19; r <= 29; r++) {
           if (data.cbk[r]) {
-              var vals = Object.values(data.cbk[r]);
-              var ccy = String(vals[1] || "").trim(), crBuy = String(vals[2] || "—").trim(), crSell = String(vals[3] || "—").trim(), kBuy = String(vals[4] || "—").trim();
+              var vals = Object.values(data.cbk[r]); var ccy = String(vals[1] || "").trim(), crBuy = String(vals[2] || "—").trim(), crSell = String(vals[3] || "—").trim(), kBuy = String(vals[4] || "—").trim();
               if (ccy && ccy !== "—" && ccy.toLowerCase() !== "currency" && ccy.toLowerCase() !== "mean") { FOREX_RATES.push({ ccy: ccy, crBuy: crBuy, crSell: crSell, kBuy: kBuy, kSell: "—" }); }
           }
       }
@@ -1072,14 +863,9 @@ function extractDynamicData(data) {
   if (cd.length > 0) {
       var tmpGdp = [];
       cd.forEach(function(rawRow) {
-          var row = {};
-          for(var k in rawRow) { row[k.toLowerCase().trim().replace(/[\s\-]+/g, '_')] = rawRow[k]; }
-          
+          var row = {}; for(var k in rawRow) { row[k.toLowerCase().trim().replace(/[\s\-]+/g, '_')] = rawRow[k]; }
           var infKey = row["12_month_inflation"] !== undefined ? "12_month_inflation" : (row["inflation"] !== undefined ? "inflation" : null);
-          if (row.inf_date && infKey && row[infKey] !== "") {
-              var infVal = cleanNum(row[infKey]);
-              if (!isNaN(infVal)) { CHART_DATA.inflation.labels.push(String(row.inf_date).trim()); CHART_DATA.inflation.m12.push(infVal); }
-          }
+          if (row.inf_date && infKey && row[infKey] !== "") { var infVal = cleanNum(row[infKey]); if (!isNaN(infVal)) { CHART_DATA.inflation.labels.push(String(row.inf_date).trim()); CHART_DATA.inflation.m12.push(infVal); } }
           if (row.gdp_year && row.nominal_gdp !== undefined && row.nominal_gdp !== "") {
               var yrStr = String(row.gdp_year).trim(), yrMatch = yrStr.match(/20\d{2}/), yr = yrMatch ? parseInt(yrMatch[0]) : parseInt(yrStr);
               var nom = cleanNum(row.nominal_gdp), real = cleanNum(row.real_gdp), growth = cleanNum(row.gdp_growth_rate || row.gdp_growth);
@@ -1090,8 +876,7 @@ function extractDynamicData(data) {
               if (!isNaN(len)) { CHART_DATA.banks.labels.push(String(row.rates_date).trim()); CHART_DATA.banks.lending.push(len); CHART_DATA.banks.overdraft.push(ovr); CHART_DATA.banks.savings.push(sav); CHART_DATA.banks.deposit.push(dep); }
           }
           if (row.kepss_date && row.kepss_value !== undefined && row.kepss_value !== "") {
-              var kv = cleanNum(row.kepss_value);
-              if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(String(row.kepss_date).trim()); CHART_DATA.kepss.values.push(kv); }
+              var kv = cleanNum(row.kepss_value); if (!isNaN(kv)) { CHART_DATA.kepss.labels.push(String(row.kepss_date).trim()); CHART_DATA.kepss.values.push(kv); }
           }
       });
       if(tmpGdp.length>0){tmpGdp.sort(function(a,b) { return a.year-b.year; }); tmpGdp.forEach(function(d) { CHART_DATA.gdp.labels.push(d.year); CHART_DATA.gdp.nominal.push(d.nom); CHART_DATA.gdp.real.push(d.real); if(!isNaN(d.growth)) CHART_DATA.gdp.growth.push(d.growth); });}
@@ -1180,9 +965,7 @@ function render(data, isInitialLoad) {
 
   var metricsHtml = '<div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">' + fmtNum(statsMap["NSE ALL SHARE INDEX"], 2) + '</div><div class="sub">' + formatChange(statsChange["NSE ALL SHARE INDEX"], false) + ' vs prev</div></div><div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">' + fmtNum(statsMap["NSE 20 SHARE INDEX"], 2) + '</div><div class="sub">Blue-chip Index</div></div><div class="metric-card"><div class="lbl">Market Cap</div><div class="val">' + fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"], 2) + 'B</div><div class="sub">KES Total</div></div><div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">' + fmtNum(totalTurnover, 0) + '</div><div class="sub">KES Today</div></div><div class="metric-card"><div class="lbl">Total Deals</div><div class="val">' + fmtNum(totalTrades, 0) + '</div><div class="sub">Trades Today</div></div><div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">' + fmtNum(totalFBuy, 0) + '</span></div><div class="sub">KES Today</div></div><div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">' + fmtNum(totalFSell, 0) + '</span></div><div class="sub">KES Today</div></div><div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">' + gainers.length + '</span> / <span class="dn">' + losers.length + '</span></div><div class="sub">' + unchanged.length + ' unchanged · ' + tickers.length + ' total</div></div>';
 
-  var macroCardsHtml = '<div class="macro-cards-container">';
-  KEY_RATES.forEach(function(r) { macroCardsHtml += '<div class="macro-mini-card"><div class="macro-mc-lbl">' + r.label + '</div><div class="macro-mc-val">' + r.value + '</div></div>'; });
-  macroCardsHtml += '</div>';
+  var macroCardsHtml = KEY_RATES.map(function(r){ return '<div class="macro-mini-card"><div class="macro-mc-lbl">'+r.label+'</div><div class="macro-mc-val">'+r.value+'</div></div>'; }).join("");
 
   var statsRows = statsArr.filter(function(r) { return r && r.name && r.value !== undefined && r.value !== ""; }).map(function(r) { return '<tr><td>' + r.name + '</td><td>' + fmtNum(r.value, 2) + '</td><td>' + ((r.change !== undefined && r.change !== "") ? formatChange(r.change, false) : "—") + '</td></tr>'; });
   function trRow(t) { return '<tr><td>' + t.symbol + '</td><td>' + fmtKsh(t["last_price_(kshs)"]) + '</td><td>' + formatChange(pk(t), true) + '</td></tr>'; }
@@ -1206,7 +989,11 @@ function render(data, isInitialLoad) {
         var cData = data[countryKey]; var isActive = countryKey === currentGlobalSelection ? "active-country" : "";
         if (currentGlobalSelection === "mainland_china" && (countryKey === "hong_kong" || countryKey === "taiwan")) isActive = "active-country";
         globalEquitiesHtml += '<div id="country-' + countryKey + '" class="global-tables-section ' + isActive + '">';
-        if (cData && cData.length > 0) { var tableData = buildGenericTableRows(cData); globalEquitiesHtml += tableCard(countryMap[countryKey].name, tableData.headers, tableData.rows, "No data available"); } else { globalEquitiesHtml += tableCard(countryMap[countryKey].name, ["Status"], [], "Data not loaded yet."); }
+        if (cData && cData.length > 0) { 
+            var tableData = buildGenericTableRows(cData); 
+            // FIX: Wraps individual international markets in collapsible details tags
+            globalEquitiesHtml += '<details open style="margin-bottom:10px;"><summary style="cursor:pointer; font-weight:bold; padding:10px; background:var(--table-header-bg); border:1px solid var(--border-color); margin-bottom:5px; border-radius:6px; user-select:none;">▶ ' + countryMap[countryKey].name + ' Market</summary>' + tableCard(countryMap[countryKey].name, tableData.headers, tableData.rows, "No data available") + '</details>'; 
+        } else { globalEquitiesHtml += tableCard(countryMap[countryKey].name, ["Status"], [], "Data not loaded yet."); }
         globalEquitiesHtml += '</div>';
       });
       globalEquitiesHtml += '</div></div></div>';
@@ -1222,7 +1009,7 @@ function render(data, isInitialLoad) {
 
       document.getElementById("app-kenya").innerHTML = [
         '<div class="metrics">' + metricsHtml + '</div>', 
-        standardCard("Key Macro Rates (CBK)", macroCardsHtml),
+        standardCard("Key Macro Rates (CBK)", '<div class="macro-cards-container">' + macroCardsHtml + '</div>'),
         standardCard("Upcoming Corporate Actions", '<div id="corp-actions-container"></div>'),
         '<div class="grid3">', tableCard("Top Gainers", ["Ticker","Price","Change"], gainers.map(trRow), "No gainers today."), tableCard("Top Losers", ["Ticker","Price","Change"], losers.map(trRow), "No losers today."), tableCard("Unchanged Stocks", ["Ticker","Price","Change"], unchanged.map(trRow), "No unchanged stocks today."), '</div>',
         '<div class="grid2">', tableCard("Indicative Forex Rates", ["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"], fxRows, "No forex data available."), tableCard("NSE Market Statistics", ["Metric","Value","Change"], statsRows, "NSE statistics not yet loaded."), '</div>',
@@ -1238,7 +1025,7 @@ function render(data, isInitialLoad) {
 
   } else {
       var me = document.querySelector(".metrics"); if (me) me.innerHTML = metricsHtml; 
-      var mg = document.querySelector(".macro-cards-container"); if (mg) mg.outerHTML = macroCardsHtml; 
+      var mg = document.querySelector(".macro-cards-container"); if (mg) mg.innerHTML = macroCardsHtml; 
       var hg = document.getElementById("heatmap-grid"); if (hg) hg.innerHTML = heatCells;
       updateTableData(getTableId("Top Gainers"), gainers.map(trRow)); updateTableData(getTableId("Top Losers"), losers.map(trRow)); updateTableData(getTableId("Unchanged Stocks"), unchanged.map(trRow)); updateTableData(getTableId("Indicative Forex Rates"), fxRows); updateTableData(getTableId("NSE Market Statistics"), statsRows); updateTableData(getTableId("Top by Turnover"), topTurnover.map(rTO)); updateTableData(getTableId("Top by Volume"), topVolume.map(rVol)); updateTableData(getTableId("Top by Trades"), topTrades.map(rTR)); updateTableData(getTableId("Top Foreign Inflows (Buys)"), topFBuy.map(rFB)); updateTableData(getTableId("Top Foreign Outflows (Sells)"), topFSell.map(rFS)); updateTableData(getTableId("Ticker Prices — Full List"), tFull); updateTableData(getTableId("Market Watch — Full Order Book Detail"), mwRows);
       updateTableData(getTableId("Global Markets (World Indices)"), indicesRows); updateTableData(getTableId("Yahoo Most Active (US Equities)"), activeRows);
@@ -1247,7 +1034,6 @@ function render(data, isInitialLoad) {
   }
 }
 
-// ── NATIVE CHART.JS ENGINE ────────────────────────────────────────────────
 function updateChartTheme(mode) {
   var tc = mode === "dark" ? "#94a3b8" : "#64748b", gc = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
   for (var id in chartInstances) { 
@@ -1305,8 +1091,6 @@ function updateChartsData(){
 
 function createChart(id, config) { var ctx = document.getElementById(id); if (ctx) { if (chartInstances[id]) chartInstances[id].destroy(); chartInstances[id] = new Chart(ctx, config); } }
 
-// ── GLOBAL MAP ────────────────────────────────────────────────────────────
-// FIX 1: GeoChart heavily secured behind a window load event to prevent race-condition crashing
 window.addEventListener('load', function() {
     if (typeof google !== 'undefined') {
         google.charts.load('current', { 'packages': ['geochart'] });
@@ -1358,4 +1142,3 @@ triggerRefresh(); startRefresh();
 </script>
 </body>
 </html>
-
