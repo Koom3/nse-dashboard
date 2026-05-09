@@ -19,13 +19,11 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg-base); color: var(--text-main); font-family: var(--font-sans); height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
 
-    /* ── COMMAND LINE (TOP BAR) ── */
     #command-bar { height: 35px; background: var(--term-blue); display: flex; align-items: center; padding: 0 15px; border-bottom: 2px solid var(--term-gold); }
     #cli-prompt { color: #fff; font-weight: bold; font-family: var(--font-mono); margin-right: 10px; font-size: 14px;}
     #cli-input { background: transparent; border: none; color: #fff; font-family: var(--font-mono); font-size: 14px; font-weight: bold; width: 500px; outline: none; }
     .top-clock { margin-left: auto; font-family: var(--font-mono); color: #fff; font-size: 12px; font-weight: bold; display: flex; gap: 15px;}
     
-    /* ── TERMINAL WORKSPACE GRID ── */
     #workspace { display: grid; grid-template-columns: 55% 45%; grid-template-rows: 50% 50%; height: calc(100vh - 35px); width: 100%; gap: 2px; background: var(--border-main); }
     .pane { background: var(--bg-pane); display: flex; flex-direction: column; overflow: hidden; }
     .pane-header { background: #111111; padding: 4px 10px; font-size: 11px; font-weight: bold; color: var(--term-gold); text-transform: uppercase; border-bottom: 1px solid var(--border-focus); display: flex; justify-content: space-between; align-items: center;}
@@ -36,7 +34,6 @@
     ::-webkit-scrollbar-thumb { background: var(--border-focus); }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-    /* ── TERMINAL TABLES ── */
     table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; margin-bottom: 15px;}
     th { text-align: right; padding: 4px 6px; color: var(--text-muted); font-weight: normal; border-bottom: 1px solid #222; position: sticky; top: 0; background: var(--bg-pane); z-index: 10;}
     th:first-child, td:first-child { text-align: left; }
@@ -50,7 +47,6 @@
     .flash-update { animation: flashYellow 1s ease-out; }
     @keyframes flashYellow { 0% { background-color: #ffd700; color: #000; } 100% { background-color: transparent; } }
 
-    /* ── PANES & TABS ── */
     #pane-left { grid-row: 1 / 3; grid-column: 1 / 2; }
     #pane-chart { grid-row: 1 / 2; grid-column: 2 / 3; display: flex; flex-direction: column;}
     #pane-portfolio { grid-row: 2 / 3; grid-column: 2 / 3; }
@@ -67,7 +63,6 @@
     .section-title { font-family: var(--font-mono); color: var(--term-gold); font-size: 11px; margin: 10px 0 5px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 3px;}
     .flex-row { display: flex; gap: 15px; } .flex-col { flex: 1; }
 
-    /* ── PORTFOLIO & AUTH UI ── */
     .port-metrics { display: flex; gap: 20px; padding: 10px; background: #000; border-bottom: 1px solid #222; font-family: var(--font-mono);}
     .p-met { display: flex; flex-direction: column; }
     .p-met-lbl { color: var(--text-muted); font-size: 10px; }
@@ -83,19 +78,20 @@
     .auth-btn { background: var(--border-focus); color: #fff; border: none; padding: 6px; width: 100%; font-family: var(--font-mono); cursor: pointer; margin-top: 10px; font-size: 11px; font-weight: bold;}
     .auth-btn:hover { background: var(--term-blue); }
     
-    /* ── NEWS UI ── */
     .news-item { padding: 8px 0; border-bottom: 1px dotted #1a1a1a; font-family: var(--font-mono); }
     .n-title { color: #fff; font-size: 11px; font-weight: bold; margin-bottom: 4px; text-decoration: none;}
     .n-title:hover { color: var(--term-gold); }
     .n-desc { color: var(--text-muted); font-size: 10px; line-height: 1.3;}
+    
+    details { margin-bottom: 10px; }
+    summary { cursor:pointer; font-weight:bold; padding:8px; background:#111; border:1px solid #222; font-family: var(--font-mono); font-size: 11px; color: var(--term-gold); outline:none; user-select: none;}
+    summary:hover { background: #1a1a1a; }
   </style>
 </head>
 <body>
 
-  <!-- THE COMMAND LINE -->
   <div id="command-bar">
     <span id="cli-prompt">NOBLE></span>
-    <!-- JS handles exact string matching without forcing uppercase on inputs -->
     <input type="text" id="cli-input" placeholder="TYPE 'HELP' FOR COMMANDS" autocomplete="off" spellcheck="false">
     
     <div class="top-clock">
@@ -104,40 +100,33 @@
     </div>
   </div>
 
-  <!-- THE WORKSPACE MATRIX -->
   <div id="workspace">
     
-    <!-- LEFT PANE: MULTI-VIEW DATA TERMINAL -->
     <div class="pane" id="pane-left">
       <div class="pane-header">
         <span>01 DATA TERMINAL</span>
         <div class="view-tabs">
-            <span class="v-tab active" onclick="switchView('nse')">[NSE]</span>
-            <span class="v-tab" onclick="switchView('global')">[GLOBAL]</span>
-            <span class="v-tab" onclick="switchView('forex')">[FX/MACRO]</span>
-            <span class="v-tab" onclick="switchView('movers')">[MOVERS]</span>
-            <span class="v-tab" onclick="switchView('mkw')">[MKT WATCH]</span>
-            <span class="v-tab" onclick="switchView('news')">[NEWS]</span>
+            <span class="v-tab active" data-view="nse" onclick="switchView('nse')">[NSE]</span>
+            <span class="v-tab" data-view="global" onclick="switchView('global')">[GLOBAL]</span>
+            <span class="v-tab" data-view="forex" onclick="switchView('forex')">[FX/MACRO]</span>
+            <span class="v-tab" data-view="movers" onclick="switchView('movers')">[MOVERS]</span>
+            <span class="v-tab" data-view="mkw" onclick="switchView('mkw')">[MKT WATCH]</span>
+            <span class="v-tab" data-view="news" onclick="switchView('news')">[NEWS]</span>
         </div>
       </div>
       <div class="pane-content">
           
-        <!-- VIEW: NSE -->
         <div id="view-nse" class="data-view active">
             <table><thead><tr><th>TICKER</th><th>LTP (KES)</th><th>CHG</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-market"><tr><td colspan="5" class="nt" style="text-align:center;">SYNCING...</td></tr></tbody></table>
         </div>
         
-        <!-- VIEW: GLOBAL (Now Exhaustive) -->
         <div id="view-global" class="data-view">
             <h3 class="section-title">World Indices</h3>
             <table><thead><tr><th>INDEX</th><th>PRICE (USD)</th><th>% CHG</th><th>VOL</th></tr></thead><tbody id="tb-indices"></tbody></table>
-            
-            <div id="global-countries-container">
-                <!-- Dynamically populated with USA, Canada, Japan, UK, etc. -->
-            </div>
+            <h3 class="section-title">Global Markets Matrix</h3>
+            <div id="global-countries-container"></div>
         </div>
         
-        <!-- VIEW: FOREX & MACRO -->
         <div id="view-forex" class="data-view">
             <div class="flex-row">
                 <div class="flex-col"><h3 class="section-title">NSE Statistics</h3><table><thead><tr><th>METRIC</th><th>VALUE</th><th>CHG</th></tr></thead><tbody id="tb-stats"></tbody></table></div>
@@ -145,7 +134,6 @@
             </div>
         </div>
         
-        <!-- VIEW: MOVERS -->
         <div id="view-movers" class="data-view">
             <div class="flex-row">
                 <div class="flex-col"><h3 class="section-title">Top Gainers</h3><table><thead><tr><th>TICKER</th><th>PRICE</th><th>% CHG</th></tr></thead><tbody id="tb-gain"></tbody></table></div>
@@ -157,20 +145,17 @@
             </div>
         </div>
         
-        <!-- VIEW: MKT WATCH -->
         <div id="view-mkw" class="data-view">
             <h3 class="section-title">Full Order Book & Turnover</h3>
             <table><thead><tr><th>SYMBOL</th><th>LTP</th><th>PREV CLOSE</th><th>VOLUME</th><th>TRADES</th><th>TURNOVER (KES)</th></tr></thead><tbody id="tb-mkw"></tbody></table>
         </div>
         
-        <!-- VIEW: NEWS -->
         <div id="view-news" class="data-view">
             <div id="live-news-container"><span class="nt">FETCHING GLOBAL FEEDS...</span></div>
         </div>
       </div>
     </div>
 
-    <!-- TOP RIGHT PANE: NATIVE CHARTING -->
     <div class="pane" id="pane-chart">
       <div class="pane-header">
         <span id="chart-title">02 MACRO ENGINE | AWAITING DATA</span>
@@ -181,14 +166,12 @@
       </div>
     </div>
 
-    <!-- BOTTOM RIGHT PANE: PORTFOLIO & AUTH -->
     <div class="pane" id="pane-portfolio">
       <div class="pane-header">
         <span>03 LIVE PORTFOLIO & AI SENTINEL</span>
         <span id="user-badge" class="nt">NOT AUTHENTICATED</span>
       </div>
       
-      <!-- AUTHENTICATION SCREEN (Reads exact values directly to backend) -->
       <div id="auth-screen">
           <div class="auth-box">
               <div class="auth-title">NOBLE SECURE LOGIN</div>
@@ -199,7 +182,6 @@
           </div>
       </div>
 
-      <!-- PORTFOLIO SCREEN -->
       <div id="port-screen" style="display:none; display:flex; flex-direction:column; height:100%;">
           <div class="port-metrics">
             <div class="p-met"><span class="p-met-lbl">NET LIQ (KES)</span><span class="p-met-val" id="met-liq">0.00</span></div>
@@ -219,7 +201,7 @@
 
 <script>
 // =========================================================================
-// NOBLE TERMINAL ENGINE V1.4 - GLOBAL EXHAUSTION
+// NOBLE TERMINAL ENGINE V1.4 - SECURE AUTH & GLOBAL MATRIX
 // =========================================================================
 
 const API_LOCAL  = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
@@ -231,6 +213,7 @@ let LIVE_PRICES = {}; let PREV_PRICES = {};
 let PORTFOLIO_DATA = []; let SENTIMENT_DATA = {};
 let CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
 let nativeChartInstance = null;
+let hasRenderedOnce = false;
 
 const countryMap = { "usa":"USA", "canada":"CANADA", "south_africa":"SOUTH AFRICA", "nigeria":"NIGERIA", "egypt":"EGYPT", "france":"FRANCE", "united_kingdom":"UNITED KINGDOM", "australia":"AUSTRALIA", "japan":"JAPAN", "mainland_china":"MAINLAND CHINA" };
 
@@ -238,6 +221,14 @@ const countryMap = { "usa":"USA", "canada":"CANADA", "south_africa":"SOUTH AFRIC
 setInterval(() => {
     let now = new Date(new Date().toLocaleString("en-US", {timeZone: "Africa/Nairobi"}));
     document.getElementById("term-clock").innerText = now.toTimeString().split(' ')[0] + " EAT";
+    
+    if(currentUser) {
+      let loginTime = localStorage.getItem("pf_time");
+      if(loginTime && (Date.now() - parseInt(loginTime)) > (10 * 60 * 1000)) {
+          terminalLogout();
+          alert("SECURITY PROTOCOL: Session timed out after 10 minutes. Please re-authenticate.");
+      }
+    }
 }, 1000);
 
 function switchView(viewId) {
@@ -247,7 +238,7 @@ function switchView(viewId) {
     
     let tabs = document.querySelectorAll('.v-tab');
     for(let i=0; i<tabs.length; i++) {
-        if(tabs[i].innerText.toLowerCase().includes(viewId.substring(0,3))) {
+        if(tabs[i].dataset.view === viewId) {
             tabs[i].classList.add('active'); break;
         }
     }
@@ -271,6 +262,7 @@ function triggerSync() {
         if (localData && globalData && !isProcessed) {
             isProcessed = true;
             processMarketData(Object.assign({}, localData, globalData));
+            hasRenderedOnce = true;
         }
     }
     let s1 = document.createElement("script"); s1.src = API_LOCAL + "?callback=localCallback&sheet=all&_t=" + Date.now(); document.head.appendChild(s1);
@@ -279,11 +271,19 @@ function triggerSync() {
     if(currentUser) fetchPortfolioData();
 }
 
+function buildGenericTableRows(sheetData) {
+  if (!sheetData || sheetData.length === 0) return { headers: [], rows: [] };
+  var keys = Object.keys(sheetData[0]).filter(function(k) { return !k.match(/_\d+$/) && !["index_symbol", "%_change"].includes(k) && k !== ""; });
+  var displayHeaders = keys.map(function(k) { return k.replace(/_/g, ' ').toUpperCase(); });
+  var rows = sheetData.map(function(rowObj) { return '<tr>' + keys.map(function(k) { var val = rowObj[k] !== null && rowObj[k] !== undefined ? rowObj[k] : "—"; if (k.includes("change")) { if (String(val).includes("▲")) val = '<span class="up">' + val + '</span>'; else if (String(val).includes("▼") || String(val).includes("(")) val = '<span class="dn">' + val + '</span>'; } return '<td>' + val + '</td>'; }).join("") + '</tr>'; });
+  return { headers: displayHeaders, rows: rows };
+}
+
 function processMarketData(data) {
     let sys = document.getElementById("sys-status");
     if(sys) { sys.innerText = "SYS: OK"; sys.style.color = "var(--term-up)"; }
     
-    // 1. Extract Macro for Chart (Now includes KEPSS)
+    // 1. Extract Macro for Chart
     let cd = data.chart_data || [];
     if (cd.length > 0) {
         CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
@@ -344,37 +344,23 @@ function processMarketData(data) {
 
     // Global Indices
     let indices = (data.indices || data.world_indices || []).filter(r => r && r.name && r.price !== "N/A");
+    let active = (data.mostactive || data.yahoo_most_active || []).filter(r => r && r.symbol && r.price);
     document.getElementById('tb-indices').innerHTML = indices.map(r => `<tr><td class="sym">${r.name}</td><td>${fmtNum(r.price)}</td><td class="${cleanNum(r["%_change"]||r.percent_change)>0?'up':'dn'}">${r["%_change"]||r.percent_change||"—"}</td><td>${r.volume||"—"}</td></tr>`).join("");
+    document.getElementById('tb-us').innerHTML = active.map(r => `<tr><td class="sym">${r.symbol}</td><td>${r.name||"—"}</td><td>$${fmtNum(r.price)}</td><td class="${cleanNum(r["%_change"]||r.percent_change)>0?'up':'dn'}">${r["%_change"]||r.percent_change||"—"}</td><td>${fmtNum(r.volume,0)}</td></tr>`).join("");
     
-    // Exhaustive International Matrix Loop
-    let globalHtml = "";
-    Object.keys(countryMap).forEach(key => {
-        let cData = data[key];
-        if(cData && cData.length > 0) {
-            let keys = Object.keys(cData[0]).filter(k => !k.match(/_\d+$/) && !["index_symbol", "%_change"].includes(k) && k !== "");
-            let headers = keys.map(k => k.replace(/_/g, ' ').toUpperCase());
-            
-            globalHtml += `<h3 class="section-title">${countryMap[key]} EQUITIES</h3><table><thead><tr>`;
-            headers.forEach(h => globalHtml += `<th>${h}</th>`);
-            globalHtml += `</tr></thead><tbody>`;
-            
-            cData.forEach(rowObj => {
-                globalHtml += '<tr>';
-                keys.forEach(k => {
-                    let val = rowObj[k] !== null && rowObj[k] !== undefined ? rowObj[k] : "—";
-                    let vStr = String(val);
-                    if (k.toLowerCase().includes("change")) {
-                        if (vStr.includes("▲")) val = `<span class="up">${vStr}</span>`;
-                        else if (vStr.includes("▼") || vStr.includes("(")) val = `<span class="dn">${vStr}</span>`;
-                    }
-                    globalHtml += `<td>${val}</td>`;
-                });
-                globalHtml += '</tr>';
-            });
-            globalHtml += `</tbody></table>`;
-        }
-    });
-    document.getElementById('global-countries-container').innerHTML = globalHtml;
+    // Deep Collapsible Global Matrix
+    if(!hasRenderedOnce) {
+        let globalHtml = "";
+        Object.keys(countryMap).forEach(key => {
+            let cData = data[key];
+            if(cData && cData.length > 0) {
+                let tData = buildGenericTableRows(cData);
+                let hdr = tData.headers.map(h => `<th>${h}</th>`).join("");
+                globalHtml += `<details><summary>▶ ${countryMap[key]} EQUITIES MATRIX</summary><table><thead><tr>${hdr}</tr></thead><tbody>${tData.rows.join("")}</tbody></table></details>`;
+            }
+        });
+        document.getElementById('global-countries-container').innerHTML = globalHtml;
+    }
 
     // Stats & FX
     let stats = (data.stats || []).filter(r=>r&&r.name);
@@ -385,7 +371,7 @@ function processMarketData(data) {
             if (data.cbk[r]) {
                 let vals = Object.values(data.cbk[r]); let ccy = String(vals[1]||"").trim();
                 if (ccy && ccy !== "—" && ccy.toLowerCase() !== "currency" && ccy.toLowerCase() !== "mean") {
-                    fxHtml += `<tr><td class="sym">${ccy}</td><td>${vals[2]||"—"}</td><td>${vals[3]||"—"}</td><td>${vals[4]||"—"}</td><td>${vals[5]||"—"}</td></tr>`;
+                    fxHtml += `<tr><td class="sym">${ccy}</td><td>${vals[2]||"—"}</td><td>${vals[3]||"—"}</td></tr>`;
                 }
             }
         }
@@ -393,7 +379,7 @@ function processMarketData(data) {
     }
 }
 
-// --- 3. Chart.js Macro Engine (Now Includes KEPSS) ---
+// --- 3. Chart.js Macro Engine ---
 function renderNativeChart(type) {
     const ctx = document.getElementById('terminal-chart');
     if(nativeChartInstance) nativeChartInstance.destroy();
@@ -438,7 +424,7 @@ function checkAuthUI() {
 
 async function terminalLogin() {
     let u = document.getElementById('auth-user').value.trim();
-    let p = document.getElementById('auth-pass').value; // EXACT CASE, NO TRIM OR TOUPPERCASE
+    let p = document.getElementById('auth-pass').value; // EXACT CASE PRESERVED
     let fb = document.getElementById('auth-feedback');
     
     if(!u || !p) { fb.innerText = "CREDENTIALS REQUIRED"; fb.className="dn"; return; }
@@ -448,7 +434,7 @@ async function terminalLogin() {
         let resp = await fetch(API_PORTFOLIO, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "login", username: u, password: p }) });
         let res = await resp.json();
         if(res.status === "success") { 
-            currentUser = u; localStorage.setItem("pf_username", u); 
+            currentUser = u; localStorage.setItem("pf_username", u); localStorage.setItem("pf_time", Date.now()); 
             fb.innerText = ""; document.getElementById('auth-pass').value = "";
             checkAuthUI(); 
         } else { fb.innerText = "AUTH FAILED: " + res.message.toUpperCase(); fb.className="dn"; }
@@ -497,8 +483,25 @@ function renderPortfolio() {
 }
 
 function terminalLogout() {
-    currentUser = null; localStorage.removeItem("pf_username");
+    currentUser = null; localStorage.removeItem("pf_username"); localStorage.removeItem("pf_time");
     checkAuthUI();
+}
+
+function terminalExport(type, format) {
+    if(!currentUser) { alert("AUTH REQUIRED TO EXPORT"); return; }
+    if(typeof XLSX === 'undefined') { alert("EXPORT ENGINE LOADING..."); return; }
+    
+    let dt = new Date(); let fDate = dt.getFullYear() + "_" + String(dt.getMonth()+1).padStart(2,'0') + "_" + String(dt.getDate()).padStart(2,'0');
+    let tbl = type === 'HOLDINGS' ? document.getElementById('tbl-port') : null;
+    if(!tbl) { alert("CURRENTLY ONLY HOLDINGS EXPORT IS SUPPORTED IN CLI"); return; }
+    
+    if(format === 'CSV') {
+        let csv = []; let rows = tbl.querySelectorAll("tr");
+        for(let i=0; i<rows.length; i++) { let row=[], cols=rows[i].querySelectorAll("td, th"); for(let j=0; j<cols.length; j++) row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"'); csv.push(row.join(",")); }
+        let blob = new Blob([csv.join("\n")], {type: "text/csv"}); let link = document.createElement("a"); link.download = `PORTFOLIO_${type}_${fDate}.csv`; link.href = window.URL.createObjectURL(blob); link.click();
+    } else if(format === 'XLSX') {
+        let wb = XLSX.utils.table_to_book(tbl, {sheet: "Data"}); XLSX.writeFile(wb, `PORTFOLIO_${type}_${fDate}.xlsx`);
+    }
 }
 
 // --- 5. Background News Scraper ---
@@ -511,8 +514,7 @@ async function loadLiveNews() {
     }).catch(() => []));
     
     promises.push(fetch("https://api.allorigins.win/get?url=" + encodeURIComponent("https://kenyanwallstreet.com/feed/")).then(r => r.json()).then(d => {
-        let xml = new DOMParser().parseFromString(d.contents, "application/xml");
-        let items = Array.from(xml.querySelectorAll("item")).slice(0, 5);
+        let xml = new DOMParser().parseFromString(d.contents, "application/xml"); let items = Array.from(xml.querySelectorAll("item")).slice(0, 5);
         return items.map(n => ({ title: n.querySelector("title")?.textContent||"", link: n.querySelector("link")?.textContent||"", desc: (n.querySelector("description")?.textContent||"").replace(/<[^>]*>?/gm, '').substring(0, 100) + '...', src: "Kenyan Wall Street" }));
     }).catch(() => []));
     
@@ -531,17 +533,15 @@ cli.addEventListener("keypress", async function(e) {
         cli.value = ""; 
         
         let parts = rawCmd.split(" ");
-        let action = parts[0].toUpperCase(); 
+        let action = parts[0].toUpperCase(); // Only uppercase the command keyword
         
-        if (action === "HELP") { alert("NOBLE TERMINAL COMMANDS:\n\nLOGIN\nLOGOUT\nVIEW [NSE|GLOBAL|FX|MOVERS|MKW|NEWS]\nCHART [GDP|INF|RATES|KEPSS]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]"); }
+        if (action === "HELP") { alert("NOBLE TERMINAL COMMANDS:\n\nLOGIN\nLOGOUT\nVIEW [NSE|GLOBAL|FX|MOVERS|MKW|NEWS]\nCHART [GDP|INF|RATES|KEPSS]\nBUY [qty] [ticker] @ [price]\nSELL [qty] [ticker] @ [price]\nEXPORT HOLDINGS [CSV|XLSX]"); }
         else if (action === "LOGIN") {
             if(parts.length >= 3) {
                 document.getElementById('auth-user').value = parts[1];
                 document.getElementById('auth-pass').value = parts.slice(2).join(" "); 
                 terminalLogin();
-            } else {
-                document.getElementById('auth-user').focus();
-            }
+            } else { document.getElementById('auth-user').focus(); }
         }
         else if (action === "LOGOUT") { terminalLogout(); }
         else if (action === "VIEW" && parts.length === 2) {
@@ -552,10 +552,19 @@ cli.addEventListener("keypress", async function(e) {
             let v = parts[1].toUpperCase();
             if(['GDP', 'INF', 'RATES', 'KEPSS'].includes(v)) renderNativeChart(v);
         }
+        else if (action === "EXPORT" && parts.length === 3) {
+            terminalExport(parts[1].toUpperCase(), parts[2].toUpperCase());
+        }
         else if ((action === "BUY" || action === "SELL") && parts.length >= 5) {
             if(!currentUser) { alert("ERROR: NOT AUTHENTICATED"); return; }
             let qty = parseFloat(parts[1]); let tkr = parts[2].toUpperCase(); let price = parseFloat(parts[4]);
             if(isNaN(qty) || isNaN(price) || !tkr) { alert("SYNTAX ERROR. USE: BUY 100 KCB @ 35.50"); return; }
+            
+            if (action === "SELL") {
+                let currentHeld = 0;
+                PORTFOLIO_DATA.forEach(r => { if(r.ticker === tkr) { if(r.type==="BOUGHT") currentHeld+=r.shares; else if(r.type==="SOLD") currentHeld-=r.shares; } });
+                if (currentHeld < qty) { alert(`ORDER REJECTED: INSUFFICIENT SHARES. YOU ONLY HOLD ${currentHeld} SHARES OF ${tkr}.`); return; }
+            }
             
             let dt = new Date().toISOString().split('T')[0];
             let payload = { action: "update_portfolio", username: currentUser, date: dt, type: action === "BUY" ? "BOUGHT" : "SOLD", ticker: tkr, shares: qty, price: price, broker: "Terminal Node Execution" };
@@ -565,7 +574,7 @@ cli.addEventListener("keypress", async function(e) {
     }
 });
 
-document.addEventListener("click", (e) => { if(e.target.tagName !== "INPUT" && e.target.tagName !== "SPAN") document.getElementById("cli-input").focus(); });
+document.addEventListener("click", (e) => { if(e.target.tagName !== "INPUT" && e.target.tagName !== "SPAN" && e.target.tagName !== "SUMMARY" && e.target.tagName !== "DETAILS") document.getElementById("cli-input").focus(); });
 
 // --- Boot Sequence ---
 window.addEventListener('load', () => {
