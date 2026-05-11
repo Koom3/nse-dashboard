@@ -11,7 +11,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
-    /* ── PREMIUM "NOBLE FINANCE" THEME ──────────────────── */
     :root { 
       --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2c3e50; --text-muted: #666666; --text-sub: #999999; 
       --border-color: #e2e8f0; --table-header-bg: #f8fafc; --table-border: #f1f5f9; --table-hover: #fafbfd; 
@@ -575,7 +574,6 @@ function toggleAuthMode() {
 
 async function handleAuth() {
     var u = document.getElementById('auth-user').value.trim();
-    // EXACT case preservation for password matching
     var p = document.getElementById('auth-pass').value; 
     var n = document.getElementById('auth-name').value.trim();
     var fb = document.getElementById('auth-feedback');
@@ -980,6 +978,8 @@ function render(data, isInitialLoad) {
   var heatCells = tickers.map(function(t) { var n = getPctNumForSort(t, "%_change"), cls = n > 0 ? "up-cell" : n < 0 ? "dn-cell" : "nt-cell"; return '<div class="ticker-cell ' + cls + '" data-sym="' + t.symbol + '"><div class="tc-sym">' + t.symbol + '</div><div class="tc-price">' + fmtKsh(t["last_price_(kshs)"]) + '</div><div class="tc-chg">' + formatChange(pk(t), true) + '</div></div>'; }).join("");
   var indicesRows = indices.map(function(r) { return '<tr><td>' + r.name + '</td><td>' + (r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + ((r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—") + '</td></tr>'; });
   var activeRows = active.map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td><td>' + fmtNum(r["market_cap"], 0) + '</td></tr>'; });
+  
+  var commoRows = (data.global_assets || []).map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + r.asset_class + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td></tr>'; });
 
   if (isInitialLoad) {
       var globalEquitiesHtml = '<div class="full-card"><div class="card-header"><h2 class="brand-font">Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value, false)">';
@@ -991,14 +991,13 @@ function render(data, isInitialLoad) {
         globalEquitiesHtml += '<div id="country-' + countryKey + '" class="global-tables-section ' + isActive + '">';
         if (cData && cData.length > 0) { 
             var tableData = buildGenericTableRows(cData); 
-            // FIX: Wraps individual international markets in collapsible details tags
             globalEquitiesHtml += '<details open style="margin-bottom:10px;"><summary style="cursor:pointer; font-weight:bold; padding:10px; background:var(--table-header-bg); border:1px solid var(--border-color); margin-bottom:5px; border-radius:6px; user-select:none;">▶ ' + countryMap[countryKey].name + ' Market</summary>' + tableCard(countryMap[countryKey].name, tableData.headers, tableData.rows, "No data available") + '</details>'; 
         } else { globalEquitiesHtml += tableCard(countryMap[countryKey].name, ["Status"], [], "Data not loaded yet."); }
         globalEquitiesHtml += '</div>';
       });
       globalEquitiesHtml += '</div></div></div>';
 
-      document.getElementById("app-global").innerHTML = ['<div class="grid2">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>', globalEquitiesHtml].join("");
+      document.getElementById("app-global").innerHTML = ['<div class="grid3">', tableCard("Global Markets (World Indices)", ["Index","Price","Change","Volume"], indicesRows, "Global indices not yet loaded."), tableCard("Live Alternative Assets (1M)", ["Symbol","Name","Class","Price","Change","Volume"], commoRows, "Assets not loaded."), tableCard("Yahoo Most Active (US Equities)", ["Symbol","Company","Price","Change","Volume","Market Cap"], activeRows, "US most active not yet loaded."), '</div>', globalEquitiesHtml].join("");
 
       var graphsHtml = '<div class="graphs-section"><div class="card-header"><h2 class="brand-font">Graphs — Macro &amp; CBK Data</h2></div><div class="card-body padding-0"><div class="graphs-grid">' +
         '<div class="graph-card"><h3 class="brand-font">12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>' +
@@ -1028,7 +1027,7 @@ function render(data, isInitialLoad) {
       var mg = document.querySelector(".macro-cards-container"); if (mg) mg.innerHTML = macroCardsHtml; 
       var hg = document.getElementById("heatmap-grid"); if (hg) hg.innerHTML = heatCells;
       updateTableData(getTableId("Top Gainers"), gainers.map(trRow)); updateTableData(getTableId("Top Losers"), losers.map(trRow)); updateTableData(getTableId("Unchanged Stocks"), unchanged.map(trRow)); updateTableData(getTableId("Indicative Forex Rates"), fxRows); updateTableData(getTableId("NSE Market Statistics"), statsRows); updateTableData(getTableId("Top by Turnover"), topTurnover.map(rTO)); updateTableData(getTableId("Top by Volume"), topVolume.map(rVol)); updateTableData(getTableId("Top by Trades"), topTrades.map(rTR)); updateTableData(getTableId("Top Foreign Inflows (Buys)"), topFBuy.map(rFB)); updateTableData(getTableId("Top Foreign Outflows (Sells)"), topFSell.map(rFS)); updateTableData(getTableId("Ticker Prices — Full List"), tFull); updateTableData(getTableId("Market Watch — Full Order Book Detail"), mwRows);
-      updateTableData(getTableId("Global Markets (World Indices)"), indicesRows); updateTableData(getTableId("Yahoo Most Active (US Equities)"), activeRows);
+      updateTableData(getTableId("Global Markets (World Indices)"), indicesRows); updateTableData(getTableId("Yahoo Most Active (US Equities)"), activeRows); updateTableData(getTableId("Live Alternative Assets (1M)"), commoRows);
       Object.keys(countryMap).forEach(function(countryKey) { var cData = data[countryKey]; if (cData && cData.length > 0) { var tableData = buildGenericTableRows(cData); updateTableData(getTableId(countryMap[countryKey].name), tableData.rows); } });
       updateChartsData(); attachTableSorting();
   }
