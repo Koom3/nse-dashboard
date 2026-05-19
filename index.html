@@ -1,492 +1,320 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quantis | Institutional Market Terminal</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/feather-icons"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Quantis Terminal</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: '#D4AF37',       // Core Gold Accent
-            darkbg: '#0F172A',      // Slate 900 Background
-            darkcard: '#1E293B',    // Slate 800 Card Base
-            lightbg: '#F8FAFC',     // Slate 50 Background
-            lightcard: '#FFFFFF',   // White Card Base
-          }
-        }
-      }
-    }
-  </script>
-
   <style>
-    body { transition: background-color 0.3s, color 0.3s; overflow: hidden; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-    
-    .glass-card {
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transition: all 0.3s ease;
+    /* BESPOKE TERMINAL AESTHETIC - NO AI SAAS ELEMENTS */
+    :root {
+      --bg-base: #f0f0f0; --bg-panel: #ffffff; --text-main: #111111; --text-muted: #555555;
+      --border: #cccccc; --border-highlight: #0000ff;
+      --color-up: #008800; --color-down: #dd0000;
     }
-    .dark .glass-card { background: rgba(30, 41, 59, 0.75); border: 1px solid rgba(255,255,255,0.05); }
-    .light .glass-card { background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(0,0,0,0.05); }
-    .glass-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    
-    .tab-content { display: none; animation: fadeIn 0.4s ease-in-out; }
-    .tab-content.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    [data-theme="dark"] {
+      --bg-base: #000000; --bg-panel: #0a0a0a; --text-main: #e0e0e0; --text-muted: #888888;
+      --border: #333333; --border-highlight: #ffcc00;
+      --color-up: #00ff00; --color-down: #ff3333;
+    }
 
-    /* Custom Ticker Tape */
-    .ticker-wrap { width: 100%; overflow: hidden; background: #000; border-bottom: 2px solid #D4AF37; }
-    .ticker { display: flex; width: max-content; animation: ticker-scroll 60s linear infinite; }
-    .ticker:hover { animation-play-state: paused; }
-    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    body { background: var(--bg-base); color: var(--text-main); font-size: 11px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* Top Bar */
+    header { background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; padding: 4px 12px; align-items: center; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+    header .clock { color: var(--border-highlight); }
+    header button { background: transparent; color: var(--text-main); border: 1px solid var(--border); cursor: pointer; padding: 2px 8px; font-family: inherit; font-size: 11px; }
+    header button:hover { border-color: var(--border-highlight); color: var(--border-highlight); }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-panel); }
+    .tab { padding: 8px 16px; cursor: pointer; border-right: 1px solid var(--border); font-weight: bold; text-transform: uppercase; color: var(--text-muted); }
+    .tab:hover { color: var(--text-main); }
+    .tab.active { color: var(--border-highlight); border-bottom: 2px solid var(--border-highlight); margin-bottom: -1px; }
+
+    /* Main Grid */
+    main { flex: 1; overflow-y: auto; padding: 8px; display: none; }
+    main.active { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); align-content: start; }
+
+    /* Panels */
+    .panel { background: var(--bg-panel); border: 1px solid var(--border); display: flex; flex-direction: column; }
+    .panel-header { padding: 4px 8px; border-bottom: 1px solid var(--border); font-weight: bold; text-transform: uppercase; background: var(--border); color: var(--bg-base); }
+    [data-theme="dark"] .panel-header { background: #222; color: #fff; }
+    .panel-body { padding: 8px; overflow-x: auto; }
+
+    /* Tables (Strict Tabular) */
+    table { width: 100%; border-collapse: collapse; font-family: 'Consolas', 'Courier New', Courier, monospace; }
+    th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--text-muted); text-transform: uppercase; font-weight: normal; font-size: 10px; cursor: pointer; }
+    tr:hover td { background: var(--border); }
+    [data-theme="dark"] tr:hover td { background: #1a1a1a; }
+    .num { text-align: right; }
+    .up { color: var(--color-up); } .down { color: var(--color-down); }
+
+    /* Form Elements */
+    input, select { background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 4px; font-family: inherit; font-size: 11px; width: 100%; outline: none; margin-bottom: 8px; }
+    input:focus, select:focus { border-color: var(--border-highlight); }
+    .btn-exec { background: var(--border-highlight); color: var(--bg-base); border: none; padding: 6px; width: 100%; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+    .btn-exec:hover { filter: brightness(1.2); }
+
+    /* Modals */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 100; }
+    .modal-content { background: var(--bg-panel); border: 1px solid var(--border-highlight); padding: 16px; width: 300px; }
+    .modal-content h3 { margin-bottom: 12px; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+    .close-btn { float: right; cursor: pointer; font-weight: bold; }
+
+    /* Data Highlights */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .kpi { border: 1px solid var(--border); padding: 8px; }
+    .kpi .val { font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: bold; margin-top: 4px; }
   </style>
 </head>
-<body class="bg-lightbg text-slate-900 dark:bg-darkbg dark:text-slate-100 antialiased font-sans flex h-screen">
+<body>
 
-  <aside class="w-20 lg:w-64 flex flex-col justify-between border-r border-slate-200 dark:border-slate-800 bg-lightcard dark:bg-darkcard h-full transition-all">
+  <header>
+    <div>QUANTIS <span style="color:var(--text-muted)">// TERMINAL V17.1</span></div>
+    <div class="clock" id="sys-clock">SYNCING...</div>
     <div>
-      <div class="h-16 flex items-center justify-center lg:justify-start lg:px-6 border-b border-slate-200 dark:border-slate-800">
-        <i data-feather="hexagon" class="text-brand w-8 h-8"></i>
-        <span class="ml-3 font-bold text-xl hidden lg:block tracking-wide">QUANTIS</span>
+      <button onclick="document.getElementById('auth-modal').style.display='flex'">AUTH</button>
+      <button onclick="toggleTheme()">THEME</button>
+      <button onclick="bootTerminal()">REFRESH</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchView('view-market')">MARKET</div>
+    <div class="tab" onclick="switchView('view-global')">GLOBAL</div>
+    <div class="tab" onclick="switchView('view-portfolio')">PORTFOLIO</div>
+  </div>
+
+  <main id="view-market" class="active">
+    <div class="panel" style="grid-column: 1 / -1;">
+      <div class="panel-header">System Metrics</div>
+      <div class="panel-body kpi-grid">
+        <div class="kpi">NSE ALL SHARE<div class="val" id="kpi-nse">--</div></div>
+        <div class="kpi">XAU/USD<div class="val" id="kpi-gold">--</div></div>
+        <div class="kpi">BTC/USD<div class="val" id="kpi-btc">--</div></div>
+        <div class="kpi">SYS STATUS<div class="val" id="kpi-status" style="color:var(--color-up)">ONLINE</div></div>
       </div>
-      <nav class="mt-6 flex flex-col gap-2 px-3">
-        <button onclick="switchTab('landing')" class="nav-btn active flex items-center p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-brand">
-          <i data-feather="home"></i><span class="ml-3 hidden lg:block font-medium">Terminal Home</span>
-        </button>
-        <button onclick="switchTab('kenyan')" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400">
-          <i data-feather="bar-chart-2"></i><span class="ml-3 hidden lg:block font-medium">Domestic Markets</span>
-        </button>
-        <button onclick="switchTab('global')" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400">
-          <i data-feather="globe"></i><span class="ml-3 hidden lg:block font-medium">Global Macro</span>
-        </button>
-        <button onclick="switchTab('portfolio')" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400">
-          <i data-feather="briefcase"></i><span class="ml-3 hidden lg:block font-medium">Portfolio Engine</span>
-        </button>
-        <button onclick="switchTab('news')" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400">
-          <i data-feather="file-text"></i><span class="ml-3 hidden lg:block font-medium">News & Intelligence</span>
-        </button>
-      </nav>
     </div>
     
-    <div class="p-4 border-t border-slate-200 dark:border-slate-800">
-      <button onclick="toggleTheme()" class="w-full flex justify-center lg:justify-start items-center p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-brand transition">
-        <i data-feather="moon" id="theme-icon"></i><span class="ml-3 hidden lg:block text-sm font-medium">Toggle Theme</span>
-      </button>
-      <div class="mt-4 flex items-center justify-center lg:justify-start cursor-pointer" onclick="openAuthModal()">
-        <div class="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-white font-bold">EK</div>
-        <div class="ml-3 hidden lg:block">
-          <p class="text-sm font-bold" id="user-display-name">Eric Koome</p>
-          <p class="text-xs text-slate-500">Sign In to Portfolio</p>
-        </div>
+    <div class="panel" style="grid-column: 1 / -1;">
+      <div class="panel-header">Domestic Equities (Live)</div>
+      <div class="panel-body">
+        <table id="tbl-kenya">
+          <thead><tr><th>TICKER</th><th class="num">PRICE</th><th class="num">CHANGE (%)</th></tr></thead>
+          <tbody id="tbl-kenya-body"><tr><td colspan="3">Fetching...</td></tr></tbody>
+        </table>
       </div>
-    </div>
-  </aside>
-
-  <main class="flex-1 flex flex-col h-screen overflow-hidden">
-    <div class="ticker-wrap h-10 flex-shrink-0">
-      <div class="ticker text-sm text-white py-2" id="ticker-content">
-        <span class="mx-4 text-slate-400">Initializing Core Systems...</span>
-      </div>
-    </div>
-
-    <div class="flex-1 overflow-y-auto p-6 lg:p-10 relative">
-      <div id="loader-overlay" class="absolute inset-0 bg-lightbg dark:bg-darkbg z-10 flex flex-col items-center justify-center">
-        <i data-feather="loader" class="w-10 h-10 text-brand animate-spin"></i>
-        <p class="mt-4 text-slate-500 font-medium tracking-widest uppercase">Fetching Datasets...</p>
-      </div>
-
-      <section id="landing" class="tab-content active">
-        <div class="max-w-6xl mx-auto text-center mt-12">
-          <span class="px-4 py-1.5 rounded-full bg-brand/10 text-brand font-semibold text-sm tracking-wide uppercase border border-brand/20">System V17 Online</span>
-          <h1 class="text-5xl lg:text-7xl font-extrabold mt-6 leading-tight">Master the Markets <br/> <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-yellow-600">in Real-Time</span></h1>
-          <p class="mt-6 text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">Unifying the Nairobi Securities Exchange, Global Equities, Commodities, and Crypto into a single ultra-fast interface.</p>
-          <div class="mt-10 flex gap-4 justify-center">
-            <button onclick="switchTab('portfolio')" class="px-8 py-3 bg-brand text-white rounded-xl font-bold shadow-lg shadow-brand/25 hover:bg-yellow-600 transition">Access Portfolio</button>
-            <button onclick="switchTab('global')" class="px-8 py-3 bg-slate-200 dark:bg-slate-800 rounded-xl font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition">View Global Assets</button>
-          </div>
-        </div>
-        
-        <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="glass-card p-6 rounded-2xl border-l-4 border-brand">
-            <p class="text-slate-500 text-sm font-semibold uppercase">XAU/USD (Gold)</p>
-            <h3 class="text-3xl font-bold mt-1" id="dash-gold">--</h3>
-          </div>
-          <div class="glass-card p-6 rounded-2xl border-l-4 border-blue-500">
-            <p class="text-slate-500 text-sm font-semibold uppercase">NSE All Share</p>
-            <h3 class="text-3xl font-bold mt-1" id="dash-nse">--</h3>
-          </div>
-          <div class="glass-card p-6 rounded-2xl border-l-4 border-emerald-500">
-            <p class="text-slate-500 text-sm font-semibold uppercase">Bitcoin (BTC)</p>
-            <h3 class="text-3xl font-bold mt-1" id="dash-btc">--</h3>
-          </div>
-        </div>
-      </section>
-
-      <section id="kenyan" class="tab-content">
-        <div class="flex justify-between items-end mb-8">
-          <div>
-            <h2 class="text-3xl font-bold">Nairobi Securities Exchange</h2>
-            <p class="text-slate-500 mt-1">Local equities, derivatives, and corporate actions.</p>
-          </div>
-          <div id="market-badge" class="px-4 py-2 bg-slate-500/10 text-slate-500 rounded-lg font-semibold text-sm">Status Pending</div>
-        </div>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-2 glass-card rounded-2xl p-6 overflow-hidden">
-            <h3 class="font-bold mb-4 text-lg">Live Ticker Feed</h3>
-            <div class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-sm whitespace-nowrap">
-                <thead class="sticky top-0 bg-lightcard dark:bg-darkcard/95 backdrop-blur">
-                  <tr class="text-slate-500 border-b border-slate-200 dark:border-slate-700">
-                    <th class="py-3 px-4 font-medium uppercase tracking-wider">Symbol</th>
-                    <th class="py-3 px-4 font-medium uppercase tracking-wider">Price (KES)</th>
-                    <th class="py-3 px-4 font-medium uppercase tracking-wider">Change %</th>
-                  </tr>
-                </thead>
-                <tbody id="kenyan-table-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-              </table>
-            </div>
-          </div>
-          <div class="glass-card rounded-2xl p-6">
-            <h3 class="font-bold mb-4 text-lg">Market Movers</h3>
-            <div class="space-y-4" id="kenyan-movers"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="global" class="tab-content">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <h2 class="text-3xl font-bold">Global Macro & Assets</h2>
-          <select id="global-region-select" onchange="renderGlobalEquities(this.value)" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 border-none rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-brand cursor-pointer">
-            <option value="usa">United States</option>
-            <option value="united_kingdom">United Kingdom</option>
-            <option value="japan">Japan</option>
-            <option value="south_africa">South Africa</option>
-            <option value="mainland_china">Mainland China</option>
-          </select>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6" id="global-asset-grid"></div>
-
-        <div class="glass-card rounded-2xl p-6 overflow-x-auto">
-          <h3 class="font-bold mb-4 text-lg capitalize" id="global-table-title">Regional Equities</h3>
-          <table class="w-full text-left text-sm whitespace-nowrap">
-            <thead class="bg-slate-100 dark:bg-slate-800/50">
-              <tr id="global-thead" class="text-slate-500 border-b border-slate-200 dark:border-slate-700"></tr>
-            </thead>
-            <tbody id="global-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="portfolio" class="tab-content">
-        <h2 class="text-3xl font-bold mb-8">Portfolio Engine</h2>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div class="glass-card rounded-2xl p-6 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-xl relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 w-40 h-40 bg-brand/20 rounded-full blur-3xl"></div>
-            <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Total Value</p>
-            <h3 class="text-4xl font-extrabold mt-2" id="port-total">KES 0.00</h3>
-            <div class="mt-6 flex items-center gap-2">
-              <span class="px-2 py-1 bg-slate-800 rounded text-xs font-bold border border-slate-700" id="port-pnl">0.00%</span>
-              <span class="text-xs text-slate-400">Net Returns</span>
-            </div>
-          </div>
-          
-          <div class="lg:col-span-2 glass-card rounded-2xl p-6 flex flex-col justify-center">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="font-bold text-lg">Positions Composition</h3>
-              <button onclick="document.getElementById('trade-modal').style.display='flex'" class="text-sm bg-brand text-white px-3 py-1.5 rounded font-bold hover:bg-yellow-600 transition">+ Trade</button>
-            </div>
-            <div class="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full flex overflow-hidden" id="port-allocation-bar"></div>
-            <div class="flex flex-wrap gap-4 mt-4 text-sm text-slate-500" id="port-allocation-legend"></div>
-          </div>
-        </div>
-
-        <div class="glass-card rounded-2xl p-6 overflow-x-auto">
-          <table class="w-full text-left text-sm whitespace-nowrap">
-            <thead>
-              <tr class="text-slate-500 border-b border-slate-200 dark:border-slate-700">
-                <th class="py-3 px-4 font-medium uppercase tracking-wider">Asset</th>
-                <th class="py-3 px-4 font-medium uppercase tracking-wider">Qty</th>
-                <th class="py-3 px-4 font-medium uppercase tracking-wider">Avg Price</th>
-                <th class="py-3 px-4 font-medium uppercase tracking-wider">Current Price</th>
-                <th class="py-3 px-4 font-medium uppercase tracking-wider text-right">P&L</th>
-                <th class="py-3 px-4 font-medium uppercase tracking-wider text-center">AI Signal</th>
-              </tr>
-            </thead>
-            <tbody id="portfolio-holdings" class="divide-y divide-slate-100 dark:divide-slate-800">
-              <tr><td colspan="6" class="py-8 text-center text-slate-500">Sign in to view holdings</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="news" class="tab-content">
-        <div class="flex justify-between items-center mb-8">
-          <h2 class="text-3xl font-bold">Intelligence Feed</h2>
-          <div class="bg-slate-200 dark:bg-slate-800 rounded-lg p-1 hidden md:flex">
-            <button class="px-4 py-1.5 bg-white dark:bg-slate-700 rounded-md text-sm font-medium shadow">Global Top Stories</button>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="news-grid"></div>
-      </section>
-
     </div>
   </main>
 
-  <div id="auth-modal" class="modal-overlay">
-    <div class="bg-lightcard dark:bg-darkcard p-8 rounded-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm relative">
-      <button onclick="document.getElementById('auth-modal').style.display='none'" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white"><i data-feather="x"></i></button>
-      <h3 class="text-2xl font-bold text-center mb-6">Access Portfolio</h3>
-      <input type="text" id="auth-user" placeholder="Username" class="w-full mb-4 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:border-brand transition">
-      <input type="password" id="auth-pass" placeholder="Password" class="w-full mb-6 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:border-brand transition">
-      <button onclick="execLogin()" class="w-full py-3 bg-brand text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition">Log In</button>
-      <p id="auth-msg" class="text-red-500 text-center text-sm mt-4 hidden"></p>
+  <main id="view-global">
+    <div class="panel" style="grid-column: 1 / -1;">
+      <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Macro Instruments</span>
+        <select id="global-region" onchange="renderGlobal(this.value)" style="width:auto; margin:0; padding:0 4px; font-size:10px;">
+          <option value="usa">United States</option>
+          <option value="united_kingdom">United Kingdom</option>
+          <option value="japan">Japan</option>
+          <option value="mainland_china">China</option>
+        </select>
+      </div>
+      <div class="panel-body">
+        <table id="tbl-global">
+          <thead id="tbl-global-head"></thead>
+          <tbody id="tbl-global-body"><tr><td>Select region to load data.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-portfolio">
+    <div class="panel" style="grid-column: 1 / -1;">
+      <div class="panel-header">Portfolio Engine <span id="port-user-label" style="float:right; color:var(--border-highlight)">GUEST</span></div>
+      <div class="panel-body kpi-grid">
+        <div class="kpi">TOTAL VALUE<div class="val" id="port-val">0.00</div></div>
+        <div class="kpi">NET P&L<div class="val" id="port-pnl">0.00</div></div>
+        <div class="kpi">ACTIONS<button class="btn-exec" style="margin-top:4px" onclick="document.getElementById('trade-modal').style.display='flex'">LOG TRADE</button></div>
+      </div>
+    </div>
+
+    <div class="panel" style="grid-column: 1 / -1;">
+      <div class="panel-header">Holdings Ledger</div>
+      <div class="panel-body">
+        <table id="tbl-portfolio">
+          <thead><tr><th>ASSET</th><th class="num">QTY</th><th class="num">AVG COST</th><th class="num">LTP</th><th class="num">P&L</th><th>SIGNAL</th></tr></thead>
+          <tbody id="tbl-portfolio-body"><tr><td colspan="6">Requires Authentication.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="auth-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="document.getElementById('auth-modal').style.display='none'">[X]</span>
+      <h3>AUTHENTICATE</h3>
+      <input type="text" id="auth-u" placeholder="USERNAME">
+      <input type="password" id="auth-p" placeholder="PASSWORD">
+      <button class="btn-exec" onclick="execAuth()">LOGIN</button>
+      <div id="auth-msg" style="color:var(--color-down); margin-top:8px; display:none;"></div>
     </div>
   </div>
 
-  <div id="trade-modal" class="modal-overlay">
-    <div class="bg-lightcard dark:bg-darkcard p-8 rounded-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md relative">
-      <button onclick="document.getElementById('trade-modal').style.display='none'" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white"><i data-feather="x"></i></button>
-      <h3 class="text-2xl font-bold text-center mb-6">Log Transaction</h3>
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <select id="trade-type" class="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border-none outline-none font-bold"><option value="BOUGHT">Buy</option><option value="SOLD">Sell</option></select>
-        <input type="text" id="trade-ticker" placeholder="Ticker (e.g. EQTY)" class="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:border-brand">
-      </div>
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <input type="number" id="trade-qty" placeholder="Shares" class="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
-        <input type="number" id="trade-px" placeholder="Price" class="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
-      </div>
-      <input type="date" id="trade-date" class="w-full mb-6 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
-      <button onclick="execTrade()" class="w-full py-3 bg-brand text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition">Confirm Execution</button>
-      <p id="trade-msg" class="text-red-500 text-center text-sm mt-4 hidden"></p>
+  <div id="trade-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="document.getElementById('trade-modal').style.display='none'">[X]</span>
+      <h3>EXECUTE RECORD</h3>
+      <select id="t-type"><option value="BOUGHT">BUY</option><option value="SOLD">SELL</option></select>
+      <input type="text" id="t-tick" placeholder="TICKER (e.g. EQTY)">
+      <input type="number" id="t-qty" placeholder="QUANTITY">
+      <input type="number" id="t-px" placeholder="PRICE">
+      <input type="date" id="t-date">
+      <button class="btn-exec" onclick="execTrade()">SUBMIT</button>
+      <div id="trade-msg" style="color:var(--color-down); margin-top:8px; display:none;"></div>
     </div>
   </div>
 
   <script>
-    // System Constants - MUST REPLACE THESE WITH YOUR EXACT APP SCRIPT WEB APP URLS
-    const API_MARKET = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
-    const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec";
-    const API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
+    // --------------------------------------------------------
+    // API URLS - REPLACE THESE
+    // --------------------------------------------------------
+    const API_MARKET = "YOUR_MARKET_DATA_URL_HERE";
+    const API_GLOBAL = "YOUR_GLOBAL_EQUITY_URL_HERE";
+    const API_PORTFOLIO = "YOUR_PERSONAL_CREDENTIALS_URL_HERE";
 
-    let sysData = {}, globalData = {}, portfolioHistory = [], sentimentData = {}, currentUser = localStorage.getItem("auth_user");
+    let sys = {}, glob = {}, portHistory = [], portSent = {}, user = localStorage.getItem("pf_user");
 
-    // UI Init
-    feather.replace();
-    document.getElementById('trade-date').valueAsDate = new Date();
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(el => { el.classList.remove('active', 'text-brand'); el.classList.add('text-slate-500'); });
-      document.getElementById(tabId).classList.add('active');
-      event.currentTarget.classList.add('active', 'text-brand');
-      event.currentTarget.classList.remove('text-slate-500');
-    }
+    // Utilities
+    document.getElementById('t-date').valueAsDate = new Date();
+    setInterval(() => { document.getElementById('sys-clock').innerText = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC'; }, 1000);
 
     function toggleTheme() {
       const html = document.documentElement;
-      html.classList.toggle('dark');
-      document.getElementById('theme-icon').setAttribute('data-feather', html.classList.contains('dark') ? 'moon' : 'sun');
-      feather.replace();
+      html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
 
-    // Core Fetcher
-    async function bootSystem() {
+    function switchView(id) {
+      document.querySelectorAll('main').forEach(m => m.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function fmt(num, pct=false) {
+      if(isNaN(num)) return '--';
+      let str = parseFloat(num).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+      return pct ? str + '%' : str;
+    }
+
+    function colorize(num) {
+      const v = parseFloat(num);
+      return v > 0 ? `class="num up"` : (v < 0 ? `class="num down"` : `class="num"`);
+    }
+
+    // Main Engine
+    async function bootTerminal() {
       try {
-        const [resM, resG] = await Promise.all([
-          fetch(`${API_MARKET}?sheet=all`).then(r => r.json()),
-          fetch(`${API_GLOBAL}`).then(r => r.json())
-        ]);
-        sysData = resM; globalData = resG;
+        const [rM, rG] = await Promise.all([ fetch(`${API_MARKET}?sheet=all`).then(r=>r.json()), fetch(API_GLOBAL).then(r=>r.json()) ]);
+        sys = rM; glob = rG;
         
-        document.getElementById('loader-overlay').style.display = 'none';
-        buildDashboards();
-        if (currentUser) { document.getElementById('user-display-name').innerText = "Eric Koome (Logged In)"; fetchPortfolio(); }
-      } catch (err) {
-        document.getElementById('loader-overlay').innerHTML = `<p class="text-red-500 font-bold">System Boot Failure. Ensure API URLs are correct.</p>`;
-      }
+        // KPIs
+        if(sys.global_assets) {
+          const gold = sys.global_assets.find(a=>a.symbol==="GC=F"), btc = sys.global_assets.find(a=>a.symbol==="BTC-USD");
+          if(gold) document.getElementById('kpi-gold').innerText = fmt(gold.price);
+          if(btc) document.getElementById('kpi-btc').innerText = fmt(btc.price);
+        }
+        if(sys.stats) {
+          const nse = sys.stats.find(a=>a.name==="NSE ALL SHARE INDEX");
+          if(nse) document.getElementById('kpi-nse').innerText = fmt(nse.value);
+        }
+
+        // Kenya Table
+        if(sys.tickers) {
+          const sorted = [...sys.tickers].sort((a,b)=>parseFloat(b["%_change"]||0)-parseFloat(a["%_change"]||0));
+          document.getElementById('tbl-kenya-body').innerHTML = sorted.map(t => {
+            const chg = parseFloat(t["%_change"]||0)*100;
+            return `<tr><td>${t.symbol}</td><td class="num">${fmt(t["last_price_(kshs)"])}</td><td ${colorize(chg)}>${chg>0?'+':''}${fmt(chg,true)}</td></tr>`;
+          }).join('');
+        }
+
+        renderGlobal("usa");
+        if(user) { document.getElementById('port-user-label').innerText = user; loadPortfolio(); }
+
+      } catch(e) { document.getElementById('kpi-status').innerText = "ERR"; document.getElementById('kpi-status').style.color = "var(--color-down)"; }
     }
 
-    function buildDashboards() {
-      // 1. Landing Highlights
-      if(sysData.global_assets) {
-        const gold = sysData.global_assets.find(a => a.symbol === "GC=F");
-        const btc = sysData.global_assets.find(a => a.symbol === "BTC-USD");
-        if(gold) document.getElementById('dash-gold').innerText = `$${parseFloat(gold.price).toLocaleString()}`;
-        if(btc) document.getElementById('dash-btc').innerText = `$${parseFloat(btc.price).toLocaleString()}`;
-      }
-      if(sysData.stats) {
-        const nseInfo = sysData.stats.find(a => a.metric === "NSE ALL SHARE INDEX" || a.name === "NSE ALL SHARE INDEX");
-        if(nseInfo) document.getElementById('dash-nse').innerText = parseFloat(nseInfo.value).toFixed(2);
-      }
-
-      // 2. Kenyan Market
-      if(sysData.tickers) {
-        let tHtml = '', mHtml = '';
-        const sorted = [...sysData.tickers].sort((a,b) => parseFloat(b["%_change"]||0) - parseFloat(a["%_change"]||0));
-        sysData.tickers.forEach(t => {
-          const chg = parseFloat(t["%_change"]||0);
-          const cColor = chg > 0 ? 'text-green-500' : (chg < 0 ? 'text-red-500' : 'text-slate-500');
-          tHtml += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50"><td class="py-3 px-4 font-bold text-brand">${t.symbol}</td><td class="py-3 px-4">${parseFloat(t["last_price_(kshs)"]||0).toFixed(2)}</td><td class="py-3 px-4 font-bold ${cColor}">${chg>0?'+':''}${(chg*100).toFixed(2)}%</td></tr>`;
-        });
-        document.getElementById('kenyan-table-body').innerHTML = tHtml;
-
-        sorted.slice(0,4).forEach(t => {
-          mHtml += `<div class="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700"><div><p class="font-bold">${t.symbol}</p><p class="text-xs text-slate-500">Top Gainer</p></div><div class="text-right"><p class="font-bold text-green-500">+${(parseFloat(t["%_change"]||0)*100).toFixed(2)}%</p></div></div>`;
-        });
-        document.getElementById('kenyan-movers').innerHTML = mHtml;
-      }
-      
-      // Ticker Tape
-      let tape = '';
-      (sysData.global_assets || []).slice(0,10).forEach(a => tape += `<span class="mx-6"><span class="text-brand font-bold">${a.symbol}</span> $${parseFloat(a.price).toFixed(2)}</span>`);
-      document.getElementById('ticker-content').innerHTML = tape + tape;
-
-      // 3. Global Macro
-      renderGlobalEquities("usa");
-      if(sysData.global_assets) {
-        let gHtml = '';
-        sysData.global_assets.slice(0, 8).forEach(a => {
-          const chg = parseFloat(a["%_change"]||0);
-          gHtml += `<div class="glass-card p-5 rounded-xl border-l-4 ${chg > 0 ? 'border-green-500' : 'border-red-500'}"><p class="text-xs text-slate-500 font-semibold tracking-wider uppercase">${a.asset_class||'Asset'}</p><h4 class="text-lg font-bold mt-1">${a.symbol}</h4><div class="flex justify-between items-end mt-2"><span class="text-xl font-medium">$${parseFloat(a.price).toLocaleString()}</span><span class="text-sm font-bold ${chg > 0 ? 'text-green-500' : 'text-red-500'}">${(chg * 100).toFixed(2)}%</span></div></div>`;
-        });
-        document.getElementById('global-asset-grid').innerHTML = gHtml;
-      }
-
-      // 4. News
-      loadRSSFeeds();
-    }
-
-    function renderGlobalEquities(region) {
-      const data = globalData[region];
-      if(!data || data.length === 0) return;
+    // Global
+    function renderGlobal(reg) {
+      const data = glob[reg]; if(!data || !data.length) return;
       const keys = Object.keys(data[0]).filter(k => !k.includes('_'));
-      document.getElementById('global-thead').innerHTML = keys.map(k => `<th class="py-3 px-4 font-medium uppercase tracking-wider">${k.replace(/_/g, ' ')}</th>`).join('');
-      document.getElementById('global-tbody').innerHTML = data.slice(0,50).map(row => {
-        return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">` + keys.map(k => {
-          let val = row[k];
-          if(k.includes('change')) {
-            const num = parseFloat(val||0);
-            return `<td class="py-3 px-4 font-bold ${num>0?'text-green-500':(num<0?'text-red-500':'text-slate-500')}">${val}</td>`;
-          }
-          if(k === 'ticker') return `<td class="py-3 px-4 font-bold text-brand">${val}</td>`;
-          return `<td class="py-3 px-4">${val}</td>`;
-        }).join('') + `</tr>`;
-      }).join('');
+      document.getElementById('tbl-global-head').innerHTML = `<tr>${keys.map(k=>`<th>${k}</th>`).join('')}</tr>`;
+      document.getElementById('tbl-global-body').innerHTML = data.slice(0,100).map(r => `<tr>${keys.map(k => {
+        let v = r[k];
+        if(k.includes('change')) return `<td ${colorize(v)}>${v}</td>`;
+        if(!isNaN(v) && v !== '') return `<td class="num">${v}</td>`;
+        return `<td>${v}</td>`;
+      }).join('')}</tr>`).join('');
     }
 
-    // --- PORTFOLIO ENGINE ---
-    function openAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
-    async function execLogin() {
-      const u = document.getElementById('auth-user').value, p = document.getElementById('auth-pass').value;
-      const msg = document.getElementById('auth-msg'); msg.classList.add('hidden');
+    // Portfolio
+    async function execAuth() {
+      const u = document.getElementById('auth-u').value, p = document.getElementById('auth-p').value, m = document.getElementById('auth-msg');
       try {
-        const res = await fetch(API_PORTFOLIO, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) }).then(r=>r.json());
-        if(res.status === "success") {
-          currentUser = u; localStorage.setItem("auth_user", u);
-          document.getElementById('auth-modal').style.display = 'none';
-          document.getElementById('user-display-name').innerText = "Eric Koome (Logged In)";
-          fetchPortfolio(); switchTab('portfolio');
-        } else { msg.innerText = res.message; msg.classList.remove('hidden'); }
-      } catch(e) { msg.innerText = "Connection Failed."; msg.classList.remove('hidden'); }
+        const res = await fetch(API_PORTFOLIO, { method:"POST", body:JSON.stringify({action:"login", username:u, password:p}) }).then(r=>r.json());
+        if(res.status === "success") { user=u; localStorage.setItem("pf_user",u); document.getElementById('auth-modal').style.display='none'; document.getElementById('port-user-label').innerText = u; loadPortfolio(); }
+        else { m.innerText = res.message; m.style.display='block'; }
+      } catch(e) { m.innerText = "API ERR"; m.style.display='block'; }
     }
 
-    async function fetchPortfolio() {
+    async function loadPortfolio() {
+      if(!user) return;
       try {
-        const res = await fetch(API_PORTFOLIO, { method: "POST", body: JSON.stringify({ action: "get_portfolio", username: currentUser }) }).then(r=>r.json());
-        if(res.status === "success") { portfolioHistory = res.history; sentimentData = res.sentiment; renderPortfolio(); }
+        const res = await fetch(API_PORTFOLIO, { method:"POST", body:JSON.stringify({action:"get_portfolio", username:user}) }).then(r=>r.json());
+        if(res.status === "success") { portHistory = res.history; portSent = res.sentiment; calcPort(); }
       } catch(e) {}
     }
 
-    function renderPortfolio() {
-      let holdings = {}, totInv = 0, totCur = 0;
-      portfolioHistory.forEach(r => {
-        if(!holdings[r.ticker]) holdings[r.ticker] = { shares: 0, cost: 0 };
-        if(r.type === "BOUGHT") { holdings[r.ticker].shares += r.shares; holdings[r.ticker].cost += r.total; }
-        else if(r.type === "SOLD" && holdings[r.ticker].shares > 0) {
-          const avg = holdings[r.ticker].cost / holdings[r.ticker].shares;
-          holdings[r.ticker].shares -= r.shares; holdings[r.ticker].cost = holdings[r.ticker].shares * avg;
-        }
+    function calcPort() {
+      let h = {}, tInv = 0, tCur = 0;
+      portHistory.forEach(r => {
+        if(!h[r.ticker]) h[r.ticker] = { sh:0, cost:0 };
+        if(r.type === "BOUGHT") { h[r.ticker].sh += r.shares; h[r.ticker].cost += r.total; }
+        else if(r.type === "SOLD" && h[r.ticker].sh > 0) { const avg = h[r.ticker].cost / h[r.ticker].sh; h[r.ticker].sh -= r.shares; h[r.ticker].cost = h[r.ticker].sh * avg; }
       });
 
-      let tbody = '', colors = ['#D4AF37','#3b82f6','#10b981','#ef4444','#8b5cf6']; let cIdx = 0;
-      let allocBar = '', allocLeg = '';
-
-      Object.keys(holdings).forEach(k => {
-        const sh = holdings[k].shares; if(sh <= 0) return;
-        const avg = holdings[k].cost / sh;
+      let tbody = '';
+      Object.keys(h).forEach(k => {
+        if(h[k].sh <= 0) return;
+        const avg = h[k].cost / h[k].sh;
+        let ltp = 0; if(sys.tickers) { const tk = sys.tickers.find(x=>x.symbol===k); if(tk) ltp = parseFloat(tk["last_price_(kshs)"]||0); }
+        const curV = h[k].sh * ltp, pnl = curV - h[k].cost, pnlP = (pnl/h[k].cost)*100;
+        tInv += h[k].cost; tCur += curV;
+        const ai = portSent[k] ? portSent[k].label : 'NEUTRAL';
         
-        let ltp = 0;
-        if(sysData.tickers) { const tk = sysData.tickers.find(x => x.symbol === k); if(tk) ltp = parseFloat(tk["last_price_(kshs)"]||0); }
-        const curV = sh * ltp, pnl = curV - holdings[k].cost, pnlPct = (pnl/holdings[k].cost)*100;
-        totInv += holdings[k].cost; totCur += curV;
-
-        const ai = sentimentData[k];
-        const aiBadge = ai ? (ai.label==='Bullish'?`<span class="px-2 py-1 bg-green-500/20 text-green-500 rounded text-xs">🟢 BULL</span>` : (ai.label==='Bearish'?`<span class="px-2 py-1 bg-red-500/20 text-red-500 rounded text-xs">🔴 BEAR</span>`:`<span class="px-2 py-1 bg-slate-500/20 text-slate-500 rounded text-xs">⚪ NEUT</span>`)) : `<span class="px-2 py-1 bg-slate-500/20 text-slate-500 rounded text-xs">⚪ NEUT</span>`;
-
-        tbody += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50"><td class="py-3 px-4 font-bold text-brand">${k}</td><td class="py-3 px-4">${sh.toFixed(2)}</td><td class="py-3 px-4">${avg.toFixed(2)}</td><td class="py-3 px-4">${ltp.toFixed(2)}</td><td class="py-3 px-4 text-right font-bold ${pnl>=0?'text-green-500':'text-red-500'}">${pnl>=0?'+':''}${pnl.toLocaleString('en-KE',{maximumFractionDigits:2})} (${pnlPct.toFixed(2)}%)</td><td class="py-3 px-4 text-center">${aiBadge}</td></tr>`;
-        
-        const col = colors[cIdx%colors.length]; cIdx++;
-        allocLeg += `<div class="flex items-center"><span class="w-3 h-3 rounded-full mr-2" style="background:${col}"></span> ${k}</div>`;
-        holdings[k].curV = curV; holdings[k].color = col;
+        tbody += `<tr><td>${k}</td><td class="num">${fmt(h[k].sh)}</td><td class="num">${fmt(avg)}</td><td class="num">${fmt(ltp)}</td><td ${colorize(pnl)}>${fmt(pnl)}</td><td>${ai.toUpperCase()}</td></tr>`;
       });
 
-      document.getElementById('portfolio-holdings').innerHTML = tbody || `<tr><td colspan="6" class="py-8 text-center text-slate-500">No active positions.</td></tr>`;
-      
-      const netPnl = totCur - totInv, netPct = totInv>0 ? (netPnl/totInv)*100 : 0;
-      document.getElementById('port-total').innerText = `KES ${totCur.toLocaleString('en-KE',{maximumFractionDigits:2})}`;
-      const pnlEl = document.getElementById('port-pnl');
-      pnlEl.innerText = `${netPnl>=0?'+':''}${netPct.toFixed(2)}%`;
-      pnlEl.className = `px-2 py-1 rounded text-xs font-bold border ${netPnl>=0?'bg-green-500/20 text-green-400 border-green-500/50':'bg-red-500/20 text-red-400 border-red-500/50'}`;
-
-      Object.keys(holdings).forEach(k => {
-        if(holdings[k].shares > 0) {
-          const w = (holdings[k].curV / totCur) * 100;
-          allocBar += `<div class="h-full" style="width:${w}%; background:${holdings[k].color}"></div>`;
-        }
-      });
-      document.getElementById('port-allocation-bar').innerHTML = allocBar;
-      document.getElementById('port-allocation-legend').innerHTML = allocLeg;
+      document.getElementById('tbl-portfolio-body').innerHTML = tbody || `<tr><td colspan="6">NO POSITIONS</td></tr>`;
+      document.getElementById('port-val').innerText = fmt(tCur);
+      const net = tCur - tInv;
+      const pel = document.getElementById('port-pnl');
+      pel.innerText = `${net>0?'+':''}${fmt(net)}`;
+      pel.style.color = net >= 0 ? "var(--color-up)" : "var(--color-down)";
     }
 
     async function execTrade() {
-      const payload = { action: "update_portfolio", username: currentUser, type: document.getElementById('trade-type').value, ticker: document.getElementById('trade-ticker').value, shares: document.getElementById('trade-qty').value, price: document.getElementById('trade-px').value, date: document.getElementById('trade-date').value, broker: "AIB-AXYS Africa" };
-      const msg = document.getElementById('trade-msg'); msg.classList.add('hidden');
+      const p = { action:"update_portfolio", username:user, type:document.getElementById('t-type').value, ticker:document.getElementById('t-tick').value, shares:document.getElementById('t-qty').value, price:document.getElementById('t-px').value, date:document.getElementById('t-date').value, broker:"AIB-AXYS Africa" };
+      const m = document.getElementById('trade-msg');
       try {
-        const res = await fetch(API_PORTFOLIO, { method: "POST", body: JSON.stringify(payload) }).then(r=>r.json());
-        if(res.status === "success") { document.getElementById('trade-modal').style.display='none'; fetchPortfolio(); } 
-        else { msg.innerText = res.message; msg.classList.remove('hidden'); }
-      } catch(e) { msg.innerText = "Error logging trade."; msg.classList.remove('hidden'); }
+        const res = await fetch(API_PORTFOLIO, { method:"POST", body:JSON.stringify(p) }).then(r=>r.json());
+        if(res.status==="success") { document.getElementById('trade-modal').style.display='none'; loadPortfolio(); } else { m.innerText = res.message; m.style.display='block'; }
+      } catch(e) { m.innerText = "API ERR"; m.style.display='block'; }
     }
 
-    // --- RSS NEWS ---
-    async function loadRSSFeeds() {
-      try {
-        const res = await fetch("https://api.rss2json.com/v1/api.json?rss_url=https://www.economist.com/finance-and-economics/rss.xml").then(r=>r.json());
-        let html = '';
-        res.items.slice(0,9).forEach(i => {
-          html += `<a href="${i.link}" target="_blank" class="glass-card p-6 rounded-2xl block hover:border-brand transition"><h4 class="font-bold text-lg mb-2 leading-snug">${i.title}</h4><p class="text-sm text-slate-500 mb-4 line-clamp-3">${i.description.replace(/<[^>]+>/g, '')}</p><div class="flex justify-between items-center text-xs text-brand font-bold uppercase tracking-wide"><span>The Economist</span><span>Read Article →</span></div></a>`;
-        });
-        document.getElementById('news-grid').innerHTML = html;
-      } catch(e) { document.getElementById('news-grid').innerHTML = '<p class="text-slate-500">Intelligence feed unavailable.</p>'; }
-    }
-
-    bootSystem();
+    bootTerminal();
   </script>
 </body>
 </html>
