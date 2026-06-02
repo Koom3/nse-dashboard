@@ -3,317 +3,628 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quantis Terminal</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <title>Quantis | Institutional Terminal</title>
   <style>
-    /* BESPOKE TERMINAL AESTHETIC - NO AI SAAS ELEMENTS */
+    /* =========================================================
+       THEME & VARIABLES
+       ========================================================= */
     :root {
-      --bg-base: #f0f0f0; --bg-panel: #ffffff; --text-main: #111111; --text-muted: #555555;
-      --border: #cccccc; --border-highlight: #0000ff;
-      --color-up: #008800; --color-down: #dd0000;
+      --bg-base: #f4f5f8;
+      --bg-panel: #ffffff;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --border-hover: #cbd5e1;
+      --gold: #D4AF37;
+      --gold-hover: #c4a02e;
+      --up: #059669;
+      --down: #dc2626;
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --radius: 6px;
     }
+
     [data-theme="dark"] {
-      --bg-base: #000000; --bg-panel: #0a0a0a; --text-main: #e0e0e0; --text-muted: #888888;
-      --border: #333333; --border-highlight: #ffcc00;
-      --color-up: #00ff00; --color-down: #ff3333;
+      --bg-base: #0f1115;
+      --bg-panel: #16191f;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #262a33;
+      --border-hover: #333842;
+      --up: #10b981;
+      --down: #ef4444;
+      --shadow-sm: 0 1px 2px 0 rgba(0,0,0, 0.5);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0, 0.4);
+      --shadow-modal: 0 25px 50px -12px rgba(0,0,0, 0.8);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-    body { background: var(--bg-base); color: var(--text-main); font-size: 11px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    /* =========================================================
+       BASE & RESET
+       ========================================================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg-base); color: var(--text-main); font-family: var(--font-ui); font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background 0.3s ease, color 0.3s ease; }
+    
+    /* Animations */
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Top Bar */
-    header { background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; padding: 4px 12px; align-items: center; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
-    header .clock { color: var(--border-highlight); }
-    header button { background: transparent; color: var(--text-main); border: 1px solid var(--border); cursor: pointer; padding: 2px 8px; font-family: inherit; font-size: 11px; }
-    header button:hover { border-color: var(--border-highlight); color: var(--border-highlight); }
+    /* =========================================================
+       HEADER & NAVIGATION
+       ========================================================= */
+    header { background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 56px; flex-shrink: 0; z-index: 10; }
+    .brand { font-size: 16px; font-weight: 800; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+    .brand span { color: var(--gold); }
+    .clock { font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; font-weight: 500; }
+    .header-actions { display: flex; gap: 12px; }
+    
+    button { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 6px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; outline: none; }
+    button:hover { border-color: var(--text-muted); background: var(--border); }
+    button.primary { background: var(--gold); border-color: var(--gold); color: #000; }
+    button.primary:hover { background: var(--gold-hover); border-color: var(--gold-hover); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 
-    /* Tabs */
-    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-panel); }
-    .tab { padding: 8px 16px; cursor: pointer; border-right: 1px solid var(--border); font-weight: bold; text-transform: uppercase; color: var(--text-muted); }
+    .tabs { display: flex; background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 0 24px; flex-shrink: 0; }
+    .tab { padding: 14px 20px; cursor: pointer; font-weight: 600; font-size: 12px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid transparent; transition: all 0.2s ease; letter-spacing: 0.5px; }
     .tab:hover { color: var(--text-main); }
-    .tab.active { color: var(--border-highlight); border-bottom: 2px solid var(--border-highlight); margin-bottom: -1px; }
+    .tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
 
-    /* Main Grid */
-    main { flex: 1; overflow-y: auto; padding: 8px; display: none; }
-    main.active { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); align-content: start; }
+    /* =========================================================
+       MAIN LAYOUT & PANELS
+       ========================================================= */
+    .view-container { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; display: none; background: var(--bg-base); }
+    .view-container.active { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); align-content: start; animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-    /* Panels */
-    .panel { background: var(--bg-panel); border: 1px solid var(--border); display: flex; flex-direction: column; }
-    .panel-header { padding: 4px 8px; border-bottom: 1px solid var(--border); font-weight: bold; text-transform: uppercase; background: var(--border); color: var(--bg-base); }
-    [data-theme="dark"] .panel-header { background: #222; color: #fff; }
-    .panel-body { padding: 8px; overflow-x: auto; }
+    .panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: border-color 0.3s ease, box-shadow 0.3s ease; overflow: hidden; }
+    .panel:hover { border-color: var(--border-hover); box-shadow: var(--shadow-md); }
+    .panel-header { padding: 14px 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.02); }
+    [data-theme="dark"] .panel-header { background: rgba(255,255,255,0.01); }
+    .panel-body { padding: 0; overflow-x: auto; flex: 1; }
+    .panel-body.padded { padding: 20px; }
 
-    /* Tables (Strict Tabular) */
-    table { width: 100%; border-collapse: collapse; font-family: 'Consolas', 'Courier New', Courier, monospace; }
-    th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { color: var(--text-muted); text-transform: uppercase; font-weight: normal; font-size: 10px; cursor: pointer; }
-    tr:hover td { background: var(--border); }
-    [data-theme="dark"] tr:hover td { background: #1a1a1a; }
-    .num { text-align: right; }
-    .up { color: var(--color-up); } .down { color: var(--color-down); }
+    /* =========================================================
+       KPIS & DATA COMPONENTS
+       ========================================================= */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }
+    .kpi { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-base); transition: transform 0.2s ease; }
+    .kpi:hover { transform: translateY(-2px); border-color: var(--gold); }
+    .kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .kpi-val { font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--text-main); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th { text-align: left; padding: 12px 20px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--border); background: var(--bg-panel); position: sticky; top: 0; z-index: 2; white-space: nowrap; }
+    td { padding: 10px 20px; border-bottom: 1px solid var(--border); font-size: 13px; white-space: nowrap; transition: background 0.15s ease; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-base); }
+    
+    .num { text-align: right; font-family: var(--font-mono); }
+    .up { color: var(--up) !important; font-weight: 500; } 
+    .down { color: var(--down) !important; font-weight: 500; }
+    .sym { font-weight: 700; color: var(--gold); }
 
     /* Form Elements */
-    input, select { background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 4px; font-family: inherit; font-size: 11px; width: 100%; outline: none; margin-bottom: 8px; }
-    input:focus, select:focus { border-color: var(--border-highlight); }
-    .btn-exec { background: var(--border-highlight); color: var(--bg-base); border: none; padding: 6px; width: 100%; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-    .btn-exec:hover { filter: brightness(1.2); }
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+    input, select { background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 10px 14px; border-radius: var(--radius); font-family: var(--font-ui); font-size: 13px; width: 100%; outline: none; transition: border-color 0.2s ease; }
+    input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.2); }
 
-    /* Modals */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 100; }
-    .modal-content { background: var(--bg-panel); border: 1px solid var(--border-highlight); padding: 16px; width: 300px; }
-    .modal-content h3 { margin-bottom: 12px; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
-    .close-btn { float: right; cursor: pointer; font-weight: bold; }
-
-    /* Data Highlights */
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .kpi { border: 1px solid var(--border); padding: 8px; }
-    .kpi .val { font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; font-weight: bold; margin-top: 4px; }
+    /* =========================================================
+       MODALS
+       ========================================================= */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
+    .modal-content { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; width: 100%; max-width: 400px; box-shadow: var(--shadow-modal); display: flex; flex-direction: column; animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h3 { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .modal-close { background: transparent; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; padding: 0; line-height: 1; }
+    .modal-close:hover { color: var(--text-main); background: transparent; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 20px; border-top: 1px solid var(--border); background: var(--bg-base); border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
   </style>
 </head>
 <body>
 
   <header>
-    <div>QUANTIS <span style="color:var(--text-muted)">// TERMINAL V17.1</span></div>
-    <div class="clock" id="sys-clock">SYNCING...</div>
-    <div>
-      <button onclick="document.getElementById('auth-modal').style.display='flex'">AUTH</button>
-      <button onclick="toggleTheme()">THEME</button>
-      <button onclick="bootTerminal()">REFRESH</button>
+    <div class="brand"><span>//</span> QUANTIS</div>
+    <div class="clock" id="sys-clock">Awaiting Sync...</div>
+    <div class="header-actions">
+      <button onclick="document.getElementById('auth-modal').style.display='flex'">Account / Auth</button>
+      <button onclick="toggleTheme()">Toggle Theme</button>
+      <button class="primary" onclick="bootTerminal()" id="btn-sync">Sync Data</button>
     </div>
   </header>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchView('view-market')">MARKET</div>
-    <div class="tab" onclick="switchView('view-global')">GLOBAL</div>
-    <div class="tab" onclick="switchView('view-portfolio')">PORTFOLIO</div>
+    <div class="tab active" onclick="switchView('view-market')">Domestic Market</div>
+    <div class="tab" onclick="switchView('view-global')">Global Macro</div>
+    <div class="tab" onclick="switchView('view-portfolio')">Portfolio Engine</div>
   </div>
 
-  <main id="view-market" class="active">
+  <main id="view-market" class="view-container active">
+    
     <div class="panel" style="grid-column: 1 / -1;">
-      <div class="panel-header">System Metrics</div>
-      <div class="panel-body kpi-grid">
-        <div class="kpi">NSE ALL SHARE<div class="val" id="kpi-nse">--</div></div>
-        <div class="kpi">XAU/USD<div class="val" id="kpi-gold">--</div></div>
-        <div class="kpi">BTC/USD<div class="val" id="kpi-btc">--</div></div>
-        <div class="kpi">SYS STATUS<div class="val" id="kpi-status" style="color:var(--color-up)">ONLINE</div></div>
+      <div class="panel-header">Terminal Telemetry</div>
+      <div class="panel-body padded kpi-grid">
+        <div class="kpi"><div class="kpi-label">NSE All Share</div><div class="kpi-val" id="kpi-nse">--</div></div>
+        <div class="kpi"><div class="kpi-label">Gold (XAU/USD)</div><div class="kpi-val" id="kpi-gold">--</div></div>
+        <div class="kpi"><div class="kpi-label">Bitcoin (BTC)</div><div class="kpi-val" id="kpi-btc">--</div></div>
+        <div class="kpi"><div class="kpi-label">Data Node</div><div class="kpi-val up" id="kpi-status">STANDBY</div></div>
       </div>
     </div>
     
     <div class="panel" style="grid-column: 1 / -1;">
-      <div class="panel-header">Domestic Equities (Live)</div>
-      <div class="panel-body">
+      <div class="panel-header">Live Equities Feed (Nairobi Securities Exchange)</div>
+      <div class="panel-body" style="max-height: 60vh;">
         <table id="tbl-kenya">
-          <thead><tr><th>TICKER</th><th class="num">PRICE</th><th class="num">CHANGE (%)</th></tr></thead>
-          <tbody id="tbl-kenya-body"><tr><td colspan="3">Fetching...</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th class="num">Last Price (KES)</th>
+              <th class="num">Net Change</th>
+              <th class="num">Change %</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-kenya-body">
+            <tr><td colspan="4" style="text-align:center; padding: 30px; color:var(--text-muted);">Initializing data streams...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
+
   </main>
 
-  <main id="view-global">
+  <main id="view-global" class="view-container">
+    
     <div class="panel" style="grid-column: 1 / -1;">
-      <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <span>Macro Instruments</span>
-        <select id="global-region" onchange="renderGlobal(this.value)" style="width:auto; margin:0; padding:0 4px; font-size:10px;">
+      <div class="panel-header">
+        <span>Global Institutional Equities</span>
+        <select id="global-region" onchange="renderGlobal(this.value)" style="width: 200px; padding: 4px 8px; margin: 0;">
           <option value="usa">United States</option>
           <option value="united_kingdom">United Kingdom</option>
           <option value="japan">Japan</option>
-          <option value="mainland_china">China</option>
+          <option value="mainland_china">Mainland China</option>
+          <option value="south_africa">South Africa</option>
         </select>
       </div>
-      <div class="panel-body">
+      <div class="panel-body" style="max-height: 75vh;">
         <table id="tbl-global">
           <thead id="tbl-global-head"></thead>
-          <tbody id="tbl-global-body"><tr><td>Select region to load data.</td></tr></tbody>
+          <tbody id="tbl-global-body">
+            <tr><td style="text-align:center; padding: 30px; color:var(--text-muted);">Select a region to stream data.</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
+
   </main>
 
-  <main id="view-portfolio">
+  <main id="view-portfolio" class="view-container">
+    
     <div class="panel" style="grid-column: 1 / -1;">
-      <div class="panel-header">Portfolio Engine <span id="port-user-label" style="float:right; color:var(--border-highlight)">GUEST</span></div>
-      <div class="panel-body kpi-grid">
-        <div class="kpi">TOTAL VALUE<div class="val" id="port-val">0.00</div></div>
-        <div class="kpi">NET P&L<div class="val" id="port-pnl">0.00</div></div>
-        <div class="kpi">ACTIONS<button class="btn-exec" style="margin-top:4px" onclick="document.getElementById('trade-modal').style.display='flex'">LOG TRADE</button></div>
+      <div class="panel-header">
+        <span>Aggregated Positions</span>
+        <span id="port-user-label" style="color: var(--text-muted); font-family: var(--font-mono);">GUEST SESSION</span>
+      </div>
+      <div class="panel-body padded kpi-grid">
+        <div class="kpi"><div class="kpi-label">Gross Market Value</div><div class="kpi-val" id="port-val">KES 0.00</div></div>
+        <div class="kpi"><div class="kpi-label">Unrealized P&L</div><div class="kpi-val" id="port-pnl">KES 0.00</div></div>
+        <div class="kpi"><div class="kpi-label">Execution</div><button class="primary" style="margin-top:4px;" onclick="document.getElementById('trade-modal').style.display='flex'">Log Transaction</button></div>
       </div>
     </div>
 
     <div class="panel" style="grid-column: 1 / -1;">
       <div class="panel-header">Holdings Ledger</div>
-      <div class="panel-body">
+      <div class="panel-body" style="max-height: 55vh;">
         <table id="tbl-portfolio">
-          <thead><tr><th>ASSET</th><th class="num">QTY</th><th class="num">AVG COST</th><th class="num">LTP</th><th class="num">P&L</th><th>SIGNAL</th></tr></thead>
-          <tbody id="tbl-portfolio-body"><tr><td colspan="6">Requires Authentication.</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th class="num">Shares</th>
+              <th class="num">Avg Cost</th>
+              <th class="num">Current Price</th>
+              <th class="num">P&L (Value)</th>
+              <th class="num">P&L (%)</th>
+              <th style="text-align:center;">AI Sentiment</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-portfolio-body">
+            <tr><td colspan="7" style="text-align:center; padding: 30px; color:var(--text-muted);">Authenticate to view portfolio ledgers.</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
+
   </main>
 
-  <div id="auth-modal" class="modal">
+  <div id="auth-modal" class="modal-overlay">
     <div class="modal-content">
-      <span class="close-btn" onclick="document.getElementById('auth-modal').style.display='none'">[X]</span>
-      <h3>AUTHENTICATE</h3>
-      <input type="text" id="auth-u" placeholder="USERNAME">
-      <input type="password" id="auth-p" placeholder="PASSWORD">
-      <button class="btn-exec" onclick="execAuth()">LOGIN</button>
-      <div id="auth-msg" style="color:var(--color-down); margin-top:8px; display:none;"></div>
+      <div class="modal-header">
+        <h3>System Authentication</h3>
+        <button class="modal-close" onclick="document.getElementById('auth-modal').style.display='none'">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label>Username</label>
+          <input type="text" id="auth-u" placeholder="Enter Analyst ID">
+        </div>
+        <div class="input-group">
+          <label>Passcode</label>
+          <input type="password" id="auth-p" placeholder="••••••••">
+        </div>
+        <div id="auth-msg" style="color: var(--down); font-size: 12px; font-weight: 600; display: none; text-align: center;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="primary" style="width: 100%; padding: 12px;" onclick="execAuth()">Verify & Login</button>
+      </div>
     </div>
   </div>
 
-  <div id="trade-modal" class="modal">
+  <div id="trade-modal" class="modal-overlay">
     <div class="modal-content">
-      <span class="close-btn" onclick="document.getElementById('trade-modal').style.display='none'">[X]</span>
-      <h3>EXECUTE RECORD</h3>
-      <select id="t-type"><option value="BOUGHT">BUY</option><option value="SOLD">SELL</option></select>
-      <input type="text" id="t-tick" placeholder="TICKER (e.g. EQTY)">
-      <input type="number" id="t-qty" placeholder="QUANTITY">
-      <input type="number" id="t-px" placeholder="PRICE">
-      <input type="date" id="t-date">
-      <button class="btn-exec" onclick="execTrade()">SUBMIT</button>
-      <div id="trade-msg" style="color:var(--color-down); margin-top:8px; display:none;"></div>
+      <div class="modal-header">
+        <h3>Execute Trade Record</h3>
+        <button class="modal-close" onclick="document.getElementById('trade-modal').style.display='none'">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; gap:12px;">
+          <div class="input-group" style="flex:1;">
+            <label>Action</label>
+            <select id="t-type"><option value="BOUGHT">Buy (Long)</option><option value="SOLD">Sell (Short/Close)</option></select>
+          </div>
+          <div class="input-group" style="flex:1;">
+            <label>Ticker</label>
+            <input type="text" id="t-tick" placeholder="e.g. EQTY" style="text-transform: uppercase;">
+          </div>
+        </div>
+        <div style="display:flex; gap:12px;">
+          <div class="input-group" style="flex:1;">
+            <label>Volume</label>
+            <input type="number" id="t-qty" placeholder="Shares">
+          </div>
+          <div class="input-group" style="flex:1;">
+            <label>Execution Price</label>
+            <input type="number" id="t-px" placeholder="Price">
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Value Date</label>
+          <input type="date" id="t-date">
+        </div>
+        <div id="trade-msg" style="color: var(--down); font-size: 12px; font-weight: 600; display: none; text-align: center;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="primary" style="width: 100%; padding: 12px;" onclick="execTrade()">Commit Transaction</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // --------------------------------------------------------
-    // API URLS - REPLACE THESE
-    // --------------------------------------------------------
-    const API_MARKET = "YOUR_MARKET_DATA_URL_HERE";
-    const API_GLOBAL = "YOUR_GLOBAL_EQUITY_URL_HERE";
-    const API_PORTFOLIO = "YOUR_PERSONAL_CREDENTIALS_URL_HERE";
+    /* =========================================================
+       API CONFIGURATION - MUST REPLACE WITH YOUR WEB APP URLS
+       ========================================================= */
+    const API_MARKET = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
+    const API_GLOBAL = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec";
+    const API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
 
-    let sys = {}, glob = {}, portHistory = [], portSent = {}, user = localStorage.getItem("pf_user");
+    /* =========================================================
+       STATE MANAGEMENT
+       ========================================================= */
+    let sys = {}, glob = {}, portHistory = [], portSent = {};
+    let user = localStorage.getItem("pf_user");
 
-    // Utilities
+    /* =========================================================
+       UI UTILITIES
+       ========================================================= */
     document.getElementById('t-date').valueAsDate = new Date();
-    setInterval(() => { document.getElementById('sys-clock').innerText = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC'; }, 1000);
+
+    setInterval(() => { 
+      document.getElementById('sys-clock').innerText = new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC'; 
+    }, 1000);
 
     function toggleTheme() {
       const html = document.documentElement;
-      html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+      const currentTheme = html.getAttribute('data-theme');
+      html.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
     }
 
     function switchView(id) {
-      document.querySelectorAll('main').forEach(m => m.classList.remove('active'));
+      document.querySelectorAll('.view-container').forEach(m => m.classList.remove('active'));
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
+      
+      const targetView = document.getElementById(id);
+      targetView.classList.add('active');
       event.target.classList.add('active');
     }
 
-    function fmt(num, pct=false) {
-      if(isNaN(num)) return '--';
-      let str = parseFloat(num).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-      return pct ? str + '%' : str;
+    function fmt(num, decimals = 2) {
+      if (num === null || num === undefined || isNaN(num)) return '--';
+      return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
     }
 
     function colorize(num) {
       const v = parseFloat(num);
+      if (isNaN(v)) return '';
       return v > 0 ? `class="num up"` : (v < 0 ? `class="num down"` : `class="num"`);
     }
 
-    // Main Engine
+    function getSignalBadge(label) {
+      const state = (label || 'NEUTRAL').toUpperCase();
+      if (state === 'BULLISH') return `<span style="padding:4px 8px; border-radius:4px; background:rgba(16,185,129,0.15); color:var(--up); font-size:10px; font-weight:700;">BULL</span>`;
+      if (state === 'BEARISH') return `<span style="padding:4px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:var(--down); font-size:10px; font-weight:700;">BEAR</span>`;
+      return `<span style="padding:4px 8px; border-radius:4px; background:var(--border); color:var(--text-muted); font-size:10px; font-weight:700;">NEUT</span>`;
+    }
+
+    /* =========================================================
+       CORE ENGINE
+       ========================================================= */
     async function bootTerminal() {
+      const btn = document.getElementById('btn-sync');
+      const statusLabel = document.getElementById('kpi-status');
+      
+      btn.innerText = "Syncing...";
+      statusLabel.innerText = "FETCHING";
+      statusLabel.className = "kpi-val";
+
       try {
-        const [rM, rG] = await Promise.all([ fetch(`${API_MARKET}?sheet=all`).then(r=>r.json()), fetch(API_GLOBAL).then(r=>r.json()) ]);
-        sys = rM; glob = rG;
+        const [rM, rG] = await Promise.all([
+          fetch(`${API_MARKET}?sheet=all`).then(r => r.json()),
+          fetch(API_GLOBAL).then(r => r.json())
+        ]);
         
-        // KPIs
-        if(sys.global_assets) {
-          const gold = sys.global_assets.find(a=>a.symbol==="GC=F"), btc = sys.global_assets.find(a=>a.symbol==="BTC-USD");
-          if(gold) document.getElementById('kpi-gold').innerText = fmt(gold.price);
-          if(btc) document.getElementById('kpi-btc').innerText = fmt(btc.price);
-        }
-        if(sys.stats) {
-          const nse = sys.stats.find(a=>a.name==="NSE ALL SHARE INDEX");
-          if(nse) document.getElementById('kpi-nse').innerText = fmt(nse.value);
-        }
-
-        // Kenya Table
-        if(sys.tickers) {
-          const sorted = [...sys.tickers].sort((a,b)=>parseFloat(b["%_change"]||0)-parseFloat(a["%_change"]||0));
-          document.getElementById('tbl-kenya-body').innerHTML = sorted.map(t => {
-            const chg = parseFloat(t["%_change"]||0)*100;
-            return `<tr><td>${t.symbol}</td><td class="num">${fmt(t["last_price_(kshs)"])}</td><td ${colorize(chg)}>${chg>0?'+':''}${fmt(chg,true)}</td></tr>`;
-          }).join('');
+        sys = rM; 
+        glob = rG;
+        
+        populateMarketData();
+        renderGlobal(document.getElementById('global-region').value);
+        
+        statusLabel.innerText = "ONLINE";
+        statusLabel.className = "kpi-val up";
+        
+        if (user) {
+          document.getElementById('port-user-label').innerText = `ID: ${user.toUpperCase()}`;
+          await loadPortfolio();
         }
 
-        renderGlobal("usa");
-        if(user) { document.getElementById('port-user-label').innerText = user; loadPortfolio(); }
-
-      } catch(e) { document.getElementById('kpi-status').innerText = "ERR"; document.getElementById('kpi-status').style.color = "var(--color-down)"; }
+      } catch (e) {
+        statusLabel.innerText = "OFFLINE (ERR)";
+        statusLabel.className = "kpi-val down";
+        console.error("Boot sequence failed:", e);
+      } finally {
+        btn.innerText = "Sync Data";
+      }
     }
 
-    // Global
+    function populateMarketData() {
+      // Metrics
+      if (sys.global_assets) {
+        const gold = sys.global_assets.find(a => a.symbol === "GC=F");
+        const btc = sys.global_assets.find(a => a.symbol === "BTC-USD");
+        if (gold) document.getElementById('kpi-gold').innerText = `$${fmt(gold.price)}`;
+        if (btc) document.getElementById('kpi-btc').innerText = `$${fmt(btc.price, 0)}`;
+      }
+      
+      if (sys.stats) {
+        const nse = sys.stats.find(a => a.name === "NSE ALL SHARE INDEX");
+        if (nse) document.getElementById('kpi-nse').innerText = fmt(nse.value);
+      }
+
+      // Domestic Table
+      if (sys.tickers) {
+        const sorted = [...sys.tickers].sort((a, b) => parseFloat(b["%_change"] || 0) - parseFloat(a["%_change"] || 0));
+        
+        const rowsHtml = sorted.map(t => {
+          const chg = (parseFloat(t["%_change"] || 0) * 100);
+          const px = parseFloat(t["last_price_(kshs)"] || 0);
+          const chgAbs = parseFloat(t["change"] || 0);
+          
+          return `
+            <tr>
+              <td class="sym">${t.symbol}</td>
+              <td class="num">${fmt(px)}</td>
+              <td ${colorize(chgAbs)}>${chgAbs > 0 ? '+' : ''}${fmt(chgAbs)}</td>
+              <td ${colorize(chg)}>${chg > 0 ? '+' : ''}${fmt(chg)}%</td>
+            </tr>
+          `;
+        }).join('');
+        
+        document.getElementById('tbl-kenya-body').innerHTML = rowsHtml || `<tr><td colspan="4">No Data</td></tr>`;
+      }
+    }
+
+    /* =========================================================
+       GLOBAL MACRO
+       ========================================================= */
     function renderGlobal(reg) {
-      const data = glob[reg]; if(!data || !data.length) return;
+      const data = glob[reg]; 
+      if (!data || !data.length) return;
+      
       const keys = Object.keys(data[0]).filter(k => !k.includes('_'));
-      document.getElementById('tbl-global-head').innerHTML = `<tr>${keys.map(k=>`<th>${k}</th>`).join('')}</tr>`;
-      document.getElementById('tbl-global-body').innerHTML = data.slice(0,100).map(r => `<tr>${keys.map(k => {
-        let v = r[k];
-        if(k.includes('change')) return `<td ${colorize(v)}>${v}</td>`;
-        if(!isNaN(v) && v !== '') return `<td class="num">${v}</td>`;
-        return `<td>${v}</td>`;
-      }).join('')}</tr>`).join('');
+      
+      document.getElementById('tbl-global-head').innerHTML = `
+        <tr>${keys.map(k => `<th>${k.replace(/([A-Z])/g, ' $1').trim()}</th>`).join('')}</tr>
+      `;
+      
+      document.getElementById('tbl-global-body').innerHTML = data.slice(0, 100).map(r => `
+        <tr>${keys.map(k => {
+          let v = r[k];
+          if (k.toLowerCase().includes('change')) return `<td ${colorize(v)}>${v}</td>`;
+          if (k.toLowerCase() === 'ticker') return `<td class="sym">${v}</td>`;
+          if (!isNaN(v) && v !== '') return `<td class="num">${v}</td>`;
+          return `<td>${v}</td>`;
+        }).join('')}</tr>
+      `).join('');
     }
 
-    // Portfolio
+    /* =========================================================
+       PORTFOLIO ENGINE
+       ========================================================= */
     async function execAuth() {
-      const u = document.getElementById('auth-u').value, p = document.getElementById('auth-p').value, m = document.getElementById('auth-msg');
+      const u = document.getElementById('auth-u').value.trim();
+      const p = document.getElementById('auth-p').value;
+      const m = document.getElementById('auth-msg');
+      
+      if (!u || !p) {
+        m.innerText = "Credentials required.";
+        m.style.display = 'block';
+        return;
+      }
+
       try {
-        const res = await fetch(API_PORTFOLIO, { method:"POST", body:JSON.stringify({action:"login", username:u, password:p}) }).then(r=>r.json());
-        if(res.status === "success") { user=u; localStorage.setItem("pf_user",u); document.getElementById('auth-modal').style.display='none'; document.getElementById('port-user-label').innerText = u; loadPortfolio(); }
-        else { m.innerText = res.message; m.style.display='block'; }
-      } catch(e) { m.innerText = "API ERR"; m.style.display='block'; }
+        const res = await fetch(API_PORTFOLIO, { 
+          method: "POST", 
+          body: JSON.stringify({ action: "login", username: u, password: p }) 
+        }).then(r => r.json());
+        
+        if (res.status === "success") { 
+          user = u; 
+          localStorage.setItem("pf_user", u); 
+          document.getElementById('auth-modal').style.display = 'none'; 
+          document.getElementById('port-user-label').innerText = `ID: ${u.toUpperCase()}`; 
+          
+          switchView('view-portfolio');
+          await loadPortfolio(); 
+        } else { 
+          m.innerText = res.message; 
+          m.style.display = 'block'; 
+        }
+      } catch(e) { 
+        m.innerText = "Authentication Node Offline."; 
+        m.style.display = 'block'; 
+      }
     }
 
     async function loadPortfolio() {
-      if(!user) return;
+      if (!user) return;
+      
+      document.getElementById('tbl-portfolio-body').innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px;">Synchronizing Ledgers...</td></tr>`;
+
       try {
-        const res = await fetch(API_PORTFOLIO, { method:"POST", body:JSON.stringify({action:"get_portfolio", username:user}) }).then(r=>r.json());
-        if(res.status === "success") { portHistory = res.history; portSent = res.sentiment; calcPort(); }
-      } catch(e) {}
+        const res = await fetch(API_PORTFOLIO, { 
+          method: "POST", 
+          body: JSON.stringify({ action: "get_portfolio", username: user }) 
+        }).then(r => r.json());
+        
+        if (res.status === "success") { 
+          portHistory = res.history; 
+          portSent = res.sentiment; 
+          calcPort(); 
+        }
+      } catch(e) {
+        document.getElementById('tbl-portfolio-body').innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--down);">Failed to retrieve ledgers.</td></tr>`;
+      }
     }
 
     function calcPort() {
       let h = {}, tInv = 0, tCur = 0;
+      
       portHistory.forEach(r => {
-        if(!h[r.ticker]) h[r.ticker] = { sh:0, cost:0 };
-        if(r.type === "BOUGHT") { h[r.ticker].sh += r.shares; h[r.ticker].cost += r.total; }
-        else if(r.type === "SOLD" && h[r.ticker].sh > 0) { const avg = h[r.ticker].cost / h[r.ticker].sh; h[r.ticker].sh -= r.shares; h[r.ticker].cost = h[r.ticker].sh * avg; }
+        if (!h[r.ticker]) h[r.ticker] = { sh: 0, cost: 0 };
+        if (r.type === "BOUGHT") { 
+          h[r.ticker].sh += r.shares; 
+          h[r.ticker].cost += r.total; 
+        } else if (r.type === "SOLD" && h[r.ticker].sh > 0) { 
+          const avg = h[r.ticker].cost / h[r.ticker].sh; 
+          h[r.ticker].sh -= r.shares; 
+          h[r.ticker].cost = h[r.ticker].sh * avg; 
+        }
       });
 
       let tbody = '';
+      
       Object.keys(h).forEach(k => {
-        if(h[k].sh <= 0) return;
-        const avg = h[k].cost / h[k].sh;
-        let ltp = 0; if(sys.tickers) { const tk = sys.tickers.find(x=>x.symbol===k); if(tk) ltp = parseFloat(tk["last_price_(kshs)"]||0); }
-        const curV = h[k].sh * ltp, pnl = curV - h[k].cost, pnlP = (pnl/h[k].cost)*100;
-        tInv += h[k].cost; tCur += curV;
-        const ai = portSent[k] ? portSent[k].label : 'NEUTRAL';
+        if (h[k].sh <= 0) return;
         
-        tbody += `<tr><td>${k}</td><td class="num">${fmt(h[k].sh)}</td><td class="num">${fmt(avg)}</td><td class="num">${fmt(ltp)}</td><td ${colorize(pnl)}>${fmt(pnl)}</td><td>${ai.toUpperCase()}</td></tr>`;
+        const avg = h[k].cost / h[k].sh;
+        let ltp = 0; 
+        
+        if (sys.tickers) { 
+          const tk = sys.tickers.find(x => x.symbol === k); 
+          if (tk) ltp = parseFloat(tk["last_price_(kshs)"] || 0); 
+        }
+        
+        const curV = h[k].sh * ltp;
+        const pnl = curV - h[k].cost;
+        const pnlP = (pnl / h[k].cost) * 100;
+        
+        tInv += h[k].cost; 
+        tCur += curV;
+        
+        const ai = portSent[k] ? portSent[k].label : 'Neutral';
+        
+        tbody += `
+          <tr>
+            <td class="sym">${k}</td>
+            <td class="num">${fmt(h[k].sh, 0)}</td>
+            <td class="num">${fmt(avg)}</td>
+            <td class="num">${fmt(ltp)}</td>
+            <td ${colorize(pnl)}>${pnl > 0 ? '+' : ''}${fmt(pnl)}</td>
+            <td ${colorize(pnlP)}>${pnlP > 0 ? '+' : ''}${fmt(pnlP)}%</td>
+            <td style="text-align:center;">${getSignalBadge(ai)}</td>
+          </tr>
+        `;
       });
 
-      document.getElementById('tbl-portfolio-body').innerHTML = tbody || `<tr><td colspan="6">NO POSITIONS</td></tr>`;
-      document.getElementById('port-val').innerText = fmt(tCur);
+      document.getElementById('tbl-portfolio-body').innerHTML = tbody || `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No Active Positions</td></tr>`;
+      
+      document.getElementById('port-val').innerText = `KES ${fmt(tCur)}`;
+      
       const net = tCur - tInv;
       const pel = document.getElementById('port-pnl');
-      pel.innerText = `${net>0?'+':''}${fmt(net)}`;
-      pel.style.color = net >= 0 ? "var(--color-up)" : "var(--color-down)";
+      pel.innerText = `${net > 0 ? '+' : ''}KES ${fmt(net)}`;
+      pel.className = net >= 0 ? "kpi-val up" : "kpi-val down";
     }
 
     async function execTrade() {
-      const p = { action:"update_portfolio", username:user, type:document.getElementById('t-type').value, ticker:document.getElementById('t-tick').value, shares:document.getElementById('t-qty').value, price:document.getElementById('t-px').value, date:document.getElementById('t-date').value, broker:"AIB-AXYS Africa" };
-      const m = document.getElementById('trade-msg');
+      const msg = document.getElementById('trade-msg');
+      msg.style.display = 'none';
+
+      const p = { 
+        action: "update_portfolio", 
+        username: user, 
+        type: document.getElementById('t-type').value, 
+        ticker: document.getElementById('t-tick').value.toUpperCase(), 
+        shares: document.getElementById('t-qty').value, 
+        price: document.getElementById('t-px').value, 
+        date: document.getElementById('t-date').value, 
+        broker: "AIB-AXYS Africa" 
+      };
+
+      if (!p.ticker || !p.shares || !p.price || !p.date) {
+        msg.innerText = "All execution fields are required.";
+        msg.style.display = 'block';
+        return;
+      }
+
       try {
-        const res = await fetch(API_PORTFOLIO, { method:"POST", body:JSON.stringify(p) }).then(r=>r.json());
-        if(res.status==="success") { document.getElementById('trade-modal').style.display='none'; loadPortfolio(); } else { m.innerText = res.message; m.style.display='block'; }
-      } catch(e) { m.innerText = "API ERR"; m.style.display='block'; }
+        const res = await fetch(API_PORTFOLIO, { method: "POST", body: JSON.stringify(p) }).then(r => r.json());
+        if (res.status === "success") { 
+          document.getElementById('trade-modal').style.display = 'none'; 
+          
+          // Clear inputs
+          document.getElementById('t-tick').value = '';
+          document.getElementById('t-qty').value = '';
+          document.getElementById('t-px').value = '';
+          
+          await loadPortfolio(); 
+        } else { 
+          msg.innerText = res.message; 
+          msg.style.display = 'block'; 
+        }
+      } catch(e) { 
+        msg.innerText = "Transaction Node Offline."; 
+        msg.style.display = 'block'; 
+      }
     }
 
+    // Initialize System
     bootTerminal();
   </script>
 </body>
