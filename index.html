@@ -10,6 +10,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
+  <!-- Added for 3D Globe Interactivity -->
+  <script src="https://unpkg.com/globe.gl"></script>
+  
   <style>
     :root { 
       --bg-body: #f4f6f9; --bg-card: #ffffff; --text-main: #2c3e50; --text-muted: #666666; --text-sub: #999999; 
@@ -451,7 +454,22 @@ var hasRenderedOnce = false, isGeoChartLoaded = false, currentGlobalSelection = 
 var chartInstances = {}, kenyaTickerHTML = "", globalTickerHTML = "";
 var currentUser = null, isSignupMode = false;
 
-const countryMap = { "usa":{"name":"USA","code":"US"}, "canada":{"name":"Canada","code":"CA"}, "south_africa":{"name":"South Africa","code":"ZA"}, "nigeria":{"name":"Nigeria","code":"NG"}, "egypt":{"name":"Egypt","code":"EG"}, "france":{"name":"France","code":"FR"}, "united_kingdom":{"name":"United Kingdom","code":"GB"}, "australia":{"name":"Australia","code":"AU"}, "japan":{"name":"Japan","code":"JP"}, "mainland_china":{"name":"Mainland China","code":"CN"} };
+var myGlobe = null;
+var geojsonData = null;
+var availableISOs = [];
+
+const countryMap = { 
+  "usa":{name:"USA", code:"US", iso3:"USA"}, 
+  "canada":{name:"Canada", code:"CA", iso3:"CAN"}, 
+  "south_africa":{name:"South Africa", code:"ZA", iso3:"ZAF"}, 
+  "nigeria":{name:"Nigeria", code:"NG", iso3:"NGA"}, 
+  "egypt":{name:"Egypt", code:"EG", iso3:"EGY"}, 
+  "france":{name:"France", code:"FR", iso3:"FRA"}, 
+  "united_kingdom":{name:"United Kingdom", code:"GB", iso3:"GBR"}, 
+  "australia":{name:"Australia", code:"AU", iso3:"AUS"}, 
+  "japan":{name:"Japan", code:"JP", iso3:"JPN"}, 
+  "mainland_china":{name:"Mainland China", code:"CN", iso3:"CHN"} 
+};
 const ALL_NSE_TICKERS = ["ABSA","ALP","AMAC","BAT","BKG","BOC","BRIT","CARB","CGEN","CIC","COOP","CRWN","CTUM","DTK","EABL","EGAD","EQTY","EVRD","FTGH","GLD","HAFR","HFCK","IMH","JUB","KAPC","KCB","KEGN","KNRE","KPLC","KQ","KUKZ","LBTY","LIMT","LKL","NBV","NCBA","NMG","NSE","OCH","PORT","SASN","SBIC","SCAN","SCBK","SCOM","SGL","SKL","SLAM","SMER","SMWF","TOTL","TPSE","UCHM","UMME","UNGA","WTK","XPRS","KPC"];
 
 const ALL_BROKERS = [
@@ -510,7 +528,11 @@ function switchTab(tabId, evt) {
   
   var tc = document.getElementById('ticker-content');
   if (tc) { tc.innerHTML = (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML) + (tabId === 'global' ? globalTickerHTML : kenyaTickerHTML); }
-  if (tabId === 'global' && isGeoChartLoaded) setTimeout(drawRegionsMap, 150);
+  
+  if (tabId === 'global') {
+      if (!geojsonData) initGlobe();
+      else if (isGeoChartLoaded) showGlobalCountry(currentGlobalSelection, false);
+  }
 }
 
 function switchPortTab(tabId, evt) {
@@ -524,7 +546,7 @@ function toggleTheme() {
   var root = document.documentElement, btn = document.getElementById("theme-btn");
   if (root.getAttribute("data-theme") === "dark") { root.removeAttribute("data-theme"); btn.innerHTML="🌙 Dark"; localStorage.setItem("theme","light"); updateChartTheme("light"); }
   else { root.setAttribute("data-theme","dark"); btn.innerHTML="☀️ Light"; localStorage.setItem("theme","dark"); updateChartTheme("dark"); }
-  if (isGeoChartLoaded && currentTab === 'global') drawRegionsMap();
+  if (isGeoChartLoaded && currentTab === 'global') showGlobalCountry(currentGlobalSelection, false);
 }
 if (localStorage.getItem("theme") === "dark") { document.documentElement.setAttribute("data-theme","dark"); document.addEventListener("DOMContentLoaded", function(){ var b=document.getElementById("theme-btn"); if(b) b.innerHTML="☀️ Light"; }); }
 function setMarketStatus(s) { var el=document.getElementById("market-status"); if(s==="OPEN"){el.textContent="OPEN";el.className="open";}else{el.textContent="CLOSED";el.className="closed";} }
@@ -668,7 +690,23 @@ function renderFilteredPortfolio() {
         var ctxPie = document.getElementById('portfolio-pie-chart');
         if(chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
         if(pieData.length > 0) {
-            chartInstances["portfolioPie"] = new Chart(ctxPie, { type: 'doughnut', data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors.slice(0, pieLabels.length), borderWidth: 2, borderColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#151e32" : "#ffffff" }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: "'Hadassah Friedlaender', Georgia, serif", size: 11, weight: 'bold'}, color: document.documentElement.getAttribute("data-theme") === "dark" ? "#f8fafc" : "#1e293b", padding: 20 } }, tooltip: { callbacks: { label: function(ctx) { var v = ctx.parsed; var tot = ctx.chart._metasets[ctx.datasetIndex].total; var pct = (v/tot*100).toFixed(1); return " " + ctx.label + ": KES " + v.toLocaleString() + " (" + pct + "%)"; } } } }, cutout: '65%' } });
+            chartInstances["portfolioPie"] = new Chart(ctxPie, { 
+              type: 'doughnut', 
+              data: { 
+                labels: pieLabels, 
+                datasets: [{ 
+                  data: pieData, 
+                  backgroundColor: pieColors.slice(0, pieLabels.length), 
+                  borderWidth: 0, 
+                  hoverBorderWidth: 0 
+                }] 
+              }, 
+              options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { position: 'right', labels: { font: { family: "'Hadassah Friedlaender', Georgia, serif", size: 11, weight: 'bold'}, color: document.documentElement.getAttribute("data-theme") === "dark" ? "#f8fafc" : "#1e293b", padding: 20 } }, tooltip: { callbacks: { label: function(ctx) { var v = ctx.parsed; var tot = ctx.chart._metasets[ctx.datasetIndex].total; var pct = (v/tot*100).toFixed(1); return " " + ctx.label + ": KES " + v.toLocaleString() + " (" + pct + "%)"; } } } }, 
+                cutout: '65%' 
+              } 
+            });
         }
     }
 }
@@ -703,17 +741,22 @@ async function submitTrade() {
     btn.innerText = "UPDATE PORTFOLIO";
 }
 
-// ── BLENDED LIVE NEWS ENGINE ────────────────────────────────
+// ── BLENDED LIVE NEWS ENGINE (Refreshed every 6 hours randomly) ──
 async function loadLiveNews() {
   var FB = 'https://via.placeholder.com/300x160/0f172a/FFFFFF?text=Market+Intelligence';
-  var feeds = [ { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" }, { url: "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml", name: "Wall Street Journal" }, { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" } ];
+  var cb = Date.now(); // Cache Buster
+  var feeds = [ 
+      { url: "https://www.economist.com/finance-and-economics/rss.xml", name: "The Economist" }, 
+      { url: "https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml", name: "Wall Street Journal" }, 
+      { url: "https://finance.yahoo.com/news/rss", name: "Yahoo Finance" } 
+  ];
   
   try {
     var fetchPromises = feeds.map(function(f) {
-        return fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(f.url))
+        return fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(f.url) + "&api_key=&order_dir=desc&count=10&cb=" + cb)
             .then(function(resp) { return resp.json(); }).then(function(data) {
                 if (data.status !== 'ok') return []; var parsedItems = [];
-                data.items.slice(0, 4).forEach(function(item) {
+                data.items.slice(0, 10).forEach(function(item) {
                    var imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || "";
                    if (!imgUrl && item.content) { var m = item.content.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) imgUrl = m[1]; }
                    if (!imgUrl && item.description) { var m = item.description.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) imgUrl = m[1]; }
@@ -723,10 +766,10 @@ async function loadLiveNews() {
     });
     
     fetchPromises.push(
-        fetch("https://api.allorigins.win/get?url=" + encodeURIComponent("https://kenyanwallstreet.com/feed/"))
+        fetch("https://api.allorigins.win/get?url=" + encodeURIComponent("https://kenyanwallstreet.com/feed/?cb=" + cb))
         .then(function(resp) { return resp.json(); })
         .then(function(data) {
-            var xml = new DOMParser().parseFromString(data.contents, "application/xml"); var items = Array.from(xml.querySelectorAll("item")).slice(0, 4); var pItems = [];
+            var xml = new DOMParser().parseFromString(data.contents, "application/xml"); var items = Array.from(xml.querySelectorAll("item")).slice(0, 10); var pItems = [];
             items.forEach(function(node) {
                var title = node.querySelector("title") ? node.querySelector("title").textContent : ""; var link = node.querySelector("link") ? node.querySelector("link").textContent : ""; var pubDate = node.querySelector("pubDate") ? node.querySelector("pubDate").textContent : ""; var desc = node.querySelector("description") ? node.querySelector("description").textContent : "";
                if(title && link) { pItems.push({ title: title, link: link, pubDate: pubDate, desc: desc.replace(/<[^>]*>?/gm, '').substring(0, 110) + '...', img: FB, src: "Kenyan Wall Street" }); }
@@ -737,7 +780,12 @@ async function loadLiveNews() {
     var results = await Promise.all(fetchPromises); var all = []; results.forEach(function(resArray) { all = all.concat(resArray); });
     if(all.length === 0) throw new Error("No news");
     
-    all.sort(function(a,b) { return new Date(b.pubDate) - new Date(a.pubDate); });
+    // Mathematical Random Shuffle
+    for (let i = all.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [all[i], all[j]] = [all[j], all[i]];
+    }
+    
     var html = '<div class="news-grid">';
     all.slice(0, 12).forEach(function(i) {
       var dt = new Date(i.pubDate);
@@ -747,7 +795,8 @@ async function loadLiveNews() {
     document.getElementById("live-news-container").innerHTML = html; isNewsFetched = true;
   } catch(e){ document.getElementById("live-news-container").innerHTML='<p style="color:var(--text-muted);padding:1.5rem;text-align:center;">Unable to stream live intelligence. Please verify network connection.</p>'; }
 }
-loadLiveNews(); setInterval(loadLiveNews, 3600000); 
+loadLiveNews(); 
+setInterval(loadLiveNews, 21600000); // Trigger every 6 hours
 
 // ── CORE DATA ENGINE ──────────────────────────────────────────────────────
 function openExportModal() { 
@@ -898,9 +947,11 @@ function fmtKsh(v) { var n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); re
 function fmtUSD(v) { if (!v) return "—"; var s = String(v); if (s.includes("$")) return s; var n = parseFloat(s.replace(/[^0-9.\-]/g, "")); return isNaN(n) ? s : "$" + fmtNum(n, 2); }
 
 function tableCard(title, headers, rows, emptyMsg) {
-  if (!rows || rows.length === 0) return '<div class="card"><div class="card-header"><h2 class="brand-font">' + title + '</h2></div><div class="card-body padded"><p style="color:var(--text-muted);font-weight:600;font-style:italic;">' + (emptyMsg || "Stream empty or offline.") + '</p></div></div>';
-  var many = rows.length > 5, cls = many ? "card table-collapsed interactive-card" : "card", onclick = many ? "onclick=\"this.classList.toggle('table-collapsed')\"" : "";
-  var hdrHtml = headers.map(function(h) { return '<th>' + h + ' <span class="sort-icon" style="color:var(--text-sub);">↕</span></th>'; }).join(""), bodyHtml = rows.join("");
+  var many = rows && rows.length > 5;
+  var cls = many ? "card table-collapsed interactive-card" : "card";
+  var onclick = many ? "onclick=\"this.classList.toggle('table-collapsed')\"" : "";
+  var hdrHtml = headers.map(function(h) { return '<th>' + h + ' <span class="sort-icon" style="color:var(--text-sub);">↕</span></th>'; }).join("");
+  var bodyHtml = (!rows || rows.length === 0) ? '<tr><td colspan="' + headers.length + '" style="text-align:center; color:var(--text-muted); font-style:italic; padding: 1.5rem;">' + (emptyMsg || "Stream empty or offline.") + '</td></tr>' : rows.join("");
   return '<div class="' + cls + '" ' + onclick + '><div class="card-header"><h2 class="brand-font">' + title + '</h2></div><div class="card-body"><div class="table-responsive"><table data-id="' + getTableId(title) + '"><thead><tr>' + hdrHtml + '</tr></thead><tbody>' + bodyHtml + '</tbody></table></div>' + (many ? '<div class="expand-hint"></div>' : '') + '</div></div>';
 }
 
@@ -979,12 +1030,12 @@ function render(data, isInitialLoad) {
   var indicesRows = indices.map(function(r) { return '<tr><td>' + r.name + '</td><td>' + (r.name === "US Dollar Index" ? "$" + fmtNum(r.price, 2) : fmtUSD(r.price)) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + ((r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—") + '</td></tr>'; });
   var activeRows = active.map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td><td>' + fmtNum(r["market_cap"], 0) + '</td></tr>'; });
   
-  var commoRows = (data.global_assets || []).map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + r.asset_class + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + fmtNum(r.volume, 0) + '</td></tr>'; });
+  var commoRows = (data.global_assets || []).map(function(r) { return '<tr><td>' + r.symbol + '</td><td class="cell-name">' + (r.name || "—") + '</td><td>' + r.asset_class + '</td><td>' + fmtUSD(r.price) + '</td><td>' + formatChange(r["%_change"] || r.percent_change, true) + '</td><td>' + ((r.volume && r.volume !== "N/A") ? fmtNum(r.volume, 0) : "—") + '</td></tr>'; });
 
   if (isInitialLoad) {
       var globalEquitiesHtml = '<div class="full-card"><div class="card-header"><h2 class="brand-font">Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value, false)">';
       Object.keys(countryMap).forEach(function(key) { var isSelected = key === currentGlobalSelection ? "selected" : ""; globalEquitiesHtml += '<option value="' + key + '" ' + isSelected + '>' + countryMap[key].name + '</option>'; });
-      globalEquitiesHtml += '</select></div><div id="regions_div" style="width:100%;height:350px;min-height:350px;"></div><div id="global-tables-container">';
+      globalEquitiesHtml += '</select></div><div id="globe-wrapper" style="display: flex; width: 100%; height: 400px; gap: 1rem; align-items: center; justify-content: center;"><div id="globe-3d" style="width: 100%; height: 100%; transition: width 0.5s ease; position: relative; border-radius:12px; overflow:hidden;"></div><div id="country-2d-map" style="width: 0%; height: 100%; opacity: 0; transition: width 0.5s ease, opacity 0.5s ease; overflow:hidden; border-radius:12px;"></div></div><div id="global-tables-container">';
       Object.keys(countryMap).forEach(function(countryKey) {
         var cData = data[countryKey]; var isActive = countryKey === currentGlobalSelection ? "active-country" : "";
         if (currentGlobalSelection === "mainland_china" && (countryKey === "hong_kong" || countryKey === "taiwan")) isActive = "active-country";
@@ -1020,7 +1071,7 @@ function render(data, isInitialLoad) {
         graphsHtml
       ].join("");
 
-      setTimeout(function() { initCharts(); loadCorporateActions(); attachTableSorting(); if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark"); }, 50);
+      setTimeout(function() { initGlobe(); initCharts(); loadCorporateActions(); attachTableSorting(); if (document.documentElement.getAttribute("data-theme") === "dark") updateChartTheme("dark"); }, 50);
 
   } else {
       var me = document.querySelector(".metrics"); if (me) me.innerHTML = metricsHtml; 
@@ -1037,10 +1088,10 @@ function updateChartTheme(mode) {
   var tc = mode === "dark" ? "#94a3b8" : "#64748b", gc = mode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
   for (var id in chartInstances) { 
       var c = chartInstances[id]; 
-      if(c.options.scales.x) { c.options.scales.x.ticks.color = tc; c.options.scales.x.grid.color = gc; } 
-      if(c.options.scales.y) { c.options.scales.y.ticks.color = tc; c.options.scales.y.grid.color = gc; } 
-      if(c.options.scales.y1) { c.options.scales.y1.ticks.color = tc; } 
-      if(c.options.plugins.legend) c.options.plugins.legend.labels.color = mode === "dark" ? "#f8fafc" : "#1e293b"; 
+      if(c.options.scales && c.options.scales.x) { c.options.scales.x.ticks.color = tc; c.options.scales.x.grid.color = gc; } 
+      if(c.options.scales && c.options.scales.y) { c.options.scales.y.ticks.color = tc; c.options.scales.y.grid.color = gc; } 
+      if(c.options.scales && c.options.scales.y1) { c.options.scales.y1.ticks.color = tc; } 
+      if(c.options.plugins && c.options.plugins.legend) c.options.plugins.legend.labels.color = mode === "dark" ? "#f8fafc" : "#1e293b"; 
       c.update(); 
   }
 }
@@ -1090,17 +1141,58 @@ function updateChartsData(){
 
 function createChart(id, config) { var ctx = document.getElementById(id); if (ctx) { if (chartInstances[id]) chartInstances[id].destroy(); chartInstances[id] = new Chart(ctx, config); } }
 
+// ── 3D GLOBE ENGINE ──────────────────────────────────────────────────────
+function initGlobe() {
+    if (!document.getElementById('globe-3d')) return;
+    availableISOs = Object.values(countryMap).map(function(c) { return c.iso3; });
+    
+    fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            geojsonData = data;
+            renderGlobe();
+        });
+}
+
+function renderGlobe() {
+    var globeContainer = document.getElementById('globe-3d');
+    if (!globeContainer || myGlobe) return;
+    
+    myGlobe = Globe()(globeContainer)
+        .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+        .backgroundColor('rgba(0,0,0,0)')
+        .polygonsData(geojsonData.features)
+        .polygonAltitude(function(d) { return d.properties.ISO_A3 === countryMap[currentGlobalSelection]?.iso3 ? 0.08 : (availableISOs.includes(d.properties.ISO_A3) ? 0.02 : 0.01); })
+        .polygonCapColor(function(d) { return d.properties.ISO_A3 === countryMap[currentGlobalSelection]?.iso3 ? '#D4AF37' : (availableISOs.includes(d.properties.ISO_A3) ? 'rgba(0, 180, 255, 0.4)' : 'rgba(50, 50, 50, 0.2)'); })
+        .polygonSideColor(function() { return 'rgba(0,0,0,0.1)'; })
+        .polygonStrokeColor(function() { return '#111'; })
+        .polygonLabel(function({ properties: d }) { return '<div style="background:rgba(0,0,0,0.8);padding:4px;border-radius:4px;color:#fff;"><b>' + d.ADMIN + '</b></div>'; })
+        .onPolygonClick(function({ properties: d }) {
+            var key = Object.keys(countryMap).find(function(k) { return countryMap[k].iso3 === d.ISO_A3; });
+            if (key) showGlobalCountry(key, true);
+        });
+        
+    myGlobe.controls().autoRotate = true;
+    myGlobe.controls().autoRotateSpeed = 0.5;
+
+    var resizeObserver = new ResizeObserver(function(entries) {
+        for (var i = 0; i < entries.length; i++) {
+           myGlobe.width(entries[i].contentRect.width);
+           myGlobe.height(entries[i].contentRect.height);
+        }
+    });
+    resizeObserver.observe(globeContainer);
+    showGlobalCountry(currentGlobalSelection, false);
+}
+
 window.addEventListener('load', function() {
     if (typeof google !== 'undefined') {
         google.charts.load('current', { 'packages': ['geochart'] });
         google.charts.setOnLoadCallback(function() { 
             isGeoChartLoaded = true; 
-            if (currentTab === 'global') drawRegionsMap(); 
         });
     }
 });
-
-window.addEventListener('resize', function() { if (isGeoChartLoaded && currentTab === 'global') drawRegionsMap(); });
 
 function showGlobalCountry(key, fromMap) { 
     currentGlobalSelection = key; 
@@ -1110,28 +1202,38 @@ function showGlobalCountry(key, fromMap) {
     var sel = document.getElementById("globalSearch"); 
     if(sel && sel.value !== key) sel.value = key; 
     
-    if (!fromMap && isGeoChartLoaded) drawRegionsMap(); 
-}
+    // Update Globe Highlight
+    if (myGlobe) {
+        myGlobe.polygonAltitude(function(d) { return d.properties.ISO_A3 === countryMap[key].iso3 ? 0.08 : (availableISOs.includes(d.properties.ISO_A3) ? 0.02 : 0.01); })
+               .polygonCapColor(function(d) { return d.properties.ISO_A3 === countryMap[key].iso3 ? '#D4AF37' : (availableISOs.includes(d.properties.ISO_A3) ? 'rgba(0, 180, 255, 0.4)' : 'rgba(50, 50, 50, 0.2)'); });
+    }
 
-function drawRegionsMap() {
-  var mapDiv = document.getElementById('regions_div'); if (!mapDiv || mapDiv.offsetParent === null) return; 
-  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  var data = new google.visualization.DataTable(); data.addColumn('string', 'Country'); data.addColumn('number', 'Selected');
-  var mapData = []; Object.values(countryMap).forEach(function(info) { mapData.push([info.code, 0]); });
-  
-  if (countryMap[currentGlobalSelection]) { var row = mapData.find(function(r) { return r[0] === countryMap[currentGlobalSelection].code; }); if (row) row[1] = 1; }
-  data.addRows(mapData);
-  
-  var chart = new google.visualization.GeoChart(mapDiv);
-  google.visualization.events.addListener(chart, 'select', function() { 
-      var sel = chart.getSelection(); 
-      if (sel.length > 0) { 
-          var code = data.getValue(sel[0].row, 0); 
-          var k = Object.keys(countryMap).find(function(key) { return countryMap[key].code === code; }); 
-          if (k) showGlobalCountry(k, true); 
-      } 
-  });
-  chart.draw(data, { colorAxis: { colors: [ isDark ? '#334155' : '#e2e8f0', '#D4AF37' ]}, backgroundColor: 'transparent', datalessRegionColor: isDark ? '#1e293b' : '#f1f5f9', defaultColor: isDark ? '#334155' : '#e2e8f0', legend: 'none', width: '100%', height: 350 });
+    // Shrink 3D Map & Expand 2D Map
+    var map3d = document.getElementById('globe-3d');
+    var map2d = document.getElementById('country-2d-map');
+    if (map3d && map2d) {
+        map3d.style.width = '50%';
+        map2d.style.width = '50%';
+        map2d.style.opacity = '1';
+    }
+
+    if (isGeoChartLoaded && map2d) {
+        var data = new google.visualization.DataTable(); 
+        data.addColumn('string', 'Country'); data.addColumn('number', 'Selected');
+        data.addRows([[countryMap[key].code, 1]]);
+        var chart = new google.visualization.GeoChart(map2d);
+        var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        chart.draw(data, { 
+            region: countryMap[key].code, 
+            displayMode: 'regions', 
+            resolution: 'provinces',
+            colorAxis: { colors: ['#D4AF37'] }, 
+            backgroundColor: 'transparent', 
+            datalessRegionColor: isDark ? '#1e293b' : '#f1f5f9', 
+            defaultColor: '#D4AF37', 
+            legend: 'none' 
+        });
+    }
 }
 
 function filterHeatmap(q) { var qU = (q || "").toUpperCase(); document.querySelectorAll(".ticker-cell").forEach(function(cell) { cell.style.display = (cell.dataset.sym || "").toUpperCase().includes(qU) ? "" : "none"; }); }
@@ -1141,4 +1243,3 @@ triggerRefresh(); startRefresh();
 </script>
 </body>
 </html>
-
