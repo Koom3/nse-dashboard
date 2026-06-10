@@ -1,615 +1,4853 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Market Data Analysis — NSE / Global</title>
 
+
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
+
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+
 
   <script src="https://unpkg.com/lucide@latest"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <script src="https://unpkg.com/globe.gl"></script>
 
+
+
   <style>
+
     /* ============================================================
-       DESIGN SYSTEM — Cinematic Glassmorphism (Matveyan Aesthetic)
-       Brand Standard: #002060
+
+       DESIGN SYSTEM — Financial Analytics Dashboard
+
+       Style: Soft UI Evolution + Data-Dense Dashboard
+
+       Primary: #002060 (Eric Murithi brand standard)
+
        ============================================================ */
+
+
 
     :root {
-      /* Deep Cinematic Void (Matveyan style dark theme) */
-      --bg-body:         #02060f; 
-      --bg-glow:         radial-gradient(circle at 15% 0%, #002060 0%, #02060f 50%);
-      
-      /* Glassmorphism Surfaces */
-      --bg-glass:        rgba(10, 15, 30, 0.4);
-      --bg-glass-hover:  rgba(15, 25, 45, 0.55);
-      --border-glass:    rgba(255, 255, 255, 0.06);
-      --border-focus:    rgba(255, 255, 255, 0.2);
 
-      /* Core Brand */
+      /* Brand */
+
       --brand-primary:   #002060;
-      --brand-accent:    #3b82f6;
+
+      --brand-primary-lt:#003494;
+
       --brand-gold:      #c8860a;
-      --brand-gold-lt:   #fbbf24;
+
+      --brand-gold-lt:   #f5a623;
+
+      --brand-accent:    #1d4ed8;
+
+
+
+      /* Surfaces */
+
+      --bg-body:         #f0f4f8;
+
+      --bg-card:         #ffffff;
+
+      --bg-card-2:       #f8fafc;
+
+      --bg-sidebar:      #002060;
+
+
 
       /* Text */
-      --text-main:       #f8fafc;
-      --text-muted:      #94a3b8;
-      --text-sub:        #64748b;
 
-      /* Table & Forms */
-      --table-header-bg: rgba(0, 0, 0, 0.2);
-      --table-border:    rgba(255, 255, 255, 0.03);
-      --table-hover:     rgba(255, 255, 255, 0.05);
-      --table-stripe:    rgba(255, 255, 255, 0.01);
-      
-      --input-bg:        rgba(0, 0, 0, 0.3);
-      --input-border:    var(--border-glass);
+      --text-main:       #0d1b3e;
+
+      --text-muted:      #4b5882;
+
+      --text-sub:        #8494b5;
+
+
+
+      /* Borders */
+
+      --border-color:    #d6dce8;
+
+      --border-focus:    #1d4ed8;
+
+
+
+      /* Table */
+
+      --table-header-bg: #eef1f8;
+
+      --table-border:    #e8ecf5;
+
+      --table-hover:     #f4f6fc;
+
+      --table-stripe:    #f9fafd;
+
+
+
+      /* Form inputs */
+
+      --input-border:    #c0cad8;
+
+      --input-bg:        #ffffff;
+
+
 
       /* Semantic */
-      --up:              #10b981; /* Neon green */
-      --up-bg:           rgba(16, 185, 129, 0.1);
-      --dn:              #ef4444; /* Neon red */
-      --dn-bg:           rgba(239, 68, 68, 0.1);
-      --nt:              #64748b;
 
-      /* Elevation - Deep Ambient Shadows */
-      --shadow-sm:  0 4px 12px rgba(0, 0, 0, 0.4);
-      --shadow-md:  0 10px 30px rgba(0, 0, 0, 0.6);
-      --shadow-lg:  0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 32, 96, 0.4);
+      --up:              #15803d;
+
+      --up-bg:           #dcfce7;
+
+      --dn:              #b91c1c;
+
+      --dn-bg:           #fee2e2;
+
+      --nt:              #6b7ca8;
+
+
+
+      /* Elevation */
+
+      --shadow-sm:  0 1px 3px rgba(0,32,96,.06), 0 1px 2px rgba(0,32,96,.04);
+
+      --shadow-md:  0 4px 12px rgba(0,32,96,.08), 0 2px 6px rgba(0,32,96,.05);
+
+      --shadow-lg:  0 10px 28px rgba(0,32,96,.12), 0 4px 10px rgba(0,32,96,.06);
+
+      --shadow-xl:  0 20px 50px rgba(0,32,96,.16), 0 8px 16px rgba(0,32,96,.08);
+
+
 
       /* Radius */
+
+      --r-xs: 4px;
+
       --r-sm: 8px;
-      --r-md: 16px;
-      --r-lg: 24px; /* Smoother Matveyan curves */
-      --r-xl: 32px;
+
+      --r-md: 12px;
+
+      --r-lg: 16px;
+
+      --r-xl: 20px;
+
       --r-pill: 9999px;
 
+
+
       /* Timing */
+
       --t-fast:   150ms;
-      --t-base:   300ms;
-      --t-slow:   500ms;
-      --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* Cinematic ease */
+
+      --t-base:   220ms;
+
+      --t-slow:   350ms;
+
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+      --ease-in:  cubic-bezier(0.7, 0, 0.84, 0);
+
+
+
+      /* Ticker */
+
+      --ticker-bg: #001040;
+
     }
 
-    /* Force dark mode for this aesthetic */
-    html { background-color: var(--bg-body); }
+
+
+    /* ---- DARK MODE ---- */
+
+    [data-theme="dark"] {
+
+      --brand-primary:   #5b8dee;
+
+      --brand-primary-lt:#7ba5f0;
+
+      --brand-gold:      #f5a623;
+
+      --brand-gold-lt:   #fbbf24;
+
+      --brand-accent:    #60a5fa;
+
+
+
+      --bg-body:         #040d1f;
+
+      --bg-card:         #0c1a3a;
+
+      --bg-card-2:       #0a1530;
+
+      --bg-sidebar:      #0c1a3a;
+
+
+
+      --text-main:       #e8edf8;
+
+      --text-muted:      #8494b5;
+
+      --text-sub:        #4b5882;
+
+
+
+      --border-color:    #1a2a50;
+
+      --border-focus:    #60a5fa;
+
+
+
+      --table-header-bg: #040d1f;
+
+      --table-border:    #1a2a50;
+
+      --table-hover:     #0f1e40;
+
+      --table-stripe:    #0a1530;
+
+
+
+      --input-border:    #1e3060;
+
+      --input-bg:        #0c1a3a;
+
+
+
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.4);
+
+      --shadow-md:  0 4px 12px rgba(0,0,0,.5);
+
+      --shadow-lg:  0 10px 28px rgba(0,0,0,.6);
+
+      --shadow-xl:  0 20px 50px rgba(0,0,0,.7);
+
+    }
+
+
 
     /* ---- RESET & BASE ---- */
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *, *::before, *::after {
+
+        animation-duration: 0.01ms !important;
+
+        animation-iteration-count: 1 !important;
+
+        transition-duration: 0.01ms !important;
+
+        scroll-behavior: auto !important;
+
+      }
+
+    }
+
+
+
     html { scroll-behavior: smooth; }
 
+
+
     body {
-      background: var(--bg-glow);
-      background-attachment: fixed;
+
+      background: var(--bg-body);
+
       color: var(--text-main);
+
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
       font-size: 0.875rem;
+
       line-height: 1.6;
+
       -webkit-font-smoothing: antialiased;
+
       -moz-osx-font-smoothing: grayscale;
+
       overflow-x: hidden;
-      min-height: 100vh;
+
+      transition: background var(--t-base), color var(--t-base);
+
     }
 
-    /* Dramatic Headers integrating preferred font */
+
+
     h1, h2, h3, h4, .brand-font {
-      font-family: 'Hadassah Friedlaender', 'Playfair Display', serif;
+
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+
       font-weight: 700;
-      line-height: 1.2;
-      letter-spacing: 0.02em;
+
+      line-height: 1.3;
+
     }
 
-    td, .val, .tc-price, .port-summary-val, .macro-mc-val, .ti-prc { 
-      font-variant-numeric: tabular-nums; 
+
+
+    /* Tabular numbers for all financial data */
+
+    td, .val, .tc-price, .port-summary-val, .macro-mc-val,
+
+    .ti-prc, .ti-up, .ti-dn, .ti-nt { font-variant-numeric: tabular-nums; }
+
+
+
+    /* Accessibility focus ring */
+
+    *:focus-visible {
+
+      outline: 2px solid var(--border-focus);
+
+      outline-offset: 2px;
+
+      border-radius: 3px;
+
     }
 
-    *:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+
+
     a { color: inherit; text-decoration: none; }
-    button, select, input { font-family: inherit; cursor: pointer; }
-    input[type="text"], input[type="password"], input[type="email"], input[type="date"], input[type="time"] { cursor: text; }
+
+    button { font-family: inherit; cursor: pointer; }
+
+    select, input { font-family: inherit; cursor: pointer; }
+
+    input[type="text"], input[type="password"],
+
+    input[type="email"], input[type="date"],
+
+    input[type="time"] { cursor: text; }
+
+
+
+    /* ---- ICONS ---- */
 
     .icon-xs { width: 14px; height: 14px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
     .icon-sm { width: 16px; height: 16px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
     .icon-md { width: 20px; height: 20px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
     .icon-lg { width: 24px; height: 24px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
-    .spin { animation: spin 1.2s linear infinite; }
+
+    .spin { animation: spin 0.9s linear infinite; }
+
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
+
+
     /* ============================================================
-       HEADER - Glassmorphism
+
+       HEADER
+
        ============================================================ */
+
     header {
-      background: rgba(2, 6, 15, 0.7);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+
+      background: linear-gradient(135deg, #001040 0%, #002060 60%, #003494 100%);
+
+      color: #fff;
+
       padding: 0 2rem;
+
       display: flex;
+
       align-items: center;
+
       justify-content: space-between;
+
       gap: 1rem;
-      height: 72px;
-      border-bottom: 1px solid var(--border-glass);
+
+      height: 64px;
+
+      border-bottom: 3px solid var(--brand-gold);
+
+      box-shadow: 0 4px 20px rgba(0,16,64,.5);
+
       position: sticky;
+
       top: 0;
+
       z-index: 1000;
+
+      flex-wrap: nowrap;
+
+    }
+
+
+
+    .header-brand {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 0.625rem;
+
+      flex-shrink: 0;
+
     }
 
     .header-brand h1 {
-      font-size: 1.4rem;
-      background: linear-gradient(90deg, #fff 30%, var(--text-muted));
+
+      font-size: 1.125rem;
+
+      letter-spacing: 0.03em;
+
+      font-weight: 800;
+
+      white-space: nowrap;
+
+      background: linear-gradient(90deg, #fff 50%, var(--brand-gold-lt));
+
       -webkit-background-clip: text;
+
       -webkit-text-fill-color: transparent;
+
+      background-clip: text;
+
     }
 
-    .header-right { display: flex; align-items: center; gap: 1.5rem; flex: 1; justify-content: flex-end; }
+    .header-brand-dot {
 
-    .header-status-block { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+      width: 8px; height: 8px;
+
+      border-radius: 50%;
+
+      background: var(--brand-gold);
+
+      box-shadow: 0 0 8px var(--brand-gold);
+
+      flex-shrink: 0;
+
+      animation: pulse-dot 2s ease-in-out infinite;
+
+    }
+
+    @keyframes pulse-dot {
+
+      0%,100% { box-shadow: 0 0 4px var(--brand-gold); }
+
+      50%      { box-shadow: 0 0 12px var(--brand-gold), 0 0 20px rgba(200,134,10,.3); }
+
+    }
+
+
+
+    .header-right {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 1rem;
+
+      flex: 1;
+
+      justify-content: flex-end;
+
+      min-width: 0;
+
+    }
+
+
+
+    .header-status-block {
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: flex-end;
+
+      gap: 2px;
+
+      flex-shrink: 0;
+
+    }
+
     #market-status {
-      font-size: 0.65rem; padding: 4px 12px; border-radius: var(--r-pill); font-weight: 700; letter-spacing: 1px;
+
+      font-size: 0.7rem;
+
+      padding: 4px 12px;
+
+      border-radius: var(--r-pill);
+
+      font-weight: 700;
+
+      letter-spacing: 1px;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      text-transform: uppercase;
+
+      transition: all var(--t-base);
+
     }
-    #market-status.open  { color: var(--up); border: 1px solid var(--up); background: var(--up-bg); }
-    #market-status.closed{ color: var(--dn); border: 1px solid var(--dn); background: var(--dn-bg); }
-    
-    #live-clock { font-size: 0.85rem; font-weight: 600; color: #fff; letter-spacing: 1px; }
-    #market-countdown { font-size: 0.7rem; color: var(--brand-gold-lt); }
+
+    #market-status.open  { color: #4ade80; border: 1.5px solid #4ade80; background: rgba(74,222,128,.12); }
+
+    #market-status.closed{ color: #f87171; border: 1.5px solid #f87171; background: rgba(248,113,113,.12); }
+
+    #live-clock {
+
+      font-size: 0.8125rem;
+
+      font-weight: 600;
+
+      font-variant-numeric: tabular-nums;
+
+      color: rgba(255,255,255,.75);
+
+      letter-spacing: 0.5px;
+
+    }
+
+    #market-countdown {
+
+      font-size: 0.7rem;
+
+      font-weight: 500;
+
+      color: var(--brand-gold-lt);
+
+      letter-spacing: 0.25px;
+
+    }
+
+
+
+    .btn-group { display: flex; gap: 6px; flex-wrap: nowrap; }
+
+
 
     .hdr-btn {
-      background: transparent; border: 1px solid var(--border-glass); color: #fff;
-      padding: 0 16px; height: 40px; border-radius: var(--r-pill); font-size: 0.8125rem; font-weight: 600;
-      transition: all var(--t-base) var(--ease-out); display: inline-flex; align-items: center; gap: 6px;
+
+      background: rgba(255,255,255,.1);
+
+      border: 1px solid rgba(255,255,255,.2);
+
+      color: #fff;
+
+      padding: 0 14px;
+
+      height: 36px;
+
+      border-radius: var(--r-sm);
+
+      font-size: 0.8125rem;
+
+      font-weight: 600;
+
+      transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      white-space: nowrap;
+
+      letter-spacing: 0.02em;
+
     }
-    .hdr-btn:hover { background: var(--bg-glass); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+
+    .hdr-btn:hover {
+
+      background: rgba(255,255,255,.2);
+
+      border-color: rgba(255,255,255,.4);
+
+      transform: translateY(-1px);
+
+    }
+
+    .hdr-btn:active { transform: translateY(0); }
+
+    .hdr-btn.gold { background: var(--brand-gold); border-color: var(--brand-gold); color: #001040; }
+
+    .hdr-btn.gold:hover { background: var(--brand-gold-lt); }
+
+
 
     /* ============================================================
-       TICKER STRIP - Borderless Neon
+
+       TICKER STRIP
+
        ============================================================ */
+
     .ticker-wrap {
-      background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--border-glass);
-      height: 44px; display: flex; align-items: center; overflow: hidden; position: relative;
-    }
-    .ticker { display: flex; width: max-content; animation: ticker-scroll 120s linear infinite; }
-    .ticker:hover { animation-play-state: paused; }
-    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    .ticker-item { margin: 0 1.5rem; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 8px; }
-    .ti-sym   { color: #fff; font-weight: 700; letter-spacing: 1px; }
-    .ti-prc   { color: var(--text-muted); }
-    .ti-up    { color: var(--up); text-shadow: 0 0 10px rgba(16,185,129,0.4); }
-    .ti-dn    { color: var(--dn); text-shadow: 0 0 10px rgba(239,68,68,0.4); }
 
-    /* ============================================================
-       TAB BAR
-       ============================================================ */
-    .tab-container { display: flex; justify-content: center; gap: 12px; padding: 2.5rem 1rem 1.5rem; }
-    .tab-btn {
-      padding: 12px 28px; font-size: 0.9rem; font-weight: 600;
-      background: var(--bg-glass); color: var(--text-muted);
-      border: 1px solid var(--border-glass); border-radius: var(--r-pill);
-      transition: all var(--t-base) var(--ease-out); backdrop-filter: blur(10px);
-    }
-    .tab-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
-    .tab-btn.active {
-      background: rgba(255,255,255,0.1); color: #fff;
-      border-color: rgba(255,255,255,0.4); box-shadow: 0 0 20px rgba(255,255,255,0.1);
-    }
+      width: 100%;
 
-    /* ============================================================
-       LAYOUT & CARDS (GLASSMORPHISM)
-       ============================================================ */
-    .view-section { display: none; }
-    .view-section.active { display: block; animation: fadeUp var(--t-slow) var(--ease-out); }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+      background: var(--ticker-bg);
 
-    .container { max-width: 1600px; margin: 0 auto; padding: 0 1.5rem 4rem; }
-    .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
-    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+      color: #fff;
 
-    /* Floating Cards */
-    .card, .full-card, .metric-card, .graph-card, .macro-mini-card, .port-summary-card {
-      background: var(--bg-glass);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-glass);
-      border-radius: var(--r-lg);
-      box-shadow: var(--shadow-sm);
-      transition: transform var(--t-base), box-shadow var(--t-base), border-color var(--t-base);
+      height: 40px;
+
+      display: flex;
+
+      align-items: center;
+
       overflow: hidden;
-    }
-    .interactive-card:hover, .metric-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-md);
-      border-color: rgba(255,255,255,0.15);
+
+      position: relative;
+
+      border-bottom: 1px solid rgba(255,255,255,.08);
+
     }
 
-    /* Metric Grid */
-    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
-    .metric-card { padding: 1.5rem; position: relative; }
+    .ticker-wrap::before,
+
+    .ticker-wrap::after {
+
+      content: '';
+
+      position: absolute;
+
+      top: 0;
+
+      bottom: 0;
+
+      width: 80px;
+
+      z-index: 2;
+
+      pointer-events: none;
+
+    }
+
+    .ticker-wrap::before { left: 0; background: linear-gradient(90deg, var(--ticker-bg), transparent); }
+
+    .ticker-wrap::after  { right: 0; background: linear-gradient(270deg, var(--ticker-bg), transparent); }
+
+    .ticker { display: flex; width: max-content; animation: ticker-scroll 140s linear infinite; }
+
+    .ticker:hover { animation-play-state: paused; }
+
+    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+    .ticker-item {
+
+      margin: 0 1.25rem;
+
+      font-size: 0.8125rem;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      font-weight: 500;
+
+    }
+
+    .ti-sym   { color: var(--brand-gold-lt); font-weight: 700; letter-spacing: 0.04em; }
+
+    .ti-prc   { color: #e2e8f0; }
+
+    .ti-up    { color: #4ade80; }
+
+    .ti-dn    { color: #f87171; }
+
+    .ti-nt    { color: #94a3b8; }
+
+    .ticker-sep { color: #1e3a6a; margin: 0 4px; }
+
+
+
+    /* ============================================================
+
+       TAB BAR
+
+       ============================================================ */
+
+    .tab-container {
+
+      display: flex;
+
+      justify-content: center;
+
+      gap: 6px;
+
+      padding: 1.5rem 1rem 1rem;
+
+      flex-wrap: wrap;
+
+    }
+
+    .tab-btn {
+
+      padding: 10px 22px;
+
+      font-size: 0.875rem;
+
+      font-weight: 600;
+
+      background: var(--bg-card);
+
+      color: var(--text-muted);
+
+      border: 1.5px solid var(--border-color);
+
+      border-radius: var(--r-pill);
+
+      transition: all var(--t-base) var(--ease-out);
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      box-shadow: var(--shadow-sm);
+
+      min-height: 44px;
+
+    }
+
+    .tab-btn:hover { color: var(--brand-primary); border-color: var(--brand-primary); transform: translateY(-1px); }
+
+    .tab-btn.active {
+
+      background: var(--brand-primary);
+
+      color: #fff;
+
+      border-color: var(--brand-primary);
+
+      box-shadow: var(--shadow-md), 0 0 0 3px rgba(0,32,96,.15);
+
+    }
+
+    [data-theme="dark"] .tab-btn.active { box-shadow: var(--shadow-md), 0 0 0 3px rgba(91,141,238,.2); }
+
+
+
+    /* ============================================================
+
+       LAYOUT
+
+       ============================================================ */
+
+    .view-section { display: none; }
+
+    .view-section.active { display: block; animation: fadeUp var(--t-slow) var(--ease-out); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+
+
+    .container { max-width: 1500px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+
+
+
+    .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+
+    @media (max-width: 1100px) { .grid3 { grid-template-columns: repeat(2, 1fr); } }
+
+    @media (max-width: 768px)  { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+
+
+    /* ============================================================
+
+       METRIC CARDS — Bento Grid
+
+       ============================================================ */
+
+    .metrics {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+
+      gap: 1rem;
+
+      margin-bottom: 1.5rem;
+
+    }
+
+
+
+    .metric-card {
+
+      background: var(--bg-card);
+
+      border-radius: var(--r-lg);
+
+      padding: 1.25rem 1.25rem 1rem;
+
+      border: 1px solid var(--border-color);
+
+      box-shadow: var(--shadow-sm);
+
+      transition: transform var(--t-base) var(--ease-out), box-shadow var(--t-base);
+
+      position: relative;
+
+      overflow: hidden;
+
+    }
+
     .metric-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      opacity: 0.5;
-    }
-    .metric-card .lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-    .metric-card .val { font-size: 1.8rem; font-weight: 700; color: #fff; letter-spacing: -1px; }
 
-    /* Card Headers */
-    .card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-glass); background: transparent; }
-    .card-header h2 { font-size: 1rem; color: #fff; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+      content: '';
+
+      position: absolute;
+
+      top: 0; left: 0; right: 0;
+
+      height: 3px;
+
+      background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+
+    }
+
+    .metric-card:nth-child(even)::before {
+
+      background: linear-gradient(90deg, var(--brand-gold), var(--brand-gold-lt));
+
+    }
+
+    .metric-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+
+
+    .metric-card .lbl {
+
+      font-size: 0.7rem;
+
+      font-weight: 700;
+
+      color: var(--text-sub);
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.7px;
+
+      margin-bottom: 0.5rem;
+
+    }
+
+    .metric-card .val {
+
+      font-size: 1.5rem;
+
+      font-weight: 700;
+
+      color: var(--brand-primary);
+
+      line-height: 1.2;
+
+      letter-spacing: -0.02em;
+
+    }
+
+    [data-theme="dark"] .metric-card .val { color: var(--brand-gold-lt); }
+
+    .metric-card .sub {
+
+      font-size: 0.75rem;
+
+      color: var(--text-muted);
+
+      margin-top: 5px;
+
+      font-weight: 500;
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 4px;
+
+    }
+
+
 
     /* ============================================================
+
+       CARDS
+
+       ============================================================ */
+
+    .card, .full-card {
+
+      background: var(--bg-card);
+
+      border-radius: var(--r-lg);
+
+      box-shadow: var(--shadow-sm);
+
+      margin-bottom: 1.25rem;
+
+      border: 1px solid var(--border-color);
+
+      overflow: hidden;
+
+      transition: box-shadow var(--t-base);
+
+    }
+
+    .card-header {
+
+      padding: 1rem 1.25rem;
+
+      border-bottom: 1px solid var(--border-color);
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      flex-wrap: wrap;
+
+      gap: 8px;
+
+      background: var(--bg-card);
+
+    }
+
+    .card-header h2 {
+
+      font-size: 0.8125rem;
+
+      color: var(--brand-primary);
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.6px;
+
+      margin: 0;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      font-weight: 700;
+
+    }
+
+    [data-theme="dark"] .card-header h2 { color: var(--brand-gold-lt); }
+
+
+
+    .card-body { padding: 0; }
+
+    .card-body.padded { padding: 1.25rem; }
+
+
+
+    .interactive-card { transition: all var(--t-base) var(--ease-out); }
+
+    .interactive-card:hover { box-shadow: var(--shadow-md); }
+
+
+
+    /* ============================================================
+
        TABLES
-       ============================================================ */
-    table { width: 100%; border-collapse: collapse; }
-    th {
-      text-align: left; padding: 14px 16px; color: var(--text-muted);
-      border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem;
-      text-transform: uppercase; letter-spacing: 1px; background: transparent;
-    }
-    td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 0.875rem; color: var(--text-main); }
-    tbody tr:nth-child(odd) td { background: rgba(255,255,255,0.01); }
-    tbody tr:hover td { background: rgba(255,255,255,0.04) !important; }
 
-    .up { color: var(--up) !important; text-shadow: 0 0 8px rgba(16,185,129,0.3); }
-    .dn { color: var(--dn) !important; text-shadow: 0 0 8px rgba(239,68,68,0.3); }
-    
-    .expand-hint { text-align: center; padding: 16px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; background: rgba(0,0,0,0.2); }
-    .expand-hint:hover { color: #fff; }
+       ============================================================ */
+
+    .table-collapsed tbody tr:nth-child(n+6) { display: none; }
+
+    .pdf-mode .table-collapsed tbody tr { display: table-row !important; }
+
+    .pdf-mode .expand-hint { display: none !important; }
+
+
+
+    .expand-hint {
+
+      text-align: center;
+
+      font-size: 0.8rem;
+
+      font-weight: 700;
+
+      color: var(--brand-primary);
+
+      padding: 12px;
+
+      background: var(--table-stripe);
+
+      border-top: 1px dashed var(--border-color);
+
+      cursor: pointer;
+
+      transition: background var(--t-fast), color var(--t-fast);
+
+      letter-spacing: 0.5px;
+
+      user-select: none;
+
+    }
+
+    .expand-hint:hover { background: var(--table-hover); color: var(--brand-gold); }
+
+    .table-collapsed .expand-hint::after { content: "▼  VIEW FULL TABLE  ▼"; }
+
+    .interactive-card:not(.table-collapsed) .expand-hint::after { content: "▲  COLLAPSE TABLE  ▲"; color: var(--text-muted); }
+
+
+
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+
+
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+
+
+
+    thead { position: sticky; top: 0; z-index: 1; }
+
+
+
+    th {
+
+      text-align: left;
+
+      padding: 11px 14px;
+
+      color: var(--text-muted);
+
+      border-bottom: 2px solid var(--border-color);
+
+      font-size: 0.7rem;
+
+      font-weight: 700;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.6px;
+
+      background: var(--table-header-bg);
+
+      cursor: pointer;
+
+      user-select: none;
+
+      white-space: nowrap;
+
+      transition: color var(--t-fast), background var(--t-fast);
+
+    }
+
+    th:hover { color: var(--brand-primary); background: var(--table-border); }
+
+    th.asc, th.desc { color: var(--brand-primary); }
+
+    [data-theme="dark"] th.asc, [data-theme="dark"] th.desc { color: var(--brand-gold-lt); }
+
+
+
+    td {
+
+      padding: 10px 14px;
+
+      border-bottom: 1px solid var(--table-border);
+
+      font-size: 0.875rem;
+
+      color: var(--text-main);
+
+      font-weight: 500;
+
+      transition: background var(--t-fast);
+
+    }
+
+    tbody tr:nth-child(odd) td { background: var(--table-stripe); }
+
+    tbody tr:hover td { background: var(--table-hover) !important; }
+
+    tr:last-child td { border-bottom: none; }
+
+
+
+    .up { color: var(--up) !important; font-weight: 600; }
+
+    .dn { color: var(--dn) !important; font-weight: 600; }
+
+    .nt { color: var(--nt) !important; }
+
+
+
+    .sort-icon { font-size: 0.65rem; opacity: 0.6; margin-left: 3px; }
+
+    th:hover .sort-icon { opacity: 1; }
+
+    th.asc .sort-icon  { color: var(--brand-gold); opacity: 1; }
+
+    th.desc .sort-icon { color: var(--brand-gold); opacity: 1; }
+
+
 
     /* ============================================================
-       FORMS & BUTTONS
+
+       BADGES
+
        ============================================================ */
-    input, select {
-      background: var(--input-bg); border: 1px solid var(--input-border); color: #fff;
-      padding: 12px; border-radius: var(--r-sm); backdrop-filter: blur(4px);
+
+    .badge {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 4px;
+
+      padding: 3px 9px;
+
+      border-radius: var(--r-pill);
+
+      font-size: 0.7rem;
+
+      font-weight: 700;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.5px;
+
+      white-space: nowrap;
+
     }
-    input:focus, select:focus { border-color: rgba(255,255,255,0.4); outline: none; }
+
+    .badge-bull { background: var(--up-bg); color: var(--up); border: 1px solid rgba(21,128,61,.2); }
+
+    .badge-bear { background: var(--dn-bg); color: var(--dn); border: 1px solid rgba(185,28,28,.2); }
+
+    .badge-neut { background: rgba(107,124,168,.12); color: var(--nt); border: 1px solid rgba(107,124,168,.2); }
+
+    .badge-ai   { } /* alias */
+
+
+
+    /* ============================================================
+
+       SKELETON LOADING
+
+       ============================================================ */
+
+    .skeleton {
+
+      background: linear-gradient(90deg,
+
+        var(--table-header-bg) 25%,
+
+        var(--border-color) 50%,
+
+        var(--table-header-bg) 75%);
+
+      background-size: 400% 100%;
+
+      animation: shimmer 1.4s infinite linear;
+
+      border-radius: var(--r-xs);
+
+    }
+
+    @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+
+
+    .skeleton-row { display: flex; flex-direction: column; gap: 12px; padding: 1.5rem; }
+
+    .skeleton-line { height: 12px; border-radius: var(--r-xs); }
+
+    .skeleton-line.w-full  { width: 100%; }
+
+    .skeleton-line.w-3-4   { width: 75%; }
+
+    .skeleton-line.w-1-2   { width: 50%; }
+
+    .skeleton-line.w-1-3   { width: 33%; }
+
+
+
+    .loader {
+
+      text-align: center;
+
+      padding: 4rem 2rem;
+
+      color: var(--text-muted);
+
+      font-size: 0.9375rem;
+
+      font-weight: 500;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 1rem;
+
+    }
+
+
+
+    .error-box {
+
+      background: var(--dn-bg);
+
+      border: 1px solid rgba(185,28,28,.25);
+
+      border-left: 4px solid var(--dn);
+
+      border-radius: var(--r-md);
+
+      padding: 1.5rem;
+
+      margin: 1.5rem 0;
+
+      color: var(--text-main);
+
+      font-size: 0.875rem;
+
+      line-height: 1.6;
+
+    }
+
+    .error-box h2 { color: var(--dn); margin-bottom: 8px; font-size: 1rem; }
+
+    .error-box code { background: rgba(0,0,0,.1); padding: 8px 12px; border-radius: var(--r-xs); display: block; margin-top: 10px; font-family: 'Courier New', monospace; font-size: 0.8125rem; }
+
+
+
+    /* ============================================================
+
+       MACRO MINI CARDS
+
+       ============================================================ */
+
+    .macro-cards-container {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+
+      gap: 10px;
+
+      padding: 1.25rem;
+
+    }
+
+    .macro-mini-card {
+
+      background: var(--bg-card-2);
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--r-md);
+
+      padding: 14px;
+
+      text-align: center;
+
+      transition: all var(--t-base) var(--ease-out);
+
+      position: relative;
+
+      overflow: hidden;
+
+    }
+
+    .macro-mini-card::after {
+
+      content: '';
+
+      position: absolute;
+
+      bottom: 0; left: 0; right: 0;
+
+      height: 2px;
+
+      background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+
+      transform: scaleX(0);
+
+      transition: transform var(--t-base);
+
+      transform-origin: left;
+
+    }
+
+    .macro-mini-card:hover { border-color: var(--brand-primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+    .macro-mini-card:hover::after { transform: scaleX(1); }
+
+    .macro-mc-lbl { font-size: 0.68rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+
+    .macro-mc-val { font-size: 1.25rem; font-weight: 700; color: var(--brand-primary); letter-spacing: -0.02em; }
+
+    [data-theme="dark"] .macro-mc-val { color: var(--brand-gold-lt); }
+
+
+
+    /* ============================================================
+
+       HEAT MAP
+
+       ============================================================ */
+
+    .heatmap-search {
+
+      width: calc(100% - 2.5rem);
+
+      margin: 0 1.25rem 1rem;
+
+      padding: 11px 14px;
+
+      border: 1px solid var(--input-border);
+
+      border-radius: var(--r-sm);
+
+      font-size: 0.875rem;
+
+      background: var(--input-bg);
+
+      color: var(--text-main);
+
+      outline: none;
+
+      transition: border-color var(--t-fast), box-shadow var(--t-fast);
+
+    }
+
+    .heatmap-search:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(29,78,216,.15); }
+
+
+
+    .ticker-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+
+      gap: 10px;
+
+      padding: 0 1.25rem 1.25rem;
+
+    }
+
+    .ticker-cell {
+
+      background: var(--bg-card-2);
+
+      border-radius: var(--r-sm);
+
+      padding: 12px;
+
+      border: 1px solid var(--border-color);
+
+      border-left: 3px solid var(--border-color);
+
+      transition: all var(--t-fast) var(--ease-out);
+
+      cursor: default;
+
+    }
+
+    .ticker-cell:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+    .ticker-cell.up-cell { border-left-color: var(--up); }
+
+    .ticker-cell.dn-cell { border-left-color: var(--dn); }
+
+    .ticker-cell.nt-cell { border-left-color: var(--text-sub); }
+
+    .tc-sym   { font-size: 0.8125rem; font-weight: 700; color: var(--brand-primary); }
+
+    .tc-price { font-size: 0.8125rem; color: var(--text-main); margin: 4px 0; }
+
+    .tc-chg   { font-size: 0.75rem; font-weight: 600; }
+
+
+
+    /* ============================================================
+
+       GLOBAL EXPLORER
+
+       ============================================================ */
+
+    .global-explorer-wrapper { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem; }
+
+    .country-filter { display: flex; justify-content: center; padding-bottom: 1.25rem; border-bottom: 1px dashed var(--border-color); }
+
+    .country-filter select {
+
+      padding: 11px 20px;
+
+      font-size: 0.875rem;
+
+      font-weight: 600;
+
+      border: 1px solid var(--input-border);
+
+      border-radius: var(--r-sm);
+
+      color: var(--text-main);
+
+      background: var(--input-bg);
+
+      outline: none;
+
+      transition: border-color var(--t-fast), box-shadow var(--t-fast);
+
+      width: 100%;
+
+      max-width: 380px;
+
+      min-height: 44px;
+
+    }
+
+    .country-filter select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(29,78,216,.15); }
+
+    .global-tables-section { display: none; }
+
+    .global-tables-section.active-country { display: block; animation: fadeUp var(--t-slow) var(--ease-out); }
+
+
+
+    /* ============================================================
+
+       GRAPHS SECTION
+
+       ============================================================ */
+
+    .graphs-section {
+
+      background: var(--bg-card);
+
+      border-radius: var(--r-lg);
+
+      box-shadow: var(--shadow-sm);
+
+      margin-bottom: 1.5rem;
+
+      border: 1px solid var(--border-color);
+
+      overflow: hidden;
+
+    }
+
+    .graphs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; padding: 1.25rem; }
+
+    @media (max-width: 860px) { .graphs-grid { grid-template-columns: 1fr; } }
+
+    .graph-card {
+
+      background: var(--bg-card-2);
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--r-md);
+
+      padding: 1.25rem;
+
+      transition: box-shadow var(--t-base);
+
+    }
+
+    .graph-card:hover { box-shadow: var(--shadow-md); }
+
+    .graph-card h3 {
+
+      font-size: 0.75rem;
+
+      color: var(--text-muted);
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.6px;
+
+      margin-bottom: 1rem;
+
+      text-align: center;
+
+      font-weight: 700;
+
+    }
+
+    .chart-wrapper { position: relative; height: 300px; width: 100%; }
+
+
+
+    /* ============================================================
+
+       MODALS
+
+       ============================================================ */
+
+    .modal-overlay {
+
+      position: fixed;
+
+      inset: 0;
+
+      background: rgba(4, 13, 31, 0.72);
+
+      z-index: 10000;
+
+      display: none;
+
+      justify-content: center;
+
+      align-items: center;
+
+      backdrop-filter: blur(6px);
+
+      -webkit-backdrop-filter: blur(6px);
+
+      padding: 1rem;
+
+    }
+
+    .modal-overlay.open { display: flex; animation: fadeIn var(--t-base) var(--ease-out); }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+
+
+    .modal-box {
+
+      background: var(--bg-card);
+
+      padding: 2rem;
+
+      border-radius: var(--r-xl);
+
+      width: 100%;
+
+      max-width: 420px;
+
+      box-shadow: var(--shadow-xl);
+
+      border: 1px solid var(--border-color);
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 1rem;
+
+      position: relative;
+
+      max-height: 90vh;
+
+      overflow-y: auto;
+
+      animation: slideUp var(--t-slow) var(--ease-out);
+
+    }
+
+    @keyframes slideUp { from { opacity: 0; transform: translateY(24px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .modal-box h3 {
+
+      color: var(--brand-primary);
+
+      font-size: 1.125rem;
+
+      text-align: center;
+
+      padding-right: 24px;
+
+    }
+
+    [data-theme="dark"] .modal-box h3 { color: var(--brand-gold-lt); }
+
+
+
+    .modal-close {
+
+      position: absolute;
+
+      top: 14px;
+
+      right: 14px;
+
+      width: 32px;
+
+      height: 32px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      border-radius: var(--r-sm);
+
+      color: var(--text-muted);
+
+      background: var(--bg-card-2);
+
+      border: 1px solid var(--border-color);
+
+      transition: all var(--t-fast);
+
+      cursor: pointer;
+
+    }
+
+    .modal-close:hover { color: var(--dn); border-color: var(--dn); background: var(--dn-bg); }
+
+
+
+    .modal-divider { border: none; border-top: 1px solid var(--border-color); margin: 2px 0; }
+
+
+
+    /* ============================================================
+
+       FORM ELEMENTS
+
+       ============================================================ */
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+
+    .form-group label {
+
+      font-size: 0.7rem;
+
+      font-weight: 700;
+
+      color: var(--text-sub);
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.5px;
+
+    }
+
+    .form-group input, .form-group select {
+
+      padding: 10px 12px;
+
+      border: 1.5px solid var(--input-border);
+
+      border-radius: var(--r-sm);
+
+      background: var(--input-bg);
+
+      color: var(--text-main);
+
+      outline: none;
+
+      font-size: 0.875rem;
+
+      transition: border-color var(--t-fast), box-shadow var(--t-fast);
+
+      min-height: 42px;
+
+    }
+
+    .form-group input:focus, .form-group select:focus {
+
+      border-color: var(--border-focus);
+
+      box-shadow: 0 0 0 3px rgba(29,78,216,.15);
+
+    }
+
+    .form-group .input-wrap { position: relative; }
+
+    .form-group .input-wrap input { width: 100%; padding-right: 40px; }
+
+    .pw-toggle {
+
+      position: absolute;
+
+      right: 10px;
+
+      top: 50%;
+
+      transform: translateY(-50%);
+
+      color: var(--text-sub);
+
+      cursor: pointer;
+
+      padding: 4px;
+
+      border-radius: var(--r-xs);
+
+      transition: color var(--t-fast);
+
+      background: none;
+
+      border: none;
+
+    }
+
+    .pw-toggle:hover { color: var(--text-main); }
+
+
+
+    .days-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 8px; margin-top: 4px; }
+
+    .day-chk {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      font-size: 0.875rem;
+
+      color: var(--text-main);
+
+      cursor: pointer;
+
+      min-height: 36px;
+
+    }
+
+    .day-chk input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--brand-primary); cursor: pointer; }
+
+
+
+    /* ============================================================
+
+       BUTTONS
+
+       ============================================================ */
 
     .primary-btn {
-      background: #fff; color: #000; border: none; padding: 14px 24px;
-      border-radius: var(--r-pill); font-weight: 700; font-size: 0.95rem;
-      transition: all var(--t-fast); display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .primary-btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
 
-    .secondary-btn, .action-btn {
-      background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);
-      padding: 10px 20px; border-radius: var(--r-pill); font-weight: 600;
-      transition: all var(--t-fast);
+      background: var(--brand-primary);
+
+      color: #fff;
+
+      border: none;
+
+      padding: 13px 20px;
+
+      border-radius: var(--r-sm);
+
+      font-weight: 700;
+
+      font-size: 0.9375rem;
+
+      letter-spacing: 0.02em;
+
+      transition: background var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 6px;
+
+      min-height: 44px;
+
+      width: 100%;
+
     }
-    .secondary-btn:hover, .action-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .primary-btn:hover { background: var(--brand-primary-lt); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+    .primary-btn:active { transform: translateY(0); }
+
+    .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+
+
+    .secondary-btn {
+
+      background: transparent;
+
+      color: var(--brand-primary);
+
+      border: 1.5px solid var(--border-color);
+
+      padding: 11px 18px;
+
+      border-radius: var(--r-sm);
+
+      font-weight: 600;
+
+      font-size: 0.875rem;
+
+      text-align: center;
+
+      transition: all var(--t-fast);
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 6px;
+
+      min-height: 42px;
+
+    }
+
+    .secondary-btn:hover { border-color: var(--brand-primary); background: rgba(0,32,96,.05); }
+
+
+
+    .action-btn {
+
+      background: var(--brand-gold);
+
+      color: #001040;
+
+      border: none;
+
+      padding: 9px 16px;
+
+      border-radius: var(--r-sm);
+
+      font-weight: 700;
+
+      font-size: 0.8125rem;
+
+      transition: all var(--t-fast);
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      white-space: nowrap;
+
+      min-height: 38px;
+
+    }
+
+    .action-btn:hover { background: var(--brand-gold-lt); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+
+
+
+    .signout-btn {
+
+      background: transparent;
+
+      color: var(--dn);
+
+      border: 1.5px solid rgba(185,28,28,.3);
+
+      padding: 9px 16px;
+
+      border-radius: var(--r-sm);
+
+      font-weight: 700;
+
+      font-size: 0.8125rem;
+
+      transition: all var(--t-fast);
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      white-space: nowrap;
+
+      min-height: 38px;
+
+    }
+
+    .signout-btn:hover { background: var(--dn-bg); border-color: var(--dn); transform: translateY(-1px); }
+
+
+
+    .export-icon-btn {
+
+      background: var(--bg-card-2);
+
+      border: 1px solid var(--border-color);
+
+      color: var(--text-muted);
+
+      padding: 7px 12px;
+
+      border-radius: var(--r-sm);
+
+      font-weight: 600;
+
+      font-size: 0.75rem;
+
+      transition: all var(--t-fast);
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 4px;
+
+      min-height: 34px;
+
+    }
+
+    .export-icon-btn:hover { border-color: var(--brand-accent); color: var(--brand-accent); background: rgba(29,78,216,.06); }
+
+
+
+    .auth-toggle {
+
+      text-align: center;
+
+      font-size: 0.875rem;
+
+      font-weight: 500;
+
+      color: var(--text-muted);
+
+      cursor: pointer;
+
+    }
+
+    .auth-toggle span { color: var(--brand-accent); text-decoration: underline; font-weight: 600; }
+
+    .auth-toggle span:hover { color: var(--brand-primary); }
+
+
+
+    .feedback-msg {
+
+      text-align: center;
+
+      font-size: 0.8125rem;
+
+      font-weight: 600;
+
+      padding: 8px 12px;
+
+      border-radius: var(--r-sm);
+
+      display: none;
+
+    }
+
+    .feedback-msg.error { background: var(--dn-bg); color: var(--dn); }
+
+    .feedback-msg.success { background: var(--up-bg); color: var(--up); }
+
+
 
     /* ============================================================
-       GLOBE WRAPPER (HERO)
+
+       PORTFOLIO SECTION
+
        ============================================================ */
-    #globe-wrapper {
-      display: flex; width: 100%; height: 500px; /* Taller cinematic globe */
-      gap: 1rem; align-items: center; justify-content: center;
-      background: radial-gradient(circle at center, rgba(10,15,30,0.8), transparent);
-      border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border-glass);
-      margin-bottom: 2rem;
+
+    .port-btn-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+
+
+
+    .port-summary-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+      gap: 1rem;
+
+      margin-bottom: 1.5rem;
+
     }
 
-    /* Utilities */
-    .loader { text-align: center; padding: 4rem; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-    .badge { padding: 4px 10px; border-radius: var(--r-pill); font-size: 0.65rem; letter-spacing: 1px; }
+    .port-summary-card {
+
+      background: var(--bg-card-2);
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--r-md);
+
+      padding: 1.25rem;
+
+      text-align: center;
+
+      box-shadow: var(--shadow-sm);
+
+      transition: transform var(--t-base), box-shadow var(--t-base);
+
+      position: relative;
+
+      overflow: hidden;
+
+    }
+
+    .port-summary-card::before {
+
+      content: '';
+
+      position: absolute;
+
+      top: 0; left: 0; right: 0;
+
+      height: 3px;
+
+      background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+
+    }
+
+    .port-summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+    .port-summary-lbl { font-size: 0.7rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+
+    .port-summary-val { font-size: 1.4rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.02em; }
+
+    .port-summary-sub { font-size: 0.875rem; font-weight: 600; margin-top: 6px; }
+
+
+
+    .port-tabs {
+
+      display: flex;
+
+      gap: 2px;
+
+      border-bottom: 2px solid var(--border-color);
+
+      margin-bottom: 1.25rem;
+
+      align-items: center;
+
+      flex-wrap: wrap;
+
+      padding-bottom: 0;
+
+    }
+
+    .port-tab-btn {
+
+      background: transparent;
+
+      color: var(--text-muted);
+
+      border: none;
+
+      padding: 10px 18px;
+
+      font-weight: 600;
+
+      font-size: 0.875rem;
+
+      cursor: pointer;
+
+      border-bottom: 3px solid transparent;
+
+      margin-bottom: -2px;
+
+      transition: all var(--t-fast);
+
+      min-height: 44px;
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      border-radius: var(--r-sm) var(--r-sm) 0 0;
+
+    }
+
+    .port-tab-btn:hover { color: var(--brand-primary); background: rgba(0,32,96,.04); }
+
+    .port-tab-btn.active { color: var(--brand-primary); border-bottom-color: var(--brand-primary); font-weight: 700; }
+
+    [data-theme="dark"] .port-tab-btn.active { color: var(--brand-gold-lt); border-bottom-color: var(--brand-gold-lt); }
+
+
+
+    .port-view { display: none; animation: fadeUp var(--t-slow) var(--ease-out); }
+
+    .port-view.active { display: block; }
+
+
+
+    .chart-container-pie {
+
+      position: relative;
+
+      height: 340px;
+
+      width: 100%;
+
+      display: flex;
+
+      justify-content: center;
+
+      align-items: center;
+
+      margin-top: 1.5rem;
+
+      border-top: 1px dashed var(--border-color);
+
+      padding-top: 1.5rem;
+
+    }
+
+
+
+    /* ============================================================
+
+       NEWS
+
+       ============================================================ */
+
+    .news-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+
+      gap: 1.25rem;
+
+      padding: 1.25rem;
+
+    }
+
+    .news-item {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 0.75rem;
+
+      background: var(--bg-card);
+
+      border: 1px solid var(--border-color);
+
+      border-radius: var(--r-md);
+
+      overflow: hidden;
+
+      height: 100%;
+
+      transition: all var(--t-base) var(--ease-out);
+
+    }
+
+    .news-item:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--brand-gold); }
+
+
+
+    .news-img-wrap {
+
+      width: 100%;
+
+      aspect-ratio: 16 / 9;
+
+      overflow: hidden;
+
+      background: var(--table-header-bg);
+
+      flex-shrink: 0;
+
+    }
+
+    .news-image {
+
+      width: 100%;
+
+      height: 100%;
+
+      object-fit: cover;
+
+      display: block;
+
+      transition: transform var(--t-slow) var(--ease-out);
+
+    }
+
+    .news-item:hover .news-image { transform: scale(1.04); }
+
+
+
+    .news-body { padding: 0.875rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+
+    .news-source {
+
+      font-size: 0.68rem;
+
+      font-weight: 700;
+
+      color: var(--brand-primary);
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.7px;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 4px;
+
+    }
+
+    [data-theme="dark"] .news-source { color: var(--brand-gold-lt); }
+
+    .news-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-main); line-height: 1.45; }
+
+    .news-desc { font-size: 0.8125rem; color: var(--text-muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .news-date { font-size: 0.7rem; font-weight: 600; color: var(--brand-gold); margin-top: auto; text-transform: uppercase; letter-spacing: 0.5px; }
+
+
+
+    /* ============================================================
+
+       RESPONSIVE OVERRIDES
+
+       ============================================================ */
+
+    @media (max-width: 900px) {
+
+      header { height: auto; padding: 0.875rem 1rem; flex-wrap: wrap; }
+
+      .header-right { flex-wrap: wrap; }
+
+      .header-status-block { display: none; }
+
+      .btn-group .hdr-btn span { display: none; }
+
+    }
+
+
+
+    @media (max-width: 600px) {
+
+      .tab-btn { padding: 9px 16px; font-size: 0.8125rem; }
+
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+
+      .container { padding: 0 1rem 2rem; }
+
+    }
+
+
+
+    /* ============================================================
+
+       FOOTER
+
+       ============================================================ */
+
+    .page-footer {
+
+      text-align: center;
+
+      padding: 2rem 1rem 1rem;
+
+      color: var(--text-sub);
+
+      font-size: 0.7rem;
+
+      font-weight: 700;
+
+      letter-spacing: 3px;
+
+      text-transform: uppercase;
+
+      border-top: 1px solid var(--border-color);
+
+      margin-top: 1.5rem;
+
+    }
+
+
+
+    /* ============================================================
+
+       TOAST
+
+       ============================================================ */
+
+    .toast-container {
+
+      position: fixed;
+
+      bottom: 1.5rem;
+
+      right: 1.5rem;
+
+      z-index: 20000;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 8px;
+
+      pointer-events: none;
+
+    }
+
+    .toast {
+
+      background: var(--bg-card);
+
+      border: 1px solid var(--border-color);
+
+      border-left: 4px solid var(--brand-primary);
+
+      border-radius: var(--r-md);
+
+      padding: 12px 16px;
+
+      box-shadow: var(--shadow-lg);
+
+      font-size: 0.875rem;
+
+      font-weight: 600;
+
+      color: var(--text-main);
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+      min-width: 260px;
+
+      max-width: 360px;
+
+      pointer-events: auto;
+
+      animation: toastIn var(--t-base) var(--ease-out),
+
+                 toastOut var(--t-base) var(--ease-in) 3.5s forwards;
+
+    }
+
+    .toast.success { border-left-color: var(--up); }
+
+    .toast.error   { border-left-color: var(--dn); }
+
+    @keyframes toastIn  { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    @keyframes toastOut { from { opacity: 1; transform: translateX(0); }    to { opacity: 0; transform: translateX(20px); } }
+
+
+
+    /* ============================================================
+
+       MISC UTILITIES
+
+       ============================================================ */
+
+    .cell-name { color: var(--text-muted); font-size: 0.8125rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+    details summary { cursor: pointer; font-weight: 600; padding: 12px 14px; background: var(--table-header-bg); border: 1px solid var(--border-color); margin-bottom: 4px; border-radius: var(--r-sm); user-select: none; font-size: 0.875rem; transition: background var(--t-fast); }
+
+    details summary:hover { background: var(--table-hover); }
+
+    details[open] summary { background: var(--brand-primary); color: #fff; border-color: var(--brand-primary); border-radius: var(--r-sm) var(--r-sm) 0 0; }
+
   </style>
+
 </head>
+
 <body>
 
+
+
+<!-- ============================================================
+
+     HEADER
+
+     ============================================================ -->
+
 <header data-html2canvas-ignore="true">
+
   <div class="header-brand">
+
     <i data-lucide="bar-chart-2" class="icon-md" style="color:var(--brand-gold-lt);"></i>
+
     <h1>Market Data Analysis</h1>
+
+    <div class="header-brand-dot" aria-hidden="true"></div>
+
   </div>
+
+
 
   <div class="header-right">
+
     <span id="market-status" class="closed" aria-live="polite">
+
       <i data-lucide="clock" class="icon-xs"></i> STATUS PENDING
+
     </span>
 
+
+
     <div class="header-status-block">
+
       <span id="live-clock" aria-live="polite">EAT: --:--:--</span>
-      <span id="last-updated" style="font-size:0.7rem; font-weight:600; color:rgba(255,255,255,.5);">Loading…</span>
+
+      <span id="last-updated" style="font-size:0.7rem; font-weight:600; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:0.5px;">Loading…</span>
+
       <span id="market-countdown" aria-live="polite"></span>
+
     </div>
 
-    <button class="hdr-btn" onclick="openAuthModal()" id="btn-portfolio-auth">
-      <i data-lucide="briefcase" class="icon-sm"></i><span>Portfolio</span>
-    </button>
-    <button class="hdr-btn" onclick="openExportModal()">
-      <i data-lucide="download" class="icon-sm"></i><span>Export</span>
-    </button>
-    <button class="hdr-btn" id="refresh-btn" onclick="triggerRefresh()">
-      <i data-lucide="refresh-cw" class="icon-sm"></i><span>Sync</span>
-    </button>
+
+
+    <div class="btn-group">
+
+      <button class="hdr-btn" onclick="openAuthModal()" id="btn-portfolio-auth" aria-label="My Portfolio">
+
+        <i data-lucide="briefcase" class="icon-sm"></i>
+
+        <span>Portfolio</span>
+
+      </button>
+
+      <button class="hdr-btn" onclick="openExportModal()" aria-label="Export tear sheet">
+
+        <i data-lucide="download" class="icon-sm"></i>
+
+        <span>Export</span>
+
+      </button>
+
+      <button class="hdr-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle dark mode">
+
+        <i data-lucide="moon" class="icon-sm"></i>
+
+        <span>Dark</span>
+
+      </button>
+
+      <button class="hdr-btn" id="refresh-btn" onclick="triggerRefresh()" aria-label="Sync data">
+
+        <i data-lucide="refresh-cw" class="icon-sm"></i>
+
+        <span>Sync</span>
+
+      </button>
+
+    </div>
+
   </div>
+
 </header>
 
-<div class="ticker-wrap" role="marquee">
+
+
+<!-- ============================================================
+
+     TICKER STRIP
+
+     ============================================================ -->
+
+<div class="ticker-wrap" role="marquee" aria-label="Live market prices">
+
   <div class="ticker" id="ticker-content">
+
     <div style="padding:0 20px; color:var(--text-muted);">Aggregating live ticker stream…</div>
+
   </div>
+
 </div>
+
+
+
+<!-- ============================================================
+
+     TAB BAR
+
+     ============================================================ -->
 
 <div class="tab-container" data-html2canvas-ignore="true" role="tablist">
-  <button class="tab-btn active" onclick="switchTab('kenya',event)" id="tab-kenya">Kenyan Market</button>
-  <button class="tab-btn" onclick="switchTab('global',event)" id="tab-global">Global Overview</button>
-  <button class="tab-btn" onclick="switchTab('portfolio',event)" id="tab-portfolio" style="display:none; color:var(--brand-gold-lt);">Personal Portfolio</button>
+
+  <button class="tab-btn active" onclick="switchTab('kenya',event)" id="tab-kenya" role="tab" aria-selected="true" aria-controls="view-kenya">
+
+    <i data-lucide="map-pin" class="icon-sm"></i> Kenyan Market
+
+  </button>
+
+  <button class="tab-btn" onclick="switchTab('global',event)" id="tab-global" role="tab" aria-selected="false" aria-controls="view-global">
+
+    <i data-lucide="globe" class="icon-sm"></i> Global Overview
+
+  </button>
+
+  <button class="tab-btn" onclick="switchTab('portfolio',event)" id="tab-portfolio" role="tab" aria-selected="false" aria-controls="view-portfolio" style="display:none; color:var(--brand-gold);">
+
+    <i data-lucide="pie-chart" class="icon-sm"></i> Personal Portfolio
+
+  </button>
+
 </div>
+
+
+
+<!-- ============================================================
+
+     MAIN CONTENT
+
+     ============================================================ -->
 
 <div class="container" id="pdf-container">
-  
-  <div id="view-kenya" class="view-section active" role="tabpanel">
+
+
+
+  <!-- KENYA TAB -->
+
+  <div id="view-kenya" class="view-section active" role="tabpanel" aria-labelledby="tab-kenya">
+
     <div id="app-kenya">
-      <div class="loader"><i data-lucide="loader-2" class="icon-lg spin"></i> Authenticating data…</div>
-    </div>
-  </div>
 
-  <div id="view-global" class="view-section" role="tabpanel">
-    <div id="app-global">
-      <div class="loader"><i data-lucide="loader-2" class="icon-lg spin"></i> Synchronizing global…</div>
-    </div>
-  </div>
+      <div class="loader">
 
-  <div id="view-portfolio" class="view-section" role="tabpanel">
-    <div class="full-card">
-      <div class="card-header" style="justify-content: space-between;">
-        <h2><i data-lucide="briefcase" class="icon-sm"></i> My Live Holdings</h2>
-        <div style="display: flex; gap:10px;">
-          <button class="action-btn" onclick="openTradeModal()">+ Add Stock</button>
-          <button class="action-btn" onclick="logoutUser()" style="border-color: var(--dn); color: var(--dn);">Sign Out</button>
-        </div>
+        <i data-lucide="loader-2" class="icon-lg spin"></i>
+
+        Authenticating and aggregating domestic datasets…
+
       </div>
-      <div class="card-body" style="padding: 1.5rem;">
-        
-        <div class="metrics">
-          <div class="metric-card">
-            <div class="lbl">Total Invested Value</div>
-            <div class="val" id="port-sum-invested">KES 0.00</div>
-          </div>
-          <div class="metric-card">
-            <div class="lbl">Current Portfolio Value</div>
-            <div class="val" id="port-sum-current" style="color:var(--brand-gold-lt);">KES 0.00</div>
-          </div>
-          <div class="metric-card">
-            <div class="lbl">Net Gain / Loss</div>
-            <div class="val" id="port-sum-pnl">KES 0.00</div>
-            <div class="sub" id="port-sum-pnl-pct" style="margin-top:8px;">0.00%</div>
-          </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- GLOBAL TAB -->
+
+  <div id="view-global" class="view-section" role="tabpanel" aria-labelledby="tab-global">
+
+    <div id="app-global">
+
+      <div class="loader">
+
+        <i data-lucide="loader-2" class="icon-lg spin"></i>
+
+        Synchronizing global datasets…
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- PORTFOLIO TAB -->
+
+  <div id="view-portfolio" class="view-section" role="tabpanel" aria-labelledby="tab-portfolio">
+
+    <div class="full-card">
+
+      <div class="card-header">
+
+        <h2><i data-lucide="briefcase" class="icon-sm"></i> My Live Holdings</h2>
+
+        <div class="port-btn-group">
+
+          <button class="action-btn" onclick="openTradeModal()">
+
+            <i data-lucide="plus" class="icon-sm"></i> Add Stock
+
+          </button>
+
+          <button class="signout-btn" onclick="logoutUser()">
+
+            <i data-lucide="log-out" class="icon-sm"></i> Sign Out
+
+          </button>
+
         </div>
 
-        <div style="margin-bottom: 1rem;">
-            <select id="portfolio-broker-filter" onchange="renderFilteredPortfolio()">
-              <option value="ALL">All Brokers</option>
-            </select>
+      </div>
+
+      <div class="card-body padded">
+
+
+
+        <div class="port-summary-grid">
+
+          <div class="port-summary-card">
+
+            <div class="port-summary-lbl">Total Invested Value</div>
+
+            <div class="port-summary-val" id="port-sum-invested">KES 0.00</div>
+
+          </div>
+
+          <div class="port-summary-card">
+
+            <div class="port-summary-lbl">Current Portfolio Value</div>
+
+            <div class="port-summary-val" id="port-sum-current" style="color:var(--brand-gold);">KES 0.00</div>
+
+          </div>
+
+          <div class="port-summary-card">
+
+            <div class="port-summary-lbl">Net Gain / Loss</div>
+
+            <div class="port-summary-val" id="port-sum-pnl">KES 0.00</div>
+
+            <div class="port-summary-sub" id="port-sum-pnl-pct">0.00%</div>
+
+          </div>
+
         </div>
+
+
+
+        <div class="port-tabs">
+
+          <button class="port-tab-btn active" onclick="switchPortTab('holdings',event)">
+
+            <i data-lucide="layers" class="icon-xs"></i> Holdings
+
+          </button>
+
+          <button class="port-tab-btn" onclick="switchPortTab('purchases',event)">
+
+            <i data-lucide="arrow-down-circle" class="icon-xs"></i> Purchases
+
+          </button>
+
+          <button class="port-tab-btn" onclick="switchPortTab('sales',event)">
+
+            <i data-lucide="arrow-up-circle" class="icon-xs"></i> Sales
+
+          </button>
+
+
+
+          <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+
+            <span style="font-size:0.7rem; font-weight:700; color:var(--text-sub); text-transform:uppercase; letter-spacing:0.5px;">Broker:</span>
+
+            <select id="portfolio-broker-filter" onchange="renderFilteredPortfolio()" style="padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-main); outline:none; font-size:0.8125rem; min-height:36px;">
+
+              <option value="ALL">All Brokers</option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
 
         <div id="port-view-holdings" class="port-view active table-responsive">
+
+          <div style="margin-bottom:12px; text-align:right; display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+
+            <button class="export-icon-btn" onclick="exportTableToCSV('my-portfolio-table','Portfolio_Holdings')"><i data-lucide="file-spreadsheet" class="icon-xs"></i> CSV</button>
+
+            <button class="export-icon-btn" onclick="exportTableToExcel('my-portfolio-table','Portfolio_Holdings')"><i data-lucide="table" class="icon-xs"></i> Excel</button>
+
+            <button class="export-icon-btn" onclick="exportTableToPDF('port-view-holdings','Portfolio_Holdings')"><i data-lucide="file-text" class="icon-xs"></i> PDF</button>
+
+          </div>
+
           <table id="my-portfolio-table">
+
             <thead><tr><th>Security</th><th>Quantity</th><th>Base VWAP</th><th>Net Avg Cost</th><th>Invested Value</th><th>LTP</th><th>Current Value</th><th>P&L Value</th><th>P&L %</th><th>AI Signal</th></tr></thead>
+
             <tbody id="my-portfolio-tbody">
+
               <tr><td colspan="10" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading portfolio…</td></tr>
+
             </tbody>
+
           </table>
-          <div style="height:340px; margin-top:2rem;"><canvas id="portfolio-pie-chart"></canvas></div>
+
+          <div class="chart-container-pie"><canvas id="portfolio-pie-chart"></canvas></div>
+
         </div>
+
+
+
+        <div id="port-view-purchases" class="port-view table-responsive">
+
+          <div style="margin-bottom:12px; text-align:right; display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+
+            <button class="export-icon-btn" onclick="exportTableToCSV('my-purchases-table','Purchase_History')"><i data-lucide="file-spreadsheet" class="icon-xs"></i> CSV</button>
+
+            <button class="export-icon-btn" onclick="exportTableToExcel('my-purchases-table','Purchase_History')"><i data-lucide="table" class="icon-xs"></i> Excel</button>
+
+            <button class="export-icon-btn" onclick="exportTableToPDF('port-view-purchases','Purchase_History')"><i data-lucide="file-text" class="icon-xs"></i> PDF</button>
+
+          </div>
+
+          <table id="my-purchases-table">
+
+            <thead><tr><th>Date</th><th>Ticker</th><th>Shares Bought</th><th>Exec. Price</th><th>Trading Fees</th><th>Total Cost</th><th>Broker</th></tr></thead>
+
+            <tbody id="my-purchases-tbody"></tbody>
+
+          </table>
+
+        </div>
+
+
+
+        <div id="port-view-sales" class="port-view table-responsive">
+
+          <div style="margin-bottom:12px; text-align:right; display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+
+            <button class="export-icon-btn" onclick="exportTableToCSV('my-sales-table','Sales_History')"><i data-lucide="file-spreadsheet" class="icon-xs"></i> CSV</button>
+
+            <button class="export-icon-btn" onclick="exportTableToExcel('my-sales-table','Sales_History')"><i data-lucide="table" class="icon-xs"></i> Excel</button>
+
+            <button class="export-icon-btn" onclick="exportTableToPDF('port-view-sales','Sales_History')"><i data-lucide="file-text" class="icon-xs"></i> PDF</button>
+
+          </div>
+
+          <table id="my-sales-table">
+
+            <thead><tr><th>Date</th><th>Ticker</th><th>Shares Sold</th><th>Exec. Price</th><th>Trading Fees</th><th>Net Proceeds</th><th>Broker</th></tr></thead>
+
+            <tbody id="my-sales-tbody"></tbody>
+
+          </table>
+
+        </div>
+
+
+
       </div>
+
     </div>
+
   </div>
 
-  <div id="news-card-wrapper" style="margin-top:2rem;">
+
+
+  <!-- NEWS SECTION (shared) -->
+
+  <div id="news-card-wrapper" style="margin-top:1.5rem;">
+
     <div class="full-card">
-      <div class="card-header"><h2><i data-lucide="newspaper" class="icon-sm"></i> Market Intelligence</h2></div>
-      <div class="card-body" style="padding:1.5rem;">
-        <div id="live-news-container">
-          <div class="loader"><i data-lucide="loader-2" class="icon-lg spin"></i> Fetching news streams…</div>
-        </div>
+
+      <div class="card-header">
+
+        <h2><i data-lucide="newspaper" class="icon-sm"></i> Live Market Intelligence</h2>
+
       </div>
+
+      <div class="card-body">
+
+        <div id="live-news-container">
+
+          <div class="loader"><i data-lucide="loader-2" class="icon-lg spin"></i> Fetching top financial news streams…</div>
+
+        </div>
+
+      </div>
+
     </div>
+
   </div>
+
+
+
+  <footer class="page-footer">To God Be The Glory</footer>
+
 </div>
 
+
+
+<!-- ============================================================
+
+     TOAST CONTAINER
+
+     ============================================================ -->
+
+<div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+
+
+<!-- ============================================================
+
+     EXPORT MODAL
+
+     ============================================================ -->
+
+<div class="modal-overlay" id="export-modal" data-html2canvas-ignore="true" role="dialog" aria-modal="true" aria-labelledby="export-modal-title">
+
+  <div class="modal-box">
+
+    <button class="modal-close" onclick="closeExportModal()" aria-label="Close export modal"><i data-lucide="x" class="icon-sm"></i></button>
+
+    <h3 id="export-modal-title"><i data-lucide="download" class="icon-sm"></i> Export Tear Sheet</h3>
+
+    <div id="export-modal-body">
+
+      <button class="secondary-btn" style="width:100%;" onclick="downloadPDF()"><i data-lucide="file-text" class="icon-sm"></i> Download PDF Now</button>
+
+      <hr class="modal-divider">
+
+      <p style="font-size:0.875rem; color:var(--text-muted); text-align:center; font-weight:600;">Automated Daily Delivery</p>
+
+      <p style="font-size:0.8125rem; color:var(--text-sub); text-align:center; margin-top:-4px;">Subscribe to receive a daily HTML summary & dashboard link.</p>
+
+      <div class="form-group">
+
+        <label>Email Address</label>
+
+        <input type="email" id="sub-email" placeholder="analyst@firm.com" autocomplete="email">
+
+      </div>
+
+      <div class="form-group">
+
+        <label>Delivery Time (EAT)</label>
+
+        <input type="time" id="sub-time" value="17:00">
+
+      </div>
+
+      <div class="form-group">
+
+        <label>Delivery Days</label>
+
+        <div class="days-grid">
+
+          <label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label>
+
+          <label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label>
+
+          <label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label>
+
+          <label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label>
+
+          <label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label>
+
+        </div>
+
+      </div>
+
+      <button class="primary-btn" onclick="submitSubscription()"><i data-lucide="mail" class="icon-sm"></i> Subscribe via Email</button>
+
+      <div id="sub-feedback" class="feedback-msg"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- ============================================================
+
+     AUTH MODAL
+
+     ============================================================ -->
+
+<div class="modal-overlay" id="auth-modal" data-html2canvas-ignore="true" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+
+  <div class="modal-box">
+
+    <button class="modal-close" onclick="closeAuthModal()" aria-label="Close login modal"><i data-lucide="x" class="icon-sm"></i></button>
+
+    <h3 id="auth-title"><i data-lucide="lock" class="icon-sm"></i> Log In to Portfolio</h3>
+
+
+
+    <div class="form-group" id="group-auth-name" style="display:none;">
+
+      <label>Full Name</label>
+
+      <input type="text" id="auth-name" placeholder="John Doe" autocomplete="name">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Username</label>
+
+      <input type="text" id="auth-user" placeholder="Analyst01" autocomplete="username">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Password</label>
+
+      <div class="input-wrap">
+
+        <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password">
+
+        <button class="pw-toggle" type="button" onclick="togglePw('auth-pass', this)" aria-label="Toggle password visibility">
+
+          <i data-lucide="eye" class="icon-sm"></i>
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+
+    <button class="primary-btn" id="auth-submit-btn" onclick="handleAuth()">
+
+      <i data-lucide="log-in" class="icon-sm"></i> Log In
+
+    </button>
+
+    <div class="auth-toggle" id="auth-toggle-txt" onclick="toggleAuthMode()">
+
+      Don't have an account? <span>Sign up</span>
+
+    </div>
+
+    <div id="auth-feedback" class="feedback-msg"></div>
+
+  </div>
+
+</div>
+
+
+
+<!-- ============================================================
+
+     TRADE MODAL
+
+     ============================================================ -->
+
+<div class="modal-overlay" id="trade-modal" data-html2canvas-ignore="true" role="dialog" aria-modal="true" aria-labelledby="trade-modal-title">
+
+  <div class="modal-box">
+
+    <button class="modal-close" onclick="closeTradeModal()" aria-label="Close trade modal"><i data-lucide="x" class="icon-sm"></i></button>
+
+    <h3 id="trade-modal-title"><i data-lucide="activity" class="icon-sm"></i> Log Transaction</h3>
+
+
+
+    <div class="form-group">
+
+      <label>Date of Transaction</label>
+
+      <input type="date" id="trade-date" required>
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Action</label>
+
+      <select id="trade-type">
+
+        <option value="BOUGHT">BOUGHT</option>
+
+        <option value="SOLD">SOLD</option>
+
+      </select>
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Ticker Symbol</label>
+
+      <select id="trade-ticker"></select>
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Number of Shares</label>
+
+      <input type="text" inputmode="decimal" id="trade-shares" placeholder="e.g. 1,000">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Execution Price (RAW)</label>
+
+      <input type="text" inputmode="decimal" id="trade-price" placeholder="e.g. 35.50">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Broker / Platform</label>
+
+      <select id="trade-broker"></select>
+
+    </div>
+
+    <div class="form-group">
+
+      <label style="color:var(--brand-gold);">Custom Trading Fee (Optional)</label>
+
+      <input type="text" inputmode="decimal" id="trade-fees" placeholder="Leave blank to auto-calculate">
+
+    </div>
+
+
+
+    <button class="primary-btn" id="trade-submit-btn" onclick="submitTrade()">
+
+      <i data-lucide="send" class="icon-sm"></i> Update Portfolio
+
+    </button>
+
+    <div id="trade-feedback" class="feedback-msg"></div>
+
+  </div>
+
+</div>
+
+
+
+
+
+<!-- ============================================================
+
+     JAVASCRIPT  (ALL ORIGINAL LOGIC PRESERVED)
+
+     ============================================================ -->
+
 <script>
-  // All original JavaScript logic from the user's provided file goes here.
-  // Including API calls, Chart.js rendering, Globe.gl setup, etc.
-  
-  /* ---- Icon init ---- */
+
+/* ---- Icon init ---- */
+
 function refreshIcons() { if (window.lucide) window.lucide.createIcons(); }
 
+
+
 /* ---- Global error catcher ---- */
+
 window.addEventListener('error', function(e) {
+
   var errHtml = '<div class="error-box" style="margin-top:50px;"><h2><i data-lucide="alert-triangle" class="icon-md"></i> Fatal JavaScript Error</h2><p>The code encountered a syntax or reference error and halted.</p><code>' + e.message + ' (Line ' + e.lineno + ')</code></div>';
+
   var app = document.getElementById("app-kenya");
+
   if (app) { app.innerHTML = errHtml; refreshIcons(); }
+
 });
 
+
+
+/* ---- Toast ---- */
+
+function showToast(msg, type) {
+
+  var tc = document.getElementById('toast-container'); if (!tc) return;
+
+  var t = document.createElement('div'); t.className = 'toast ' + (type || '');
+
+  var icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+
+  t.innerHTML = '<i data-lucide="' + icon + '" class="icon-sm"></i> ' + msg;
+
+  tc.appendChild(t); refreshIcons();
+
+  setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 4000);
+
+}
+
+
+
+/* ---- Password toggle ---- */
+
+function togglePw(inputId, btn) {
+
+  var inp = document.getElementById(inputId); if (!inp) return;
+
+  var showing = inp.type === 'text';
+
+  inp.type = showing ? 'password' : 'text';
+
+  btn.innerHTML = '<i data-lucide="' + (showing ? 'eye' : 'eye-off') + '" class="icon-sm"></i>';
+
+  refreshIcons();
+
+}
+
+
+
 /* ---- APIs ---- */
+
 const API_MARKET    = "https://script.google.com/macros/s/AKfycbximNRYuHGzGVBhb123xe11ehiBBbqtZF7LNe7zWQUlpMXhfoHbMnCqKK7lCnh1gtzX/exec";
+
 const API_GLOBAL    = "https://script.google.com/macros/s/AKfycbxsL3kF3egiH-Fva573TlrbHLR1Iw0IqkmCG08FpvnRExzFlYDIHjJzQZaYuCKPt5Td6A/exec";
+
 const API_PORTFOLIO = "https://script.google.com/macros/s/AKfycbyQjl1sXlSuhWrLN4BVUxLvwMYA6zElBArXt58wGkDDhvzcHHMy4rRVk3NYHRaJhzWA/exec";
+
 const JSONP_TIMEOUT_MS = 15000;
 
+
+
 var KEY_RATES = [], FOREX_RATES = [];
+
 var CHART_DATA = { inflation:{labels:[],m12:[]}, gdp:{labels:[],nominal:[],real:[],growth:[]}, banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]}, kepss:{labels:[],values:[]} };
+
 var LIVE_PRICES = {}; var GLOBAL_HISTORY = []; var GLOBAL_SENTIMENT = {};
+
 var currentTab = 'kenya', isNewsFetched = false, isFetching = false;
+
 var hasRenderedOnce = false, isGeoChartLoaded = false, currentGlobalSelection = "usa";
+
 var chartInstances = {}, kenyaTickerHTML = "", globalTickerHTML = "";
+
 var currentUser = null, isSignupMode = false;
+
 var myGlobe = null, geojsonData = null, availableISOs = [];
 
+
+
 const countryMap = {
+
   "usa":            {name:"USA", code:"US", iso3:"USA"},
+
   "canada":         {name:"Canada", code:"CA", iso3:"CAN"},
+
   "south_africa":   {name:"South Africa", code:"ZA", iso3:"ZAF"},
+
   "nigeria":        {name:"Nigeria", code:"NG", iso3:"NGA"},
+
   "egypt":          {name:"Egypt", code:"EG", iso3:"EGY"},
+
   "france":         {name:"France", code:"FR", iso3:"FRA"},
+
   "united_kingdom": {name:"United Kingdom", code:"GB", iso3:"GBR"},
+
   "australia":      {name:"Australia", code:"AU", iso3:"AUS"},
+
   "japan":          {name:"Japan", code:"JP", iso3:"JPN"},
+
   "mainland_china": {name:"Mainland China", code:"CN", iso3:"CHN"}
+
 };
 
+
+
+const ALL_NSE_TICKERS = ["ABSA","ALP","AMAC","BAT","BKG","BOC","BRIT","CARB","CGEN","CIC","COOP","CRWN","CTUM","DTK","EABL","EGAD","EQTY","EVRD","FTGH","GLD","HAFR","HFCK","IMH","JUB","KAPC","KCB","KEGN","KNRE","KPLC","KQ","KUKZ","LBTY","LIMT","LKL","NBV","NCBA","NMG","NSE","OCH","PORT","SASN","SBIC","SCAN","SCBK","SCOM","SGL","SKL","SLAM","SMER","SMWF","TOTL","TPSE","UCHM","UMME","UNGA","WTK","XPRS","KPC"];
+
+
+
+const ALL_BROKERS = [
+
+  "ABC Capital Ltd","AIB-AXYS Africa","Absa Securities Ltd","Capital A Investment Bank",
+
+  "Dry Associates","Dyer & Blair Investment Bank Ltd","EFG Hermes Kenya Ltd",
+
+  "Equity Investment Bank Ltd","Faida Investment Bank Ltd","Francis Drummond & Company Ltd",
+
+  "Genghis Capital Ltd","KCB Investment Bank","Kestrel Capital (EA) Ltd",
+
+  "Kingdom Securities Ltd","NCBA Investment Bank Ltd","OMNI MARCHE SECURITE (OMS) Africa Ltd",
+
+  "Pergamon Investment Bank","Renaissance Capital (Kenya) Ltd","SBG Securities Ltd",
+
+  "Standard Investment Bank Ltd","Sterling Capital Ltd","Suntra Investment Bank Ltd","Ziidi Trader (Platform)"
+
+];
+
+
+
+/* ---- Clock & Countdown ---- */
+
+function padZero(n) { return n < 10 ? '0'+n : n; }
+
+setInterval(function() {
+
+  var now = new Date(new Date().toLocaleString("en-US", {timeZone:"Africa/Nairobi"}));
+
+  var clockEl = document.getElementById("live-clock");
+
+  if (clockEl) clockEl.textContent = "EAT: "+padZero(now.getHours())+":"+padZero(now.getMinutes())+":"+padZero(now.getSeconds());
+
+
+
+  var cdEl = document.getElementById("market-countdown");
+
+  if (cdEl) {
+
+    var day = now.getDay(), h = now.getHours(), m = now.getMinutes(), timeInMins = h*60+m;
+
+    var isOpen = (day >= 1 && day <= 5) && (timeInMins >= 570 && timeInMins < 900);
+
+    var target = new Date(now);
+
+    if (isOpen) {
+
+      target.setHours(15,0,0,0); var diff = target - now;
+
+      var hours = Math.floor((diff%(1000*60*60*24))/(1000*60*60)), mins = Math.floor((diff%(1000*60*60))/(1000*60)), secs = Math.floor((diff%(1000*60))/1000);
+
+      cdEl.innerHTML = "(Closes in "+padZero(hours)+":"+padZero(mins)+":"+padZero(secs)+")";
+
+    } else {
+
+      target.setHours(9,30,0,0); var addDays = 0; if (timeInMins >= 900) { addDays = 1; } target.setDate(target.getDate()+addDays);
+
+      var tDay = target.getDay(); if (tDay===6) target.setDate(target.getDate()+2); else if (tDay===0) target.setDate(target.getDate()+1);
+
+      var diff = target - now;
+
+      var hours = Math.floor((diff%(1000*60*60*24))/(1000*60*60)), mins = Math.floor((diff%(1000*60*60))/(1000*60)), secs = Math.floor((diff%(1000*60))/1000);
+
+      var dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+      var dayStr = (target.getDate() !== now.getDate()) ? (" ["+dayNames[target.getDay()]+"]") : "";
+
+      cdEl.innerHTML = "(Opens"+dayStr+" in "+padZero(hours)+":"+padZero(mins)+":"+padZero(secs)+")";
+
+    }
+
+  }
+
+
+
+  if (currentUser) {
+
+    var loginTime = localStorage.getItem("pf_time");
+
+    if (loginTime && (Date.now() - parseInt(loginTime)) > (10*60*1000)) {
+
+      logoutUser(); alert("Your session has securely timed out after 10 minutes. Please log in again.");
+
+    }
+
+  }
+
+}, 1000);
+
+
+
 /* ---- Tab switching ---- */
+
 function switchTab(tabId, evt) {
-  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+
   document.querySelectorAll('.view-section').forEach(function(s) { s.classList.remove('active'); });
+
   var btn = evt ? (evt.currentTarget || evt.target) : document.getElementById('tab-'+tabId);
-  if (btn) { btn.classList.add('active'); }
+
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected','true'); }
+
   document.getElementById('view-'+tabId).classList.add('active'); currentTab = tabId;
-  
+
+
+
   var tc = document.getElementById('ticker-content');
+
   if (tc) { tc.innerHTML = (tabId==='global' ? globalTickerHTML : kenyaTickerHTML) + (tabId==='global' ? globalTickerHTML : kenyaTickerHTML); }
 
+
+
   if (tabId==='global') {
+
     if (!geojsonData) initGlobe();
+
     else if (isGeoChartLoaded) showGlobalCountry(currentGlobalSelection, false);
+
   }
+
 }
 
-document.addEventListener("DOMContentLoaded", function() { refreshIcons(); });
+
+
+function switchPortTab(tabId, evt) {
+
+  document.querySelectorAll('.port-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+
+  document.querySelectorAll('.port-view').forEach(function(s) { s.classList.remove('active'); });
+
+  if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+
+  document.getElementById('port-view-'+tabId).classList.add('active');
+
+}
+
+
+
+/* ---- Theme ---- */
+
+function toggleTheme() {
+
+  var root = document.documentElement, btn = document.getElementById("theme-btn");
+
+  if (root.getAttribute("data-theme")==="dark") {
+
+    root.removeAttribute("data-theme");
+
+    btn.innerHTML = '<i data-lucide="moon" class="icon-sm"></i><span>Dark</span>';
+
+    localStorage.setItem("theme","light"); updateChartTheme("light");
+
+  } else {
+
+    root.setAttribute("data-theme","dark");
+
+    btn.innerHTML = '<i data-lucide="sun" class="icon-sm"></i><span>Light</span>';
+
+    localStorage.setItem("theme","dark"); updateChartTheme("dark");
+
+  }
+
+  if (isGeoChartLoaded && currentTab==='global') showGlobalCountry(currentGlobalSelection, false);
+
+  refreshIcons();
+
+}
+
+
+
+if (localStorage.getItem("theme")==="dark") {
+
+  document.documentElement.setAttribute("data-theme","dark");
+
+  document.addEventListener("DOMContentLoaded", function() {
+
+    var b = document.getElementById("theme-btn");
+
+    if (b) b.innerHTML = '<i data-lucide="sun" class="icon-sm"></i><span>Light</span>';
+
+  });
+
+}
+
+
+
+/* ---- Market status ---- */
+
+function setMarketStatus(s) {
+
+  var el = document.getElementById("market-status");
+
+  if (s==="OPEN") { el.innerHTML='<i data-lucide="activity" class="icon-xs"></i> OPEN'; el.className="open"; }
+
+  else            { el.innerHTML='<i data-lucide="clock" class="icon-xs"></i> CLOSED'; el.className="closed"; }
+
+  refreshIcons();
+
+}
+
+
+
+/* ---- DOM Ready ---- */
+
+document.addEventListener("DOMContentLoaded", function() {
+
+  refreshIcons();
+
+  var tickerSelect = document.getElementById('trade-ticker');
+
+  ALL_NSE_TICKERS.sort().forEach(function(t) { tickerSelect.innerHTML += '<option value="'+t+'">'+t+'</option>'; });
+
+  var brokerSelect = document.getElementById('trade-broker');
+
+  var filterSelect = document.getElementById('portfolio-broker-filter');
+
+  ALL_BROKERS.forEach(function(b) { brokerSelect.innerHTML += '<option value="'+b+'">'+b+'</option>'; filterSelect.innerHTML += '<option value="'+b+'">'+b+'</option>'; });
+
+  document.getElementById('trade-date').value = new Date().toISOString().split('T')[0];
+
+
+
+  // Keyboard: close modals on Escape
+
+  document.addEventListener('keydown', function(e) {
+
+    if (e.key === 'Escape') {
+
+      closeAuthModal(); closeExportModal(); closeTradeModal();
+
+    }
+
+  });
+
+
+
+  var savedUser = localStorage.getItem("pf_username");
+
+  if (savedUser) { currentUser = savedUser; localStorage.setItem("pf_time", Date.now()); enablePortfolioMode(false); }
+
+});
+
+
+
+/* ---- Auth ---- */
+
+function openAuthModal() {
+
+  if (currentUser) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); return; }
+
+  document.getElementById('auth-user').value=''; document.getElementById('auth-pass').value=''; document.getElementById('auth-name').value='';
+
+  var fb = document.getElementById('auth-feedback'); fb.style.display='none'; fb.className='feedback-msg';
+
+  document.getElementById('auth-modal').classList.add('open');
+
+  setTimeout(function() { document.getElementById('auth-user').focus(); }, 100);
+
+}
+
+function closeAuthModal() { document.getElementById('auth-modal').classList.remove('open'); }
+
+
+
+function openTradeModal() { document.getElementById('trade-modal').classList.add('open'); }
+
+function closeTradeModal() {
+
+  document.getElementById('trade-modal').classList.remove('open');
+
+  var fb = document.getElementById('trade-feedback'); fb.style.display='none'; fb.className='feedback-msg';
+
+}
+
+
+
+function logoutUser() {
+
+  currentUser = null; localStorage.removeItem("pf_username"); localStorage.removeItem("pf_time");
+
+  GLOBAL_HISTORY = []; GLOBAL_SENTIMENT = {};
+
+  if (chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
+
+  ['port-sum-invested','port-sum-current','port-sum-pnl'].forEach(function(id) { document.getElementById(id).innerText="KES 0.00"; });
+
+  document.getElementById('port-sum-pnl-pct').innerText="0.00%";
+
+  document.getElementById('my-portfolio-tbody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);">Please log in.</td></tr>';
+
+  document.getElementById('my-purchases-tbody').innerHTML=''; document.getElementById('my-sales-tbody').innerHTML='';
+
+  document.getElementById('btn-portfolio-auth').innerHTML='<i data-lucide="briefcase" class="icon-sm"></i><span>Portfolio</span>';
+
+  document.getElementById('tab-portfolio').style.display='none';
+
+  if (currentTab==='portfolio') switchTab('kenya', {currentTarget: document.getElementById('tab-kenya')});
+
+  showToast('Signed out successfully.', 'success');
+
+  refreshIcons();
+
+}
+
+
+
+function toggleAuthMode() {
+
+  isSignupMode = !isSignupMode;
+
+  document.getElementById('auth-title').innerHTML = (isSignupMode ? '<i data-lucide="user-plus" class="icon-sm"></i> Create Portfolio Account' : '<i data-lucide="lock" class="icon-sm"></i> Log In to Portfolio');
+
+  document.getElementById('group-auth-name').style.display = isSignupMode ? "flex" : "none";
+
+  document.getElementById('auth-submit-btn').innerHTML = isSignupMode ? '<i data-lucide="user-plus" class="icon-sm"></i> Sign Up' : '<i data-lucide="log-in" class="icon-sm"></i> Log In';
+
+  document.getElementById('auth-toggle-txt').innerHTML = isSignupMode ? "Already have an account? <span>Log In</span>" : "Don't have an account? <span>Sign up</span>";
+
+  var fb = document.getElementById('auth-feedback'); fb.style.display='none'; fb.className='feedback-msg';
+
+  refreshIcons();
+
+}
+
+
+
+async function handleAuth() {
+
+  var u = document.getElementById('auth-user').value.trim();
+
+  var p = document.getElementById('auth-pass').value;
+
+  var n = document.getElementById('auth-name').value.trim();
+
+  var fb = document.getElementById('auth-feedback');
+
+  var btn = document.getElementById('auth-submit-btn');
+
+
+
+  if (!u || !p || (isSignupMode && !n)) {
+
+    fb.innerText="Please fill in all fields."; fb.className='feedback-msg error'; fb.style.display="block"; return;
+
+  }
+
+  btn.innerHTML='<i data-lucide="loader-2" class="icon-sm spin"></i> Authenticating…'; btn.disabled=true; fb.style.display="none"; refreshIcons();
+
+
+
+  try {
+
+    var resp = await fetch(API_PORTFOLIO, { method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify({ action: isSignupMode?"signup":"login", username:u, password:p, name:n }) });
+
+    var res = await resp.json();
+
+    if (res.status==="success") {
+
+      currentUser = u; localStorage.setItem("pf_username",u); localStorage.setItem("pf_time",Date.now());
+
+      closeAuthModal(); enablePortfolioMode(true);
+
+      showToast('Welcome back, '+u+'!', 'success');
+
+    } else {
+
+      fb.innerText=res.message; fb.className='feedback-msg error'; fb.style.display="block";
+
+    }
+
+  } catch(e) {
+
+    fb.innerText="Connection error. Please try again."; fb.className='feedback-msg error'; fb.style.display="block";
+
+  }
+
+  btn.innerHTML = isSignupMode ? '<i data-lucide="user-plus" class="icon-sm"></i> Sign Up' : '<i data-lucide="log-in" class="icon-sm"></i> Log In';
+
+  btn.disabled = false; refreshIcons();
+
+}
+
+
+
+function enablePortfolioMode(autoSwitch) {
+
+  var btn = document.getElementById('btn-portfolio-auth');
+
+  btn.innerHTML = '<i data-lucide="lock" class="icon-sm"></i><span>' + currentUser.toUpperCase() + '</span>';
+
+  document.getElementById('tab-portfolio').style.display='inline-flex';
+
+  refreshIcons();
+
+  if (autoSwitch) { switchTab('portfolio', {currentTarget: document.getElementById('tab-portfolio')}); fetchMyPortfolio(); }
+
+}
+
+
+
+async function fetchMyPortfolio() {
+
+  if (!currentUser) return;
+
+  var tbH = document.getElementById('my-portfolio-tbody');
+
+  tbH.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);"><i data-lucide="loader-2" class="icon-sm spin"></i> Syncing portfolio & AI database…</td></tr>';
+
+  refreshIcons();
+
+  try {
+
+    var resp = await fetch(API_PORTFOLIO, { method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify({ action:"get_portfolio", username:currentUser }) });
+
+    var res = await resp.json();
+
+    if (res.status==="success") { GLOBAL_HISTORY=res.history||[]; GLOBAL_SENTIMENT=res.sentiment||{}; renderFilteredPortfolio(); }
+
+    else { tbH.innerHTML='<tr><td colspan="10" style="color:var(--dn);text-align:center;padding:2rem;">Failed to load portfolio.</td></tr>'; }
+
+  } catch(e) { tbH.innerHTML='<tr><td colspan="10" style="color:var(--dn);text-align:center;padding:2rem;">Connection Error.</td></tr>'; }
+
+}
+
+
+
+function renderFilteredPortfolio() {
+
+  var filterBroker = document.getElementById('portfolio-broker-filter').value;
+
+  var tbH = document.getElementById('my-portfolio-tbody'), tbP = document.getElementById('my-purchases-tbody'), tbS = document.getElementById('my-sales-tbody');
+
+  var htmlP="", htmlS=""; var holdingsMap={};
+
+
+
+  GLOBAL_HISTORY.forEach(function(row) {
+
+    if (filterBroker!=="ALL" && row.broker!==filterBroker) return;
+
+    var dt = new Date(row.date).toLocaleDateString(); var fee = row.fee||0;
+
+    var tr = '<tr><td>'+dt+'</td><td style="color:var(--brand-primary);font-weight:700;">'+row.ticker+'</td><td>'+fmtNum(row.shares,0)+'</td><td>'+fmtKsh(row.price)+'</td><td>'+fmtKsh(fee)+'</td><td>'+fmtKsh(row.total)+'</td><td>'+(row.broker||"—")+'</td></tr>';
+
+    if (row.type==="BOUGHT") htmlP+=tr; else htmlS+=tr;
+
+
+
+    if (!holdingsMap[row.ticker]) holdingsMap[row.ticker]={shares:0,total_cost:0,total_base:0};
+
+    var baseExec = row.shares*row.price;
+
+    if (row.type==="BOUGHT") { holdingsMap[row.ticker].shares+=row.shares; holdingsMap[row.ticker].total_cost+=row.total; holdingsMap[row.ticker].total_base+=baseExec; }
+
+    else if (row.type==="SOLD" && holdingsMap[row.ticker].shares>0) {
+
+      var avgC=holdingsMap[row.ticker].total_cost/holdingsMap[row.ticker].shares, avgB=holdingsMap[row.ticker].total_base/holdingsMap[row.ticker].shares;
+
+      holdingsMap[row.ticker].shares-=row.shares; holdingsMap[row.ticker].total_cost=holdingsMap[row.ticker].shares*avgC; holdingsMap[row.ticker].total_base=holdingsMap[row.ticker].shares*avgB;
+
+    }
+
+  });
+
+
+
+  tbP.innerHTML = htmlP || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">No purchases logged.</td></tr>';
+
+  tbS.innerHTML = htmlS || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem;font-style:italic;">No sales logged.</td></tr>';
+
+
+
+  var currentHoldings = Object.keys(holdingsMap).map(function(k) {
+
+    var sh=holdingsMap[k].shares;
+
+    return { ticker:k, shares:sh, total_cost:holdingsMap[k].total_cost, avg_cost:sh>0?holdingsMap[k].total_cost/sh:0, vwap:sh>0?holdingsMap[k].total_base/sh:0 };
+
+  }).filter(function(h) { return h.shares>0.001; });
+
+
+
+  if (currentHoldings.length===0) {
+
+    tbH.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);font-style:italic;">No holdings found. Click <strong>+ Add Stock</strong> to get started.</td></tr>';
+
+    ['port-sum-invested','port-sum-current','port-sum-pnl'].forEach(function(id) { document.getElementById(id).innerText="KES 0.00"; });
+
+    document.getElementById('port-sum-pnl-pct').innerText="0.00%";
+
+    if (chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
+
+  } else {
+
+    var htmlH="", totInv=0, totCur=0;
+
+    var pieLabels=[], pieData=[];
+
+    var pieColors=['#002060','#c8860a','#15803d','#1d4ed8','#b91c1c','#7c3aed','#ea580c','#0d9488','#4f46e5','#e11d48','#9333ea','#db2777','#f97316','#65a30d'];
+
+
+
+    currentHoldings.forEach(function(row) {
+
+      var tickStr=String(row.ticker).trim().toUpperCase();
+
+      var ltp=LIVE_PRICES[tickStr]; if (ltp===undefined||isNaN(ltp)) ltp=0;
+
+      var curVal=row.shares*ltp, pnl=curVal-row.total_cost, pnlPct=(pnl/row.total_cost)*100;
+
+      totInv+=row.total_cost; totCur+=curVal;
+
+      if (curVal>0) { pieLabels.push(row.ticker); pieData.push(curVal); }
+
+
+
+      var ai=GLOBAL_SENTIMENT[tickStr], aiBadge='<span class="badge badge-ai badge-neut"><i data-lucide="minus" class="icon-xs"></i> NEUTRAL</span>';
+
+      if (ai) {
+
+        if (ai.label==='Bullish') aiBadge='<span class="badge badge-ai badge-bull"><i data-lucide="trending-up" class="icon-xs"></i> BULLISH</span>';
+
+        else if (ai.label==='Bearish') aiBadge='<span class="badge badge-ai badge-bear"><i data-lucide="trending-down" class="icon-xs"></i> BEARISH</span>';
+
+      }
+
+      htmlH+='<tr><td style="color:var(--brand-primary);font-weight:700;">'+row.ticker+'</td><td>'+fmtNum(row.shares,0)+'</td><td>'+fmtKsh(row.vwap)+'</td><td>'+fmtKsh(row.avg_cost)+'</td><td>'+fmtKsh(row.total_cost)+'</td><td>'+fmtKsh(ltp)+'</td><td>'+fmtKsh(curVal)+'</td><td class="'+(pnl>=0?'up':'dn')+'">'+fmtKsh(pnl)+'</td><td class="'+(pnl>=0?'up':'dn')+'">'+(pnl>=0?'+':'')+pnlPct.toFixed(2)+'%</td><td>'+aiBadge+'</td></tr>';
+
+    });
+
+    tbH.innerHTML=htmlH;
+
+
+
+    var netPnl=totCur-totInv, netPnlPct=totInv>0?(netPnl/totInv)*100:0;
+
+    document.getElementById('port-sum-invested').innerText=fmtKsh(totInv);
+
+    document.getElementById('port-sum-current').innerText=fmtKsh(totCur);
+
+    document.getElementById('port-sum-pnl').innerText=fmtKsh(netPnl);
+
+    document.getElementById('port-sum-pnl').className="port-summary-val "+(netPnl>=0?"up":"dn");
+
+    document.getElementById('port-sum-pnl-pct').innerText=(netPnl>=0?'+':'')+netPnlPct.toFixed(2)+"%";
+
+    document.getElementById('port-sum-pnl-pct').className="port-summary-sub "+(netPnl>=0?"up":"dn");
+
+
+
+    var ctxPie=document.getElementById('portfolio-pie-chart');
+
+    if (chartInstances["portfolioPie"]) chartInstances["portfolioPie"].destroy();
+
+    if (pieData.length>0) {
+
+      chartInstances["portfolioPie"]=new Chart(ctxPie, {
+
+        type:'doughnut',
+
+        data:{ labels:pieLabels, datasets:[{ data:pieData, backgroundColor:pieColors.slice(0,pieLabels.length), borderWidth:0, hoverBorderWidth:3, hoverBorderColor:'#fff' }] },
+
+        options:{
+
+          responsive:true, maintainAspectRatio:false,
+
+          plugins:{
+
+            legend:{ position:'right', labels:{ font:{family:"'Inter',sans-serif",size:12,weight:'600'}, color:document.documentElement.getAttribute("data-theme")==="dark"?"#e8edf8":"#0d1b3e", padding:16 }},
+
+            tooltip:{ callbacks:{ label:function(ctx) { var v=ctx.parsed, tot=ctx.chart._metasets[ctx.datasetIndex].total, pct=(v/tot*100).toFixed(1); return " "+ctx.label+": KES "+v.toLocaleString()+" ("+pct+"%)"; }}}
+
+          },
+
+          cutout:'65%'
+
+        }
+
+      });
+
+    }
+
+  }
+
+  refreshIcons();
+
+}
+
+
+
+async function submitTrade() {
+
+  var tDate=document.getElementById('trade-date').value, tType=document.getElementById('trade-type').value, tTick=document.getElementById('trade-ticker').value;
+
+  var tShare=document.getElementById('trade-shares').value, tPrice=document.getElementById('trade-price').value, tBroker=document.getElementById('trade-broker').value;
+
+  var tFeeOverride=document.getElementById('trade-fees').value;
+
+  var fb=document.getElementById('trade-feedback'), btn=document.getElementById('trade-submit-btn');
+
+
+
+  if (!tDate||!tShare||!tPrice) {
+
+    fb.innerText="Please fill in Date, Shares and Price."; fb.className='feedback-msg error'; fb.style.display="block"; return;
+
+  }
+
+  var cleanShare=parseFloat(tShare.replace(/,/g,"")), cleanPrice=parseFloat(tPrice.replace(/,/g,""));
+
+  if (isNaN(cleanShare)||isNaN(cleanPrice)) { fb.innerText="Invalid number format."; fb.className='feedback-msg error'; fb.style.display="block"; return; }
+
+
+
+  if (tType==="SOLD") {
+
+    var currentHeld=0; GLOBAL_HISTORY.forEach(function(r) { if (r.ticker===tTick) { if (r.type==="BOUGHT") currentHeld+=r.shares; else if (r.type==="SOLD") currentHeld-=r.shares; } });
+
+    if (currentHeld<cleanShare) { fb.innerText="Insufficient shares in portfolio."; fb.className='feedback-msg error'; fb.style.display="block"; return; }
+
+  }
+
+  var cleanFee=""; if (tFeeOverride&&tFeeOverride.trim()!=="") { cleanFee=parseFloat(tFeeOverride.replace(/,/g,"")); }
+
+
+
+  btn.innerHTML='<i data-lucide="loader-2" class="icon-sm spin"></i> Transmitting…'; btn.disabled=true; fb.style.display="none"; refreshIcons();
+
+
+
+  try {
+
+    var bodyPayload={ action:"update_portfolio", username:currentUser, date:tDate, type:tType, ticker:tTick, shares:cleanShare, price:cleanPrice, broker:tBroker };
+
+    if (cleanFee!==""&&!isNaN(cleanFee)) bodyPayload.feeOverride=cleanFee;
+
+    var resp=await fetch(API_PORTFOLIO,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(bodyPayload)});
+
+    var res=await resp.json();
+
+    if (res.status==="success") {
+
+      fb.innerText=res.message; fb.className='feedback-msg success'; fb.style.display="block";
+
+      showToast(tType+': '+tTick+' — saved successfully.','success');
+
+      fetchMyPortfolio();
+
+      setTimeout(function() { closeTradeModal(); document.getElementById('trade-fees').value=''; }, 1500);
+
+    } else { fb.innerText=res.message; fb.className='feedback-msg error'; fb.style.display="block"; }
+
+  } catch(e) { fb.innerText="Network Error. Please try again."; fb.className='feedback-msg error'; fb.style.display="block"; }
+
+  btn.innerHTML='<i data-lucide="send" class="icon-sm"></i> Update Portfolio'; btn.disabled=false; refreshIcons();
+
+}
+
+
+
+/* ---- News ---- */
+
+async function loadLiveNews() {
+
+  var FB='https://via.placeholder.com/480x270/0d1b3e/FFFFFF?text=Market+Intelligence';
+
+  var cb=Date.now();
+
+  var feeds=[
+
+    {url:"https://www.economist.com/finance-and-economics/rss.xml",name:"The Economist"},
+
+    {url:"https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml",name:"Wall Street Journal"},
+
+    {url:"https://finance.yahoo.com/news/rss",name:"Yahoo Finance"}
+
+  ];
+
+  try {
+
+    var fetchPromises=feeds.map(function(f) {
+
+      return fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(f.url)+"&order_dir=desc&count=10&cb="+cb)
+
+        .then(function(resp){return resp.json();})
+
+        .then(function(data) {
+
+          if (data.status!=='ok') return [];
+
+          var items=[];
+
+          data.items.slice(0,10).forEach(function(item) {
+
+            var imgUrl=item.thumbnail||(item.enclosure&&item.enclosure.link)||"";
+
+            if (!imgUrl&&item.content){var m=item.content.match(/<img[^>]+src=["']([^"']+)["']/i);if(m) imgUrl=m[1];}
+
+            if (!imgUrl&&item.description){var m=item.description.match(/<img[^>]+src=["']([^"']+)["']/i);if(m) imgUrl=m[1];}
+
+            if (item.title&&item.link) items.push({title:item.title,link:item.link,pubDate:item.pubDate,desc:item.description?item.description.replace(/<[^>]*>?/gm,'').substring(0,120)+'…':'',img:imgUrl||FB,src:f.name});
+
+          }); return items;
+
+        }).catch(function(){return [];});
+
+    });
+
+
+
+    fetchPromises.push(
+
+      fetch("https://api.allorigins.win/get?url="+encodeURIComponent("https://kenyanwallstreet.com/feed/?cb="+cb))
+
+      .then(function(resp){return resp.json();})
+
+      .then(function(data) {
+
+        var xml=new DOMParser().parseFromString(data.contents,"application/xml");
+
+        var items=Array.from(xml.querySelectorAll("item")).slice(0,10); var pItems=[];
+
+        items.forEach(function(node) {
+
+          var title=node.querySelector("title")?node.querySelector("title").textContent:"";
+
+          var link=node.querySelector("link")?node.querySelector("link").textContent:"";
+
+          var pubDate=node.querySelector("pubDate")?node.querySelector("pubDate").textContent:"";
+
+          var desc=node.querySelector("description")?node.querySelector("description").textContent:"";
+
+          if (title&&link) pItems.push({title:title,link:link,pubDate:pubDate,desc:desc.replace(/<[^>]*>?/gm,'').substring(0,120)+'…',img:FB,src:"Kenyan Wall Street"});
+
+        }); return pItems;
+
+      }).catch(function(){return [];})
+
+    );
+
+
+
+    var results=await Promise.all(fetchPromises); var all=[];
+
+    results.forEach(function(arr){all=all.concat(arr);});
+
+    if (all.length===0) throw new Error("No news");
+
+
+
+    for (var i=all.length-1;i>0;i--) { var j=Math.floor(Math.random()*(i+1)); var tmp=all[i];all[i]=all[j];all[j]=tmp; }
+
+
+
+    var html='<div class="news-grid">';
+
+    all.slice(0,12).forEach(function(item) {
+
+      var dt=new Date(item.pubDate);
+
+      html+='<a href="'+item.link+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;display:flex;">'+
+
+        '<div class="news-item">'+
+
+          '<div class="news-img-wrap"><img src="'+item.img+'" class="news-image" loading="lazy" referrerpolicy="no-referrer" alt="'+item.title.replace(/"/g,'').substring(0,60)+'" onerror="this.onerror=null;this.parentNode.style.display=\'none\';"></div>'+
+
+          '<div class="news-body">'+
+
+            '<div class="news-source"><i data-lucide="rss" class="icon-xs"></i> '+item.src+'</div>'+
+
+            '<div class="news-title">'+item.title+'</div>'+
+
+            '<div class="news-desc">'+item.desc+'</div>'+
+
+            '<div class="news-date">'+(isNaN(dt)?'Recent':dt.toLocaleString())+'</div>'+
+
+          '</div>'+
+
+        '</div>'+
+
+      '</a>';
+
+    });
+
+    html+='</div>';
+
+    document.getElementById("live-news-container").innerHTML=html;
+
+    isNewsFetched=true; refreshIcons();
+
+  } catch(e) {
+
+    document.getElementById("live-news-container").innerHTML='<div style="padding:2rem;text-align:center;color:var(--text-muted);"><i data-lucide="wifi-off" class="icon-md"></i><br><br>Unable to stream live intelligence. Please verify network connection.</div>';
+
+    refreshIcons();
+
+  }
+
+}
+
+loadLiveNews();
+
+setInterval(loadLiveNews, 21600000);
+
+
+
+/* ---- Export ---- */
+
+function openExportModal() {
+
+  if (currentTab==='portfolio') {
+
+    document.getElementById('export-modal-body').innerHTML='<div style="text-align:center;padding:2rem;"><i data-lucide="shield-alert" class="icon-lg" style="color:var(--dn);margin-bottom:1rem;"></i><p style="color:var(--dn);font-weight:700;font-size:1rem;">Access Restricted</p><p style="color:var(--text-muted);margin-top:8px;font-size:0.875rem;">Tear Sheet export is disabled in Portfolio mode to protect sensitive data.</p></div>';
+
+  } else {
+
+    document.getElementById('export-modal-body').innerHTML='<button class="secondary-btn" style="width:100%;" onclick="downloadPDF()"><i data-lucide="file-text" class="icon-sm"></i> Download PDF Now</button><hr class="modal-divider"><p style="font-size:0.875rem;color:var(--text-muted);text-align:center;font-weight:600;">Automated Daily Delivery</p><p style="font-size:0.8125rem;color:var(--text-sub);text-align:center;margin-top:-4px;">Subscribe to receive a daily HTML summary & dashboard link.</p><div class="form-group"><label>Email Address</label><input type="email" id="sub-email" placeholder="analyst@firm.com" autocomplete="email"></div><div class="form-group"><label>Delivery Time (EAT)</label><input type="time" id="sub-time" value="17:00"></div><div class="form-group"><label>Delivery Days</label><div class="days-grid"><label class="day-chk"><input type="checkbox" value="Mon" checked> Mon</label><label class="day-chk"><input type="checkbox" value="Tue" checked> Tue</label><label class="day-chk"><input type="checkbox" value="Wed" checked> Wed</label><label class="day-chk"><input type="checkbox" value="Thu" checked> Thu</label><label class="day-chk"><input type="checkbox" value="Fri" checked> Fri</label></div></div><button class="primary-btn" onclick="submitSubscription()"><i data-lucide="mail" class="icon-sm"></i> Subscribe via Email</button><div id="sub-feedback" class="feedback-msg"></div>';
+
+  }
+
+  document.getElementById('export-modal').classList.add('open');
+
+  refreshIcons();
+
+}
+
+function closeExportModal() { document.getElementById('export-modal').classList.remove('open'); }
+
+
+
+function downloadPDF() {
+
+  closeExportModal();
+
+  var el=document.getElementById('pdf-container'); el.classList.add('pdf-mode');
+
+  html2pdf().set({margin:0.2,filename:"Tear_Sheet_"+new Date().toISOString().split('T')[0]+".pdf",image:{type:'jpeg',quality:1.0},html2canvas:{scale:2},jsPDF:{unit:'in',format:'a3',orientation:'portrait'}}).from(el).save().then(function(){el.classList.remove('pdf-mode');});
+
+}
+
+
+
+async function submitSubscription() {
+
+  var email=document.getElementById('sub-email')?document.getElementById('sub-email').value.trim():"";
+
+  var time=document.getElementById('sub-time')?document.getElementById('sub-time').value:"17:00";
+
+  var days=Array.from(document.querySelectorAll('.day-chk input:checked')).map(function(cb){return cb.value;});
+
+  var fb=document.getElementById('sub-feedback');
+
+
+
+  if (!email) { fb.innerText="Please enter a valid email address."; fb.className='feedback-msg error'; fb.style.display="block"; return; }
+
+  if (days.length===0) { fb.innerText="Please select at least one delivery day."; fb.className='feedback-msg error'; fb.style.display="block"; return; }
+
+
+
+  fb.innerText="Saving…"; fb.className='feedback-msg'; fb.style.display="block";
+
+  try {
+
+    fetch(API_MARKET,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:"subscribe",email:email,time:time,days:days})});
+
+    fb.innerText="Subscription saved successfully!"; fb.className='feedback-msg success'; fb.style.display="block";
+
+    showToast('Subscribed! Daily delivery confirmed.','success');
+
+    setTimeout(closeExportModal, 2000);
+
+  } catch(e) { fb.innerText="Subscription request sent."; fb.className='feedback-msg success'; fb.style.display="block"; setTimeout(closeExportModal, 2000); }
+
+}
+
+
+
+/* ---- Export helpers ---- */
+
+function exportTableToCSV(tableID, filename) {
+
+  var table=document.getElementById(tableID); if (!table) return;
+
+  var csv=[]; var rows=table.querySelectorAll("tr");
+
+  for (var i=0;i<rows.length;i++) { var row=[],cols=rows[i].querySelectorAll("td,th"); for (var j=0;j<cols.length;j++) row.push('"'+cols[j].innerText.replace(/"/g,'""')+'"'); csv.push(row.join(",")); }
+
+  var f=new Blob([csv.join("\n")],{type:"text/csv"}); var a=document.createElement("a"); a.download=filename+"_"+new Date().toISOString().split('T')[0]+".csv"; a.href=window.URL.createObjectURL(f); a.style.display="none"; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+}
+
+function exportTableToExcel(tableID, filename) {
+
+  var table=document.getElementById(tableID); if (!table) return;
+
+  if (typeof XLSX==='undefined') { showToast("Excel library loading. Please try again in a moment.",'error'); return; }
+
+  var wb=XLSX.utils.table_to_book(table,{sheet:"Data"}); var dt=new Date();
+
+  XLSX.writeFile(wb,filename+"_"+dt.getFullYear()+"_"+String(dt.getMonth()+1).padStart(2,'0')+"_"+String(dt.getDate()).padStart(2,'0')+".xlsx");
+
+}
+
+function exportTableToPDF(divID, filename) {
+
+  var el=document.getElementById(divID); if (!el) return;
+
+  html2pdf().set({margin:0.5,filename:filename+"_"+new Date().toISOString().split('T')[0]+".pdf",image:{type:'jpeg',quality:1.0},html2canvas:{scale:2},jsPDF:{unit:'in',format:'a4',orientation:'landscape'}}).from(el).save();
+
+}
+
+
+
+/* ---- Corporate Actions ---- */
+
+function loadCorporateActions() {
+
+  var container=document.getElementById("corp-actions-container"); if (!container) return;
+
+  container.innerHTML='<div style="padding:1.5rem;text-align:center;"><a href="https://www.nse.co.ke/corporate-actions/" target="_blank" rel="noopener" class="primary-btn" style="display:inline-flex;width:max-content;margin:0 auto;text-decoration:none;max-width:320px;"><i data-lucide="external-link" class="icon-sm"></i> Access Live Corporate Actions Terminal</a></div>';
+
+  refreshIcons();
+
+}
+
+
+
+/* ---- Data helpers ---- */
 
 function getTableId(title){ return "tbl-"+title.replace(/\W+/g,'-').toLowerCase(); }
+
 function triggerRefresh(){ if(isFetching) return; loadData(); }
 
+
+
+function buildDiagnosticError(localData,globalData){
+
+  return '<div class="error-box"><h2><i data-lucide="wifi-off" class="icon-md"></i> Terminal Connection Interrupted</h2><p>The dashboard failed to authenticate with the backend API endpoints.</p><code style="background:transparent;padding:0;"><b>Local Node:</b> '+(localData?"Connected ✓":"Failed ✗")+'<br><b>Global Node:</b> '+(globalData?"Connected ✓":"Failed ✗")+'</code></div>';
+
+}
+
+
+
 function loadData() {
+
   isFetching=true; var btn=document.getElementById("refresh-btn");
+
   var isInitialLoad=!hasRenderedOnce;
 
+  if (isInitialLoad) {
+
+    document.getElementById("app-kenya").innerHTML='<div class="loader"><i data-lucide="loader-2" class="icon-lg spin"></i> Authenticating and aggregating domestic datasets…</div>';
+
+    document.getElementById("app-global").innerHTML='<div class="loader"><i data-lucide="loader-2" class="icon-lg spin"></i> Synchronizing global datasets…</div>';
+
+    refreshIcons();
+
+  } else { if(btn){btn.innerHTML='<i data-lucide="loader-2" class="icon-sm spin"></i><span>Syncing…</span>';refreshIcons();} }
+
+
+
   var localData=null, globalData=null;
+
   window["localCallback"]=function(d){if(d&&typeof d==="object")localData=d; check();};
+
   window["globalCallback"]=function(d){if(d&&typeof d==="object")globalData=d; check();};
 
-  function check() {
-    if (localData&&globalData) {
-      isFetching=false;
-      var mergedData=Object.assign({},localData,globalData);
-      extractDynamicData(mergedData); render(mergedData,isInitialLoad); hasRenderedOnce=true;
+
+
+  var tid=setTimeout(function(){
+
+    isFetching=false;
+
+    if (!localData||!globalData) {
+
+      if (isInitialLoad){ document.getElementById("app-kenya").innerHTML=buildDiagnosticError(localData,globalData); refreshIcons(); }
+
+      else { if(btn){btn.innerHTML='<i data-lucide="alert-circle" class="icon-sm"></i><span>Failed</span>';refreshIcons(); setTimeout(function(){if(btn){btn.innerHTML='<i data-lucide="refresh-cw" class="icon-sm"></i><span>Sync</span>';refreshIcons();}},3000);} }
+
     }
+
+  }, JSONP_TIMEOUT_MS);
+
+
+
+  function check() {
+
+    if (localData&&globalData) {
+
+      clearTimeout(tid); isFetching=false;
+
+      if (btn){btn.innerHTML='<i data-lucide="refresh-cw" class="icon-sm"></i><span>Sync</span>';refreshIcons();}
+
+      var mergedData=Object.assign({},localData,globalData);
+
+      if (isInitialLoad&&(!localData.tickers||localData.tickers.length===0)){
+
+        document.getElementById("app-kenya").innerHTML='<div class="error-box"><h2>Empty Data Stream</h2><p>No ticker data was returned by the API.</p></div>'; refreshIcons(); return;
+
+      }
+
+      extractDynamicData(mergedData); render(mergedData,isInitialLoad); hasRenderedOnce=true;
+
+      if(currentUser) fetchMyPortfolio();
+
+      document.getElementById("last-updated").textContent="Updated: "+(mergedData.timestamp||new Date().toLocaleTimeString("en-KE",{hour12:false}));
+
+    }
+
   }
 
+
+
   var s1=document.createElement("script"); s1.src=API_MARKET+"?callback=localCallback&sheet=all&_t="+Date.now(); document.head.appendChild(s1);
+
   var s2=document.createElement("script"); s2.src=API_GLOBAL+"?callback=globalCallback&sheet=all&_t="+Date.now(); document.head.appendChild(s2);
+
 }
+
+
+
+var cleanNum=function(str){if(!str) return NaN; var s=String(str).replace(/,/g,'').replace(/%/g,'').trim().replace(/^KES\s*/i,'').replace(/\s*Mn$/i,'').trim(); if(s==="-"||s.toLowerCase()==="n/a"||s.toLowerCase()==="null") return NaN; return parseFloat(s);};
+
+
 
 function extractDynamicData(data) {
-  // Original extraction logic
+
+  KEY_RATES=[]; FOREX_RATES=[];
+
+  CHART_DATA={inflation:{labels:[],m12:[]},gdp:{labels:[],nominal:[],real:[],growth:[]},banks:{labels:[],deposit:[],savings:[],lending:[],overdraft:[]},kepss:{labels:[],values:[]}};
+
+
+
   var tickersData=data.tickers||[];
+
   tickersData.forEach(function(t){
+
     if(t.symbol){var rawPrice=t["last_price_(kshs)"]!==undefined?t["last_price_(kshs)"]:(t.last_price!==undefined?t.last_price:(t.price||"0")); LIVE_PRICES[String(t.symbol).trim().toUpperCase()]=parseFloat(String(rawPrice).replace(/[^0-9.\-]/g,''));}
+
   });
+
+
+
+  var targetRates=["Central Bank Rate","KESONIA","CBK Discount Window","91-Day T-Bill","REPO","Inflation Rate","Lending Rate","Savings Rate","Deposit Rate"];
+
+  if(data.macro&&data.macro.length>0){
+
+    data.macro.forEach(function(row){
+
+      var cols=Object.values(row).map(function(v){return String(v).trim();}).filter(function(x){return x!=="";});if(cols.length<2) return;
+
+      for(var i=0;i<targetRates.length;i++){
+
+        var idx=cols.findIndex(function(x){return x.toLowerCase()===targetRates[i].toLowerCase();});
+
+        if(idx!==-1&&idx+1<cols.length){var val=cols[idx+1],num=parseFloat(val.replace(/,/g,'').replace(/%/g,''));if(!isNaN(num)){if(num<1&&!val.includes('%')) val=(num*100).toFixed(2)+"%"; else if(!val.includes('%')) val=num.toFixed(2)+"%"; if(!KEY_RATES.find(function(r){return r.label===targetRates[i];})) KEY_RATES.push({label:targetRates[i],value:val});}}
+
+      }
+
+    });
+
+  }
+
+  if(data.cbk&&data.cbk.length>=29){
+
+    for(var r=19;r<=29;r++){
+
+      if(data.cbk[r]){var vals=Object.values(data.cbk[r]);var ccy=String(vals[1]||"").trim(),crBuy=String(vals[2]||"—").trim(),crSell=String(vals[3]||"—").trim(),kBuy=String(vals[4]||"—").trim();if(ccy&&ccy!=="—"&&ccy.toLowerCase()!=="currency"&&ccy.toLowerCase()!=="mean") FOREX_RATES.push({ccy:ccy,crBuy:crBuy,crSell:crSell,kBuy:kBuy,kSell:"—"});}
+
+    }
+
+  }
+
+
+
+  var cd=data.chart_data||[];
+
+  if(cd.length>0){
+
+    var tmpGdp=[];
+
+    cd.forEach(function(rawRow){
+
+      var row={}; for(var k in rawRow){row[k.toLowerCase().trim().replace(/[\s\-]+/g,'_')]=rawRow[k];}
+
+      var infKey=row["12_month_inflation"]!==undefined?"12_month_inflation":(row["inflation"]!==undefined?"inflation":null);
+
+      if(row.inf_date&&infKey&&row[infKey]!==""){var infVal=cleanNum(row[infKey]);if(!isNaN(infVal)){CHART_DATA.inflation.labels.push(String(row.inf_date).trim());CHART_DATA.inflation.m12.push(infVal);}}
+
+      if(row.gdp_year&&row.nominal_gdp!==undefined&&row.nominal_gdp!==""){var yrStr=String(row.gdp_year).trim(),yrMatch=yrStr.match(/20\d{2}/),yr=yrMatch?parseInt(yrMatch[0]):parseInt(yrStr);var nom=cleanNum(row.nominal_gdp),real=cleanNum(row.real_gdp),growth=cleanNum(row.gdp_growth_rate||row.gdp_growth);if(!isNaN(yr)&&!isNaN(nom)&&!tmpGdp.find(function(g){return g.year===yr;})) tmpGdp.push({year:yr,nom:nom,real:real,growth:growth});}
+
+      if(row.rates_date&&row.lending!==undefined&&row.lending!==""){var len=cleanNum(row.lending),ovr=cleanNum(row.overdraft),sav=cleanNum(row.savings),dep=cleanNum(row.deposit);if(!isNaN(len)){CHART_DATA.banks.labels.push(String(row.rates_date).trim());CHART_DATA.banks.lending.push(len);CHART_DATA.banks.overdraft.push(ovr);CHART_DATA.banks.savings.push(sav);CHART_DATA.banks.deposit.push(dep);}}
+
+      if(row.kepss_date&&row.kepss_value!==undefined&&row.kepss_value!==""){var kv=cleanNum(row.kepss_value);if(!isNaN(kv)){CHART_DATA.kepss.labels.push(String(row.kepss_date).trim());CHART_DATA.kepss.values.push(kv);}}
+
+    });
+
+    if(tmpGdp.length>0){tmpGdp.sort(function(a,b){return a.year-b.year;});tmpGdp.forEach(function(d){CHART_DATA.gdp.labels.push(d.year);CHART_DATA.gdp.nominal.push(d.nom);CHART_DATA.gdp.real.push(d.real);if(!isNaN(d.growth))CHART_DATA.gdp.growth.push(d.growth);});}
+
+    if(CHART_DATA.inflation.labels.length>0){CHART_DATA.inflation.labels.reverse();CHART_DATA.inflation.m12.reverse();}
+
+    if(CHART_DATA.kepss.labels.length>0){CHART_DATA.kepss.labels.reverse();CHART_DATA.kepss.values.reverse();}
+
+    if(CHART_DATA.banks.labels.length>0){CHART_DATA.banks.labels.reverse();CHART_DATA.banks.lending.reverse();CHART_DATA.banks.overdraft.reverse();CHART_DATA.banks.savings.reverse();CHART_DATA.banks.deposit.reverse();}
+
+  }
+
 }
 
-function fmtNum(v,dec){if(!v&&v!==0||v==="N/A") return "—";var n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));if(isNaN(n)) return String(v);var dp=(dec!==undefined)?dec:2;if(Math.abs(n)>=1e12) return (n/1e12).toFixed(dp)+"T";if(Math.abs(n)>=1e9) return (n/1e9).toFixed(dp)+"B";if(Math.abs(n)>=1e6) return (n/1e6).toFixed(dp)+"M";return n.toLocaleString("en-KE",{minimumFractionDigits:dp,maximumFractionDigits:dp});}
-function fmtKsh(v){var n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));return isNaN(n)?"—":"KSh "+n.toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+
+/* ---- Format helpers ---- */
+
 function formatChange(val,isPct){
+
   if(!val||val==="N/A"||val==="—") return '<span class="nt">—</span>';
+
   var s=String(val).trim(); if(s==="-"||s==="0"||s==="0.00") return '<span class="nt">—</span>';
+
   var isNeg=s.startsWith("-")||s.startsWith("(")||s.includes("▼"),n=parseFloat(s.replace(/[^0-9.]/g,""));if(isNaN(n)||n===0) return '<span class="nt">—</span>';
+
   var fmt=(isPct&&!s.includes("%")&&n>0&&n<1)?(n*100).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2}):n.toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});
+
   if(isPct) return isNeg?'<span class="dn">▼ ('+fmt+'%)</span>':'<span class="up">▲ '+fmt+'%</span>';
+
   return isNeg?'<span class="dn">▼ ('+fmt+')</span>':'<span class="up">▲ '+fmt+'</span>';
+
 }
+
 function getPctNumForSort(t,key){var raw=String(t[key]||"").trim();if(!raw||raw==="N/A"||raw==="—") return 0;var isNeg=raw.startsWith("-")||raw.startsWith("(")||raw.includes("▼"),n=parseFloat(raw.replace(/[^0-9.]/g,""));if(isNaN(n)) return 0;var scaled=(!raw.includes("%")&&n>0&&n<1)?n*100:n;return isNeg?-scaled:scaled;}
 
+function fmtNum(v,dec){if(!v&&v!==0||v==="N/A") return "—";var n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));if(isNaN(n)) return String(v);var dp=(dec!==undefined)?dec:2;if(Math.abs(n)>=1e12) return (n/1e12).toFixed(dp)+"T";if(Math.abs(n)>=1e9) return (n/1e9).toFixed(dp)+"B";if(Math.abs(n)>=1e6) return (n/1e6).toFixed(dp)+"M";return n.toLocaleString("en-KE",{minimumFractionDigits:dp,maximumFractionDigits:dp});}
+
+function fmtKsh(v){var n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));return isNaN(n)?"—":"KSh "+n.toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function fmtUSD(v){if(!v) return "—";var s=String(v);if(s.includes("$")) return s;var n=parseFloat(s.replace(/[^0-9.\-]/g,""));return isNaN(n)?s:"$"+fmtNum(n,2);}
+
+
+
+/* ---- Table building ---- */
+
 function tableCard(title,headers,rows,emptyMsg){
+
   var many=rows&&rows.length>5;
+
   var cls=many?"card table-collapsed interactive-card":"card";
+
   var onclick=many?'onclick="this.classList.toggle(\'table-collapsed\')"':"";
+
   var hdrHtml=headers.map(function(h){return '<th>'+h+' <span class="sort-icon">↕</span></th>';}).join("");
+
   var bodyHtml=(!rows||rows.length===0)?'<tr><td colspan="'+headers.length+'" style="text-align:center;color:var(--text-muted);font-style:italic;padding:2rem;">'+(emptyMsg||"Stream empty or offline.")+'</td></tr>':rows.join("");
+
   return '<div class="'+cls+'" '+onclick+'><div class="card-header"><h2 class="brand-font">'+title+'</h2></div><div class="card-body"><div class="table-responsive"><table data-id="'+getTableId(title)+'"><thead><tr>'+hdrHtml+'</tr></thead><tbody>'+bodyHtml+'</tbody></table></div>'+(many?'<div class="expand-hint"></div>':'')+'</div></div>';
+
 }
+
+
 
 function buildGenericTableRows(sheetData){
+
   if(!sheetData||sheetData.length===0) return {headers:[],rows:[]};
+
   var keys=Object.keys(sheetData[0]).filter(function(k){return !k.match(/_\d+$/)&&!["index_symbol","%_change"].includes(k)&&k!=="";});
+
   var displayHeaders=keys.map(function(k){return k.replace(/_/g,' ').toUpperCase();});
+
   var rows=sheetData.map(function(rowObj){return '<tr>'+keys.map(function(k){var val=rowObj[k]!==null&&rowObj[k]!==undefined?rowObj[k]:"—";if(k.includes("change")){if(String(val).includes("▲")) val='<span class="up">'+val+'</span>';else if(String(val).includes("▼")||String(val).includes("(")) val='<span class="dn">'+val+'</span>';}return '<td>'+val+'</td>';}).join("")+'</tr>';});
+
   return {headers:displayHeaders,rows:rows};
+
 }
 
-function render(data,isInitialLoad){
-  var tickers=(data.tickers||[]).filter(function(t){return t&&t.symbol;});
-  var indices=(data.indices||data.world_indices||[]).filter(function(r){return r&&r.name&&r.name!=="Name"&&r.price&&r.price!=="N/A";});
-  
-  function pk(t){return t["%_change"]||t["percent_change"]||t["change_%"]||"";}
-  var gainers=tickers.slice().filter(function(t){return getPctNumForSort(t,"%_change")>0;}).sort(function(a,b){return getPctNumForSort(b,"%_change")-getPctNumForSort(a,"%_change");});
-  var losers=tickers.slice().filter(function(t){return getPctNumForSort(t,"%_change")<0;}).sort(function(a,b){return getPctNumForSort(a,"%_change")-getPctNumForSort(b,"%_change");});
 
-  kenyaTickerHTML=""; tickers.forEach(function(t){var n=getPctNumForSort(t,"%_change");kenyaTickerHTML+='<div class="ticker-item"><span class="ti-sym">'+t.symbol+'</span> <span class="ti-prc">'+fmtKsh(t["last_price_(kshs)"])+'</span> <span class="'+(n>0?"ti-up":n<0?"ti-dn":"ti-nt")+'">'+(n>0?"▲":n<0?"▼":"—")+' '+Math.abs(n).toFixed(2)+'%</span></div>';});
-  
+
+function standardCard(title,bodyHtml){return '<div class="full-card"><div class="card-header"><h2 class="brand-font">'+title+'</h2></div><div class="card-body">'+bodyHtml+'</div></div>';}
+
+
+
+/* ---- Sorting ---- */
+
+function runSort(table,colIndex,direction,th){
+
+  var tbody=table.querySelector('tbody'),allRows=Array.from(tbody.querySelectorAll('tr'));
+
+  var dataRows=allRows.filter(function(r){return !r.innerText.toUpperCase().includes('TOTAL');}),totalRows=allRows.filter(function(r){return r.innerText.toUpperCase().includes('TOTAL');});
+
+  table.querySelectorAll('th').forEach(function(t){t.classList.remove('asc','desc');var icon=t.querySelector('.sort-icon');if(icon){icon.innerText='↕';}});
+
+  th.classList.add(direction===1?'asc':'desc');var icon=th.querySelector('.sort-icon');if(icon) icon.innerText=direction===1?'▲':'▼';
+
+  dataRows.sort(function(a,b){
+
+    var parseVal=function(str){if(str==='—'||str==='N/A'||str==='-') return -Infinity;if(str.match(/^\d{2}\/\d{2}\/\d{4}/)){var parts=str.split(',')[0].split('/');return new Date(parts[2]+'-'+parts[1]+'-'+parts[0]).getTime();}var isNegative=str.includes('▼')||str.includes('(')||str.startsWith('-');var numStr=str.replace(/[^0-9.]/g,'');if(numStr==='') return str;return isNegative?-parseFloat(numStr):parseFloat(numStr);};
+
+    var aVal=parseVal(a.children[colIndex].innerText.trim()),bVal=parseVal(b.children[colIndex].innerText.trim());
+
+    if(typeof aVal==='number'&&typeof bVal==='number') return (aVal-bVal)*direction;
+
+    return String(a.children[colIndex].innerText.trim()).localeCompare(String(b.children[colIndex].innerText.trim()),undefined,{numeric:true})*direction;
+
+  });
+
+  dataRows.forEach(function(row){tbody.appendChild(row);}); totalRows.forEach(function(row){tbody.appendChild(row);});
+
+}
+
+
+
+function attachTableSorting(){
+
+  var savedState=JSON.parse(localStorage.getItem('tableSortState')||'{}');
+
+  document.querySelectorAll('table').forEach(function(table){
+
+    var tableId=table.getAttribute('data-id'),ths=table.querySelectorAll('th');
+
+    ths.forEach(function(th,colIndex){
+
+      var newTh=th.cloneNode(true);th.parentNode.replaceChild(newTh,th);
+
+      newTh.addEventListener('click',function(e){e.stopPropagation();var direction=newTh.classList.contains('asc')?-1:1;runSort(table,colIndex,direction,newTh);if(tableId){savedState[tableId]={colIndex:colIndex,direction:direction};localStorage.setItem('tableSortState',JSON.stringify(savedState));}});
+
+    });
+
+    if(tableId&&savedState[tableId]){var activeTh=table.querySelectorAll('th')[savedState[tableId].colIndex];if(activeTh) runSort(table,savedState[tableId].colIndex,savedState[tableId].direction,activeTh);}
+
+  });
+
+}
+
+
+
+function updateTableData(id,rows){var tbody=document.querySelector('table[data-id="'+id+'"] tbody');if(tbody&&rows) tbody.innerHTML=rows.join("");}
+
+
+
+/* ---- RENDER ---- */
+
+function render(data,isInitialLoad){
+
+  var tickers=(data.tickers||[]).filter(function(t){return t&&t.symbol;}),mw=(data.marketwatch||[]).filter(function(t){return t&&t.symbol;}),indices=(data.indices||data.world_indices||[]).filter(function(r){return r&&r.name&&r.name!=="Name"&&r.price&&r.price!=="N/A";}),active=(data.mostactive||data.yahoo_most_active||[]).filter(function(r){return r&&r.symbol&&r.price;}),statsArr=(data.stats||[]);
+
+
+
+  var apiStatus="CLOSED";if(data.market_assumptions&&data.market_assumptions.length>0){var keys=Object.keys(data.market_assumptions[0]);if(keys.includes("open")) apiStatus="OPEN"; else if(keys.includes("closed")) apiStatus="CLOSED";}setMarketStatus(apiStatus);
+
+  var statsMap={},statsChange={};statsArr.forEach(function(r){if(!r||!r.name) return;statsMap[r.name.trim()]=r.value;statsChange[r.name.trim()]=r.change;});
+
+  function numMW(row,key){var v=row[key]||row[key.toLowerCase()]||0;return parseFloat(String(v).replace(/[^0-9.\-]/g,""))||0;}
+
+  var validMW=mw.filter(function(r){return numMW(r,"volume")+numMW(r,"turnover_(kshs)")+numMW(r,"trades")>0;});
+
+  var totalTurnover=0,totalTrades=0,totalFBuy=0,totalFSell=0;
+
+  var mwTotals=mw.find(function(r){return String(r.symbol).toUpperCase()==="TOTALS";});
+
+  if(mwTotals){totalTurnover=numMW(mwTotals,"turnover_(kshs)");totalTrades=numMW(mwTotals,"trades");totalFBuy=numMW(mwTotals,"foreign_buy");totalFSell=numMW(mwTotals,"foreign_sell");}
+
+  else{validMW.forEach(function(r){totalTurnover+=numMW(r,"turnover_(kshs)");totalTrades+=numMW(r,"trades");totalFBuy+=numMW(r,"foreign_buy");totalFSell+=numMW(r,"foreign_sell");});}
+
+  var topTurnover=validMW.slice().sort(function(a,b){return numMW(b,"turnover_(kshs)")-numMW(a,"turnover_(kshs)");}),topVolume=validMW.slice().sort(function(a,b){return numMW(b,"volume")-numMW(a,"volume");}),topTrades=validMW.slice().sort(function(a,b){return numMW(b,"trades")-numMW(a,"trades");}),topFBuy=validMW.slice().filter(function(r){return numMW(r,"foreign_buy")>0;}).sort(function(a,b){return numMW(b,"foreign_buy")-numMW(a,"foreign_buy");}),topFSell=validMW.slice().filter(function(r){return numMW(r,"foreign_sell")>0;}).sort(function(a,b){return numMW(b,"foreign_sell")-numMW(a,"foreign_sell");});
+
+  function pk(t){return t["%_change"]||t["percent_change"]||t["change_%"]||"";}
+
+  var gainers=tickers.slice().filter(function(t){return getPctNumForSort(t,"%_change")>0;}).sort(function(a,b){return getPctNumForSort(b,"%_change")-getPctNumForSort(a,"%_change");}),losers=tickers.slice().filter(function(t){return getPctNumForSort(t,"%_change")<0;}).sort(function(a,b){return getPctNumForSort(a,"%_change")-getPctNumForSort(b,"%_change");}),unchanged=tickers.slice().filter(function(t){return getPctNumForSort(t,"%_change")===0;});
+
+
+
+  kenyaTickerHTML=""; tickers.forEach(function(t){var n=getPctNumForSort(t,"%_change");kenyaTickerHTML+='<div class="ticker-item"><span class="ti-sym">'+t.symbol+'</span> <span class="ti-prc">'+fmtKsh(t["last_price_(kshs)"])+'</span> <span class="'+(n>0?"ti-up":n<0?"ti-dn":"ti-nt")+'">'+(n>0?"▲":n<0?"▼":"—")+' '+Math.abs(n).toFixed(2)+'%</span><span class="ticker-sep">|</span></div>';});
+
+  globalTickerHTML=""; var allGlobal=indices.concat(active).sort(function(){return 0.5-Math.random();}); allGlobal.forEach(function(t){var n=getPctNumForSort(t,"%_change" in t?"%_change":"percent_change");globalTickerHTML+='<div class="ticker-item"><span class="ti-sym">'+(t.symbol||t.name)+'</span> <span class="ti-prc">'+fmtUSD(t.price)+'</span> <span class="'+(n>0?"ti-up":n<0?"ti-dn":"ti-nt")+'">'+(n>0?"▲":n<0?"▼":"—")+' '+Math.abs(n).toFixed(2)+'%</span><span class="ticker-sep">|</span></div>';});
+
+
+
   var tc=document.getElementById('ticker-content');
+
   if(tc) tc.innerHTML=(currentTab==='global'?globalTickerHTML:kenyaTickerHTML)+(currentTab==='global'?globalTickerHTML:kenyaTickerHTML);
+
+
+
+  var metricsHtml='<div class="metric-card"><div class="lbl">NSE All Share</div><div class="val">'+fmtNum(statsMap["NSE ALL SHARE INDEX"],2)+'</div><div class="sub">'+formatChange(statsChange["NSE ALL SHARE INDEX"],false)+' vs prev</div></div>'+
+
+    '<div class="metric-card"><div class="lbl">NSE 20 Index</div><div class="val">'+fmtNum(statsMap["NSE 20 SHARE INDEX"],2)+'</div><div class="sub">Blue-chip Benchmark</div></div>'+
+
+    '<div class="metric-card"><div class="lbl">Market Cap</div><div class="val">'+fmtNum(statsMap["MARKET CAPITALIZATION (Billions)"],2)+'B</div><div class="sub">KES Total</div></div>'+
+
+    '<div class="metric-card"><div class="lbl">Equity Turnover</div><div class="val">'+fmtNum(totalTurnover,0)+'</div><div class="sub">KES Today</div></div>'+
+
+    '<div class="metric-card"><div class="lbl">Total Deals</div><div class="val">'+fmtNum(totalTrades,0)+'</div><div class="sub">Trades Today</div></div>'+
+
+    '<div class="metric-card"><div class="lbl">Foreign Buys</div><div class="val"><span class="up">'+fmtNum(totalFBuy,0)+'</span></div><div class="sub">KES Today</div></div>'+
+
+    '<div class="metric-card"><div class="lbl">Foreign Sells</div><div class="val"><span class="dn">'+fmtNum(totalFSell,0)+'</span></div><div class="sub">KES Today</div></div>'+
+
+    '<div class="metric-card"><div class="lbl">Gainers / Losers</div><div class="val"><span class="up">'+gainers.length+'</span> / <span class="dn">'+losers.length+'</span></div><div class="sub">'+unchanged.length+' unchanged · '+tickers.length+' total</div></div>';
+
+
+
+  var macroCardsHtml=KEY_RATES.map(function(r){return '<div class="macro-mini-card"><div class="macro-mc-lbl">'+r.label+'</div><div class="macro-mc-val">'+r.value+'</div></div>';}).join("");
+
+  var statsRows=statsArr.filter(function(r){return r&&r.name&&r.value!==undefined&&r.value!=="";}).map(function(r){return '<tr><td>'+r.name+'</td><td>'+fmtNum(r.value,2)+'</td><td>'+((r.change!==undefined&&r.change!=="")? formatChange(r.change,false):"—")+'</td></tr>';});
+
+
 
   function trRow(t){return '<tr><td style="font-weight:700;">'+t.symbol+'</td><td>'+fmtKsh(t["last_price_(kshs)"])+'</td><td>'+formatChange(pk(t),true)+'</td></tr>';}
 
+  var rTO=function(r){return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r["security_name"]||"")+'</td><td style="color:var(--brand-primary);">'+fmtKsh(r["turnover_(kshs)"])+'</td><td>'+fmtNum(numMW(r,"volume"),0)+'</td><td>'+(r.trades||"—")+'</td></tr>';};
+
+  var rVol=function(r){return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r["security_name"]||"")+'</td><td style="color:var(--brand-primary);">'+fmtNum(numMW(r,"volume"),0)+'</td><td>'+fmtKsh(r["turnover_(kshs)"])+'</td></tr>';};
+
+  var rTR=function(r){return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r["security_name"]||"")+'</td><td style="color:var(--brand-primary);">'+fmtNum(numMW(r,"trades"),0)+'</td><td>'+fmtKsh(r["turnover_(kshs)"])+'</td></tr>';};
+
+  var rFB=function(r){var net=numMW(r,"foreign_buy")-numMW(r,"foreign_sell");return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r["security_name"]||"")+'</td><td class="up">'+fmtNum(numMW(r,"foreign_buy"),0)+'</td><td class="dn">'+fmtNum(numMW(r,"foreign_sell"),0)+'</td><td style="color:'+(net>=0?'var(--up)':'var(--dn)')+';">'+fmtNum(net,0)+'</td></tr>';};
+
+  var rFS=function(r){return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r["security_name"]||"")+'</td><td class="dn">'+fmtNum(numMW(r,"foreign_sell"),0)+'</td><td class="up">'+fmtNum(numMW(r,"foreign_buy"),0)+'</td></tr>';};
+
+  var tFull=tickers.map(function(t){return '<tr><td style="font-weight:700;">'+t.symbol+'</td><td>'+fmtKsh(t["last_price_(kshs)"])+'</td><td>'+formatChange(t["change"],false)+'</td><td>'+formatChange(pk(t),true)+'</td><td><span class="nt">'+(t["last_updated"]||"—")+'</span></td></tr>';});
+
+  var mwRows=mw.filter(function(r){return numMW(r,"ltp_(kshs)")>0||numMW(r,"volume")>0;}).map(function(r){return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r["security_name"]||"")+'</td><td>'+fmtKsh(r["ltp_(kshs)"])+'</td><td>'+fmtKsh(r["prev_close"])+'</td><td>'+fmtNum(numMW(r,"volume"),0)+'</td><td>'+(r.trades||"—")+'</td><td>'+fmtKsh(r["turnover_(kshs)"])+'</td><td class="up">'+fmtNum(numMW(r,"foreign_buy"),0)+'</td><td class="dn">'+fmtNum(numMW(r,"foreign_sell"),0)+'</td></tr>';});
+
+  var fxRows=FOREX_RATES.map(function(r){return '<tr><td style="font-weight:700;">'+r.ccy+'</td><td>'+r.crBuy+'</td><td>'+r.crSell+'</td><td>'+r.kBuy+'</td><td>'+r.kSell+'</td></tr>';});
+
+  var heatCells=tickers.map(function(t){var n=getPctNumForSort(t,"%_change"),cls=n>0?"up-cell":n<0?"dn-cell":"nt-cell";return '<div class="ticker-cell '+cls+'" data-sym="'+t.symbol+'"><div class="tc-sym">'+t.symbol+'</div><div class="tc-price">'+fmtKsh(t["last_price_(kshs)"])+'</div><div class="tc-chg">'+formatChange(pk(t),true)+'</div></div>';}).join("");
+
+  var indicesRows=indices.map(function(r){return '<tr><td style="font-weight:700;">'+r.name+'</td><td>'+(r.name==="US Dollar Index"?"$"+fmtNum(r.price,2):fmtUSD(r.price))+'</td><td>'+formatChange(r["%_change"]||r.percent_change,true)+'</td><td>'+((r.volume&&r.volume!=="N/A")?fmtNum(r.volume,0):"—")+'</td></tr>';});
+
+  var activeRows=active.map(function(r){return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r.name||"—")+'</td><td>'+fmtUSD(r.price)+'</td><td>'+formatChange(r["%_change"]||r.percent_change,true)+'</td><td>'+fmtNum(r.volume,0)+'</td><td>'+fmtNum(r["market_cap"],0)+'</td></tr>';});
+
+  var commoRows=(data.global_assets||[]).map(function(r){return '<tr><td style="font-weight:700;">'+r.symbol+'</td><td class="cell-name">'+(r.name||"—")+'</td><td>'+r.asset_class+'</td><td>'+fmtUSD(r.price)+'</td><td>'+formatChange(r["%_change"]||r.percent_change,true)+'</td><td>'+((r.volume&&r.volume!=="N/A")?fmtNum(r.volume,0):"—")+'</td></tr>';});
+
+
+
   if(isInitialLoad){
+
     var globalEquitiesHtml='<div class="full-card"><div class="card-header"><h2 class="brand-font"><i data-lucide="globe" class="icon-sm"></i> Global Equity Explorer</h2></div><div class="card-body"><div class="global-explorer-wrapper"><div class="country-filter"><select id="globalSearch" onchange="showGlobalCountry(this.value,false)">';
+
     Object.keys(countryMap).forEach(function(key){var isSel=key===currentGlobalSelection?"selected":"";globalEquitiesHtml+='<option value="'+key+'" '+isSel+'>'+countryMap[key].name+'</option>';});
-    globalEquitiesHtml+='</select></div><div id="globe-wrapper"><div id="globe-3d" style="width:100%;height:100%;"></div></div><div id="global-tables-container">';
+
+    globalEquitiesHtml+='</select></div><div id="globe-wrapper" style="display:flex;width:100%;height:400px;gap:1rem;align-items:center;justify-content:center;"><div id="globe-3d" style="width:100%;height:100%;transition:width .5s ease;position:relative;border-radius:12px;overflow:hidden;"></div><div id="country-2d-map" style="width:0%;height:100%;opacity:0;transition:width .5s ease,opacity .5s ease;overflow:hidden;border-radius:12px;"></div></div><div id="global-tables-container">';
+
     Object.keys(countryMap).forEach(function(countryKey){
+
       var cData=data[countryKey];var isActive=countryKey===currentGlobalSelection?"active-country":"";
+
       globalEquitiesHtml+='<div id="country-'+countryKey+'" class="global-tables-section '+isActive+'">';
-      if(cData&&cData.length>0){var tableData=buildGenericTableRows(cData);globalEquitiesHtml+=tableCard(countryMap[countryKey].name,tableData.headers,tableData.rows,"No data available");}
+
+      if(cData&&cData.length>0){var tableData=buildGenericTableRows(cData);globalEquitiesHtml+='<details open style="margin-bottom:10px;"><summary>▶ '+countryMap[countryKey].name+' Market</summary>'+tableCard(countryMap[countryKey].name,tableData.headers,tableData.rows,"No data available")+'</details>';}
+
+      else{globalEquitiesHtml+=tableCard(countryMap[countryKey].name,["Status"],[],"Data not loaded yet.");}
+
       globalEquitiesHtml+='</div>';
+
     });
+
     globalEquitiesHtml+='</div></div></div></div>';
 
-    document.getElementById("app-global").innerHTML=[globalEquitiesHtml].join("");
+
+
+    document.getElementById("app-global").innerHTML=['<div class="grid3">',tableCard("Global Markets (World Indices)",["Index","Price","Change","Volume"],indicesRows,"Global indices not yet loaded."),tableCard("Live Alternative Assets (1M)",["Symbol","Name","Class","Price","Change","Volume"],commoRows,"Assets not loaded."),tableCard("Yahoo Most Active (US Equities)",["Symbol","Company","Price","Change","Volume","Market Cap"],activeRows,"US most active not yet loaded."),'</div>',globalEquitiesHtml].join("");
+
+
+
+    var graphsHtml='<div class="graphs-section"><div class="card-header"><h2 class="brand-font"><i data-lucide="trending-up" class="icon-sm"></i> Macro & CBK Data Visualisations</h2></div><div class="card-body padding-0"><div class="graphs-grid">'+
+
+      '<div class="graph-card"><h3>12-Month Inflation Rate (%)</h3><div class="chart-wrapper"><canvas id="gc_inflation"></canvas></div></div>'+
+
+      '<div class="graph-card"><h3>Nominal vs Real GDP (KSh Trillion)</h3><div class="chart-wrapper"><canvas id="gc_gdp"></canvas></div></div>'+
+
+      '<div class="graph-card"><h3>Commercial Bank Weighted Average Rates (%)</h3><div class="chart-wrapper"><canvas id="gc_banks"></canvas></div></div>'+
+
+      '<div class="graph-card"><h3>KEPSS RTGS Monthly Settlement Value</h3><div class="chart-wrapper"><canvas id="gc_kepss"></canvas></div></div>'+
+
+      '</div></div></div>';
+
+
 
     document.getElementById("app-kenya").innerHTML=[
-      '<div class="grid2">',tableCard("Top Gainers",["Ticker","Price","Change"],gainers.map(trRow),"No gainers today."),tableCard("Top Losers",["Ticker","Price","Change"],losers.map(trRow),"No losers today."),'</div>'
+
+      '<div class="metrics">'+metricsHtml+'</div>',
+
+      standardCard('<i data-lucide="trending-up" class="icon-sm"></i> Key Macro Rates (CBK)','<div class="macro-cards-container">'+macroCardsHtml+'</div>'),
+
+      standardCard('<i data-lucide="calendar" class="icon-sm"></i> Upcoming Corporate Actions','<div id="corp-actions-container"></div>'),
+
+      '<div class="grid3">',tableCard("Top Gainers",["Ticker","Price","Change"],gainers.map(trRow),"No gainers today."),tableCard("Top Losers",["Ticker","Price","Change"],losers.map(trRow),"No losers today."),tableCard("Unchanged Stocks",["Ticker","Price","Change"],unchanged.map(trRow),"No unchanged stocks today."),'</div>',
+
+      '<div class="grid2">',tableCard("Indicative Forex Rates",["Currency Pair","Cross Rate (Buy)","Cross Rate (Sell)","Against KES (Buy)","Against KES (Sell)"],fxRows,"No forex data available."),tableCard("NSE Market Statistics",["Metric","Value","Change"],statsRows,"NSE statistics not yet loaded."),'</div>',
+
+      '<div class="grid3">',tableCard("Top by Turnover",["Symbol","Security","Turnover (KSh)","Volume","Trades"],topTurnover.map(rTO),"No turnover data."),tableCard("Top by Volume",["Symbol","Security","Volume","Turnover (KSh)"],topVolume.map(rVol),"No volume data."),tableCard("Top by Trades",["Symbol","Security","Trades","Turnover (KSh)"],topTrades.map(rTR),"No trades data."),'</div>',
+
+      '<div class="grid2">',tableCard("Top Foreign Inflows (Buys)",["Symbol","Security","Foreign Buy","Foreign Sell","Net Flow"],topFBuy.map(rFB),"No foreign buy data."),tableCard("Top Foreign Outflows (Sells)",["Symbol","Security","Foreign Sell","Foreign Buy"],topFSell.map(rFS),"No foreign sell data."),'</div>',
+
+      standardCard('<i data-lucide="grid" class="icon-sm"></i> Equity Heat Map — All Tickers','<p style="font-size:0.8125rem;margin:0 1.25rem 1rem;color:var(--text-muted);font-weight:600;">'+tickers.length+' tickers &nbsp;·&nbsp; <span class="up">'+gainers.length+' gainers</span> &nbsp;·&nbsp; <span class="dn">'+losers.length+' losers</span> &nbsp;·&nbsp; '+unchanged.length+' unchanged</p><input class="heatmap-search" id="heatmap-search" placeholder="Filter by ticker symbol…" oninput="filterHeatmap(this.value)" aria-label="Filter heatmap"><div class="ticker-grid" id="heatmap-grid">'+heatCells+'</div>'),
+
+      tableCard("Ticker Prices — Full List",["Symbol","Price (KSh)","Change","% Change","Updated"],tFull,"Ticker data not loaded."),
+
+      tableCard("Market Watch — Full Order Book Detail",["Symbol","Security","LTP","Prev Close","Volume","Trades","Turnover","Foreign Buy","Foreign Sell"],mwRows,"Market Watch data not loaded."),
+
+      graphsHtml
+
     ].join("");
 
-    setTimeout(function(){initGlobe();refreshIcons();},50);
+
+
+    setTimeout(function(){initGlobe();initCharts();loadCorporateActions();attachTableSorting();if(document.documentElement.getAttribute("data-theme")==="dark") updateChartTheme("dark");refreshIcons();},50);
+
+
+
+  } else {
+
+    var me=document.querySelector(".metrics");if(me) me.innerHTML=metricsHtml;
+
+    var mg=document.querySelector(".macro-cards-container");if(mg) mg.innerHTML=macroCardsHtml;
+
+    var hg=document.getElementById("heatmap-grid");if(hg) hg.innerHTML=heatCells;
+
+    updateTableData(getTableId("Top Gainers"),gainers.map(trRow));updateTableData(getTableId("Top Losers"),losers.map(trRow));updateTableData(getTableId("Unchanged Stocks"),unchanged.map(trRow));updateTableData(getTableId("Indicative Forex Rates"),fxRows);updateTableData(getTableId("NSE Market Statistics"),statsRows);updateTableData(getTableId("Top by Turnover"),topTurnover.map(rTO));updateTableData(getTableId("Top by Volume"),topVolume.map(rVol));updateTableData(getTableId("Top by Trades"),topTrades.map(rTR));updateTableData(getTableId("Top Foreign Inflows (Buys)"),topFBuy.map(rFB));updateTableData(getTableId("Top Foreign Outflows (Sells)"),topFSell.map(rFS));updateTableData(getTableId("Ticker Prices — Full List"),tFull);updateTableData(getTableId("Market Watch — Full Order Book Detail"),mwRows);
+
+    updateTableData(getTableId("Global Markets (World Indices)"),indicesRows);updateTableData(getTableId("Yahoo Most Active (US Equities)"),activeRows);updateTableData(getTableId("Live Alternative Assets (1M)"),commoRows);
+
+    Object.keys(countryMap).forEach(function(countryKey){var cData=data[countryKey];if(cData&&cData.length>0){var tableData=buildGenericTableRows(cData);updateTableData(getTableId(countryMap[countryKey].name),tableData.rows);}});
+
+    updateChartsData();attachTableSorting();refreshIcons();
+
   }
+
 }
+
+
+
+/* ---- Chart theme update ---- */
+
+function updateChartTheme(mode){
+
+  var tc=mode==="dark"?"#8494b5":"#4b5882", gc=mode==="dark"?"rgba(255,255,255,.05)":"rgba(0,32,96,.05)";
+
+  for(var id in chartInstances){
+
+    var c=chartInstances[id];
+
+    if(c.options.scales&&c.options.scales.x){c.options.scales.x.ticks.color=tc;c.options.scales.x.grid.color=gc;}
+
+    if(c.options.scales&&c.options.scales.y){c.options.scales.y.ticks.color=tc;c.options.scales.y.grid.color=gc;}
+
+    if(c.options.scales&&c.options.scales.y1){c.options.scales.y1.ticks.color=tc;}
+
+    if(c.options.plugins&&c.options.plugins.legend) c.options.plugins.legend.labels.color=mode==="dark"?"#e8edf8":"#0d1b3e";
+
+    c.update();
+
+  }
+
+}
+
+
+
+/* ---- Init Charts ---- */
+
+function initCharts(){
+
+  var F={family:"'Inter',sans-serif",size:11,weight:"600"};
+
+  var TT={backgroundColor:"#0d1b3e",padding:12,cornerRadius:8,titleFont:F,bodyFont:F,titleColor:"#f5a623",bodyColor:"#e8edf8",borderColor:"rgba(255,255,255,.1)",borderWidth:1};
+
+  var isDark=document.documentElement.getAttribute("data-theme")==="dark";
+
+  var tc=isDark?"#8494b5":"#4b5882"; var gc=isDark?"rgba(255,255,255,.05)":"rgba(0,32,96,.05)";
+
+  var SX={ticks:{font:F,color:tc,maxRotation:45,minRotation:45,autoSkip:true,maxTicksLimit:10},grid:{color:gc,display:false}};
+
+  var SY={ticks:{font:F,color:tc,padding:8},grid:{color:gc,drawBorder:false},border:{display:false}};
+
+  var INT={mode:"index",intersect:false};
+
+  var LEG={labels:{font:F,color:isDark?"#e8edf8":"#0d1b3e",boxWidth:12,padding:15,usePointStyle:true},position:'top',align:'center'};
+
+  var d=CHART_DATA;
+
+  function xt(t){return Object.assign({},SX,{title:{display:true,text:t,font:F,color:tc}});}
+
+  function yt(t,cb){return Object.assign({},SY,{title:{display:true,text:t,font:F,color:tc},ticks:Object.assign({},SY.ticks,cb?{callback:cb}:{})});}
+
+
+
+  try{if(d.inflation.labels.length>0){createChart("gc_inflation",{type:"line",data:{labels:d.inflation.labels,datasets:[{label:"12-Month Inflation (%)",data:d.inflation.m12,borderColor:"#1d4ed8",borderWidth:3,pointRadius:0,pointHoverRadius:6,tension:0.4,fill:true,backgroundColor:"rgba(29,78,216,0.1)"}]},options:{responsive:true,maintainAspectRatio:false,interaction:INT,plugins:{legend:{display:false},tooltip:Object.assign({},TT,{callbacks:{label:function(ctx){return " Inflation: "+ctx.parsed.y.toFixed(2)+"%";}}})},scales:{x:xt(''),y:Object.assign(yt('Rate (%)'),{min:0})}}});}}catch(e){}
+
+
+
+  try{if(d.gdp.labels.length>0){
+
+    var nomTn=d.gdp.nominal.map(function(v){return isNaN(v)?null:v/1e12;});
+
+    var realTn=d.gdp.real.map(function(v){return isNaN(v)?null:v/1e12;});
+
+    var datasets=[
+
+      {label:"Nominal GDP",data:nomTn,type:"bar",backgroundColor:"rgba(200,134,10,.75)",borderWidth:0,order:2,borderRadius:4,yAxisID:'y'},
+
+      {label:"Real GDP",data:realTn,type:"bar",backgroundColor:"rgba(0,32,96,.6)",borderWidth:0,order:3,borderRadius:4,yAxisID:'y'}
+
+    ];
+
+    if(d.gdp.growth&&d.gdp.growth.length>0){datasets.push({label:"GDP Growth (%)",data:d.gdp.growth,type:"line",borderColor:"#b91c1c",borderWidth:3,pointRadius:3,tension:0.4,order:1,yAxisID:'y1'});}
+
+    createChart("gc_gdp",{type:"bar",data:{labels:d.gdp.labels,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,interaction:INT,plugins:{legend:LEG,tooltip:Object.assign({},TT,{callbacks:{label:function(ctx){if(ctx.dataset.type==="line") return " "+ctx.dataset.label+": "+ctx.parsed.y.toFixed(1)+"%";return " "+ctx.dataset.label+": KSh "+(ctx.parsed.y?ctx.parsed.y.toFixed(2):'—')+"Tn";}}})},scales:{x:Object.assign(xt(''),{grid:{display:false}}),y:yt('GDP (KSh Trillions)',function(v){return 'KSh '+v.toFixed(1)+'Tn';}),y1:{type:'linear',position:'right',grid:{drawOnChartArea:false},ticks:{color:tc,callback:function(v){return v+"%";}}}}}}); }}catch(e){}
+
+
+
+  try{if(d.banks.labels.length>0){createChart("gc_banks",{type:"line",data:{labels:d.banks.labels,datasets:[{label:"Lending",data:d.banks.lending,borderColor:"#b91c1c",backgroundColor:"rgba(185,28,28,.1)",borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:"Overdraft",data:d.banks.overdraft,borderColor:"#c8860a",backgroundColor:"rgba(200,134,10,.1)",borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:"Savings",data:d.banks.savings,borderColor:"#15803d",backgroundColor:"rgba(21,128,61,.1)",borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:"Deposit",data:d.banks.deposit,borderColor:"#002060",backgroundColor:"rgba(0,32,96,.1)",borderWidth:2,pointRadius:0,tension:0.4,fill:true}]},options:{responsive:true,maintainAspectRatio:false,interaction:INT,plugins:{legend:LEG,tooltip:Object.assign({},TT,{callbacks:{label:function(ctx){return " "+ctx.dataset.label+": "+(ctx.parsed.y?ctx.parsed.y.toFixed(2):'—')+"%";}}})},scales:{x:xt(''),y:yt('Rate (%)',function(v){return v+'%';})}}}); }}catch(e){}
+
+
+
+  try{if(d.kepss.labels.length>0){createChart("gc_kepss",{type:"line",data:{labels:d.kepss.labels,datasets:[{label:"Settlement Value",data:d.kepss.values,borderColor:"#15803d",backgroundColor:"rgba(21,128,61,.1)",borderWidth:3,pointRadius:0,pointHoverRadius:6,tension:0.4,fill:true}]},options:{responsive:true,maintainAspectRatio:false,interaction:INT,plugins:{legend:{display:false},tooltip:Object.assign({},TT,{callbacks:{label:function(ctx){return " Value: KES "+(ctx.parsed.y?(ctx.parsed.y/1000000).toFixed(2):'—')+" Tn";}}})},scales:{x:xt(''),y:yt('Value (KES Trillions)',function(v){return (v/1000000).toFixed(1)+'Tn';})}}});}}catch(e){}
+
+}
+
+
+
+function updateChartsData(){
+
+  if(chartInstances["gc_inflation"]){chartInstances["gc_inflation"].data.labels=CHART_DATA.inflation.labels;chartInstances["gc_inflation"].data.datasets[0].data=CHART_DATA.inflation.m12;chartInstances["gc_inflation"].update();}
+
+  if(chartInstances["gc_gdp"]){chartInstances["gc_gdp"].data.labels=CHART_DATA.gdp.labels;chartInstances["gc_gdp"].data.datasets[0].data=CHART_DATA.gdp.nominal.map(function(v){return isNaN(v)?null:v/1e12;});chartInstances["gc_gdp"].data.datasets[1].data=CHART_DATA.gdp.real.map(function(v){return isNaN(v)?null:v/1e12;});if(CHART_DATA.gdp.growth&&chartInstances["gc_gdp"].data.datasets[2]) chartInstances["gc_gdp"].data.datasets[2].data=CHART_DATA.gdp.growth;chartInstances["gc_gdp"].update();}
+
+  if(chartInstances["gc_banks"]){chartInstances["gc_banks"].data.labels=CHART_DATA.banks.labels;chartInstances["gc_banks"].data.datasets[0].data=CHART_DATA.banks.lending;chartInstances["gc_banks"].data.datasets[1].data=CHART_DATA.banks.overdraft;chartInstances["gc_banks"].data.datasets[2].data=CHART_DATA.banks.savings;chartInstances["gc_banks"].data.datasets[3].data=CHART_DATA.banks.deposit;chartInstances["gc_banks"].update();}
+
+  if(chartInstances["gc_kepss"]){chartInstances["gc_kepss"].data.labels=CHART_DATA.kepss.labels;chartInstances["gc_kepss"].data.datasets[0].data=CHART_DATA.kepss.values;chartInstances["gc_kepss"].update();}
+
+}
+
+
+
+function createChart(id,config){var ctx=document.getElementById(id);if(ctx){if(chartInstances[id]) chartInstances[id].destroy();chartInstances[id]=new Chart(ctx,config);}}
+
+
+
+/* ---- Globe ---- */
 
 function initGlobe(){
+
   if(!document.getElementById('globe-3d')) return;
+
   availableISOs=Object.values(countryMap).map(function(c){return c.iso3;});
+
   fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+
     .then(function(res){return res.json();})
+
     .then(function(data){geojsonData=data;renderGlobe();});
+
 }
+
+
 
 function renderGlobe(){
+
   var globeContainer=document.getElementById('globe-3d');
+
   if(!globeContainer||myGlobe) return;
+
   myGlobe=Globe()(globeContainer)
+
     .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+
     .backgroundColor('rgba(0,0,0,0)')
+
     .polygonsData(geojsonData.features)
+
     .polygonAltitude(function(d){return d.properties.ISO_A3===countryMap[currentGlobalSelection]?.iso3?0.08:(availableISOs.includes(d.properties.ISO_A3)?0.02:0.01);})
-    .polygonCapColor(function(d){return d.properties.ISO_A3===countryMap[currentGlobalSelection]?.iso3?'#c8860a':(availableISOs.includes(d.properties.ISO_A3)?'rgba(59, 130, 246, 0.4)':'rgba(50,50,50,.2)');})
-    .polygonSideColor(function(){return 'rgba(0,0,0,.2)';})
-    .polygonStrokeColor(function(){return '#111';});
+
+    .polygonCapColor(function(d){return d.properties.ISO_A3===countryMap[currentGlobalSelection]?.iso3?'#c8860a':(availableISOs.includes(d.properties.ISO_A3)?'rgba(0,32,96,.5)':'rgba(50,50,50,.2)');})
+
+    .polygonSideColor(function(){return 'rgba(0,0,0,.1)';})
+
+    .polygonStrokeColor(function(){return '#111';})
+
+    .polygonLabel(function({properties:d}){return '<div style="background:rgba(13,27,62,.9);padding:6px 12px;border-radius:8px;color:#fff;font-family:\'Inter\',sans-serif;font-size:.75rem;"><b>'+d.ADMIN+'</b></div>';})
+
+    .onPolygonClick(function({properties:d}){var key=Object.keys(countryMap).find(function(k){return countryMap[k].iso3===d.ISO_A3;});if(key) showGlobalCountry(key,true);});
+
   myGlobe.controls().autoRotate=true; myGlobe.controls().autoRotateSpeed=0.5;
+
   var resizeObserver=new ResizeObserver(function(entries){for(var i=0;i<entries.length;i++){myGlobe.width(entries[i].contentRect.width);myGlobe.height(entries[i].contentRect.height);}});
+
   resizeObserver.observe(globeContainer);
+
+  showGlobalCountry(currentGlobalSelection,false);
+
 }
+
+
+
+window.addEventListener('load',function(){
+
+  if(typeof google!=='undefined'){
+
+    google.charts.load('current',{'packages':['geochart']});
+
+    google.charts.setOnLoadCallback(function(){isGeoChartLoaded=true;});
+
+  }
+
+});
+
+
 
 function showGlobalCountry(key,fromMap){
+
   currentGlobalSelection=key;
+
   document.querySelectorAll('.global-tables-section').forEach(function(el){el.classList.remove('active-country');});
+
   var el=document.getElementById('country-'+key); if(el) el.classList.add('active-country');
+
   var sel=document.getElementById("globalSearch"); if(sel&&sel.value!==key) sel.value=key;
+
   if(myGlobe){
+
     myGlobe.polygonAltitude(function(d){return d.properties.ISO_A3===countryMap[key].iso3?0.08:(availableISOs.includes(d.properties.ISO_A3)?0.02:0.01);})
-           .polygonCapColor(function(d){return d.properties.ISO_A3===countryMap[key].iso3?'#c8860a':(availableISOs.includes(d.properties.ISO_A3)?'rgba(59, 130, 246, 0.4)':'rgba(50,50,50,.2)');});
+
+           .polygonCapColor(function(d){return d.properties.ISO_A3===countryMap[key].iso3?'#c8860a':(availableISOs.includes(d.properties.ISO_A3)?'rgba(0,32,96,.5)':'rgba(50,50,50,.2)');});
+
   }
+
+  var map3d=document.getElementById('globe-3d'), map2d=document.getElementById('country-2d-map');
+
+  if(map3d&&map2d){map3d.style.width='50%';map2d.style.width='50%';map2d.style.opacity='1';}
+
+  if(isGeoChartLoaded&&map2d){
+
+    var chartData=new google.visualization.DataTable(); chartData.addColumn('string','Country'); chartData.addColumn('number','Selected'); chartData.addRows([[countryMap[key].code,1]]);
+
+    var chart=new google.visualization.GeoChart(map2d);
+
+    var isDark=document.documentElement.getAttribute("data-theme")==="dark";
+
+    chart.draw(chartData,{region:countryMap[key].code,displayMode:'regions',resolution:'provinces',colorAxis:{colors:['#c8860a']},backgroundColor:'transparent',datalessRegionColor:isDark?'#0c1a3a':'#eef1f8',defaultColor:'#c8860a',legend:'none'});
+
+  }
+
 }
 
-triggerRefresh();
+
+
+/* ---- Heat Map filter ---- */
+
+function filterHeatmap(q){var qU=(q||"").toUpperCase();document.querySelectorAll(".ticker-cell").forEach(function(cell){cell.style.display=(cell.dataset.sym||"").toUpperCase().includes(qU)?"":"none";});}
+
+
+
+/* ---- Auto-refresh ---- */
+
+function startRefresh(){if(window.refreshTimer) clearInterval(window.refreshTimer);window.refreshTimer=setInterval(function(){if(!document.hidden) triggerRefresh();},60000);}
+
+triggerRefresh(); startRefresh();
+
 </script>
+
 </body>
+
 </html>
